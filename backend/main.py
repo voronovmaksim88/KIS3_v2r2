@@ -14,12 +14,12 @@ import uvicorn
 # from sqlalchemy.ext.asyncio import AsyncSession
 # from sqlalchemy import select
 
-# from test_views import router as test_router
+from test_views import router as test_router
 # from models.models import Country, Manufacturer
 
 
 app = FastAPI()
-# app.include_router(test_router)  # Добавляем роутер для тестовых запросов
+app.include_router(test_router)  # Добавляем роутер для тестовых запросов
 
 # Настройка CORS
 app.add_middleware(
