@@ -15,9 +15,12 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     command: >
-      sh -c "ls -l /etc/letsencrypt/archive/sibplc-kis3.ru/ &&
-             cp /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem /etc/nginx/ssl/fullchain.pem 2>&1 &&
-             cp /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem /etc/nginx/ssl/privkey.pem 2>&1 &&
+      sh -c "fullchain=$(find /etc/letsencrypt -name 'fullchain*.pem' | sort -V | tail -n 1) &&
+             privkey=$(find /etc/letsencrypt -name 'privkey*.pem' | sort -V | tail -n 1) &&
+             echo 'Fullchain path:' $fullchain &&
+             echo 'Privkey path:' $privkey &&
+             cp $fullchain /etc/nginx/ssl/fullchain.pem 2>&1 &&
+             cp $privkey /etc/nginx/ssl/privkey.pem 2>&1 &&
              chmod 644 /etc/nginx/ssl/fullchain.pem &&
              chmod 600 /etc/nginx/ssl/privkey.pem &&
              ls -l /etc/nginx/ssl/ &&
