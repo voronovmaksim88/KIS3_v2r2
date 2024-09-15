@@ -20,6 +20,7 @@ services:
              chmod 644 /etc/nginx/ssl/fullchain.pem &&
              chmod 600 /etc/nginx/ssl/privkey.pem &&
              nginx -g 'daemon off;'"
+    user: root
     depends_on:
       - backend
     networks:
