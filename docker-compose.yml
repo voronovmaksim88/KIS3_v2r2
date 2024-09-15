@@ -19,7 +19,7 @@ services:
              cp /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem /etc/nginx/ssl/privkey.pem 2>&1 &&
              chmod 644 /etc/nginx/ssl/fullchain.pem &&
              chmod 600 /etc/nginx/ssl/privkey.pem &&
-             nginx -g 'daemon off;'
+             nginx -g 'daemon off;'"
     depends_on:
       - backend
     networks:
