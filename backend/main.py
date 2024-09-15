@@ -35,7 +35,14 @@ app.add_middleware(
 if __name__ == "__main__":
     # uvicorn.run("main:app", reload=True)
     # asyncio.run(test_connection())
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+    # прямой достуа всем желающим минуя NGINX прям по HTTP
+    # uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+    # доступ только из localhost. NGINX будет передавать запросы на 127.0.0.1:8000
+    # более безопасный подход для production
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
 
 
 @app.get("/")
