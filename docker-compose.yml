@@ -15,10 +15,12 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     command: >
-      sh -c "cp /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem /etc/nginx/ssl/fullchain.pem 2>&1 &&
+      sh -c "ls -l /etc/letsencrypt/archive/sibplc-kis3.ru/ &&
+             cp /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem /etc/nginx/ssl/fullchain.pem 2>&1 &&
              cp /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem /etc/nginx/ssl/privkey.pem 2>&1 &&
              chmod 644 /etc/nginx/ssl/fullchain.pem &&
              chmod 600 /etc/nginx/ssl/privkey.pem &&
+             ls -l /etc/nginx/ssl/ &&
              nginx -g 'daemon off;'"
     user: root
     depends_on:
