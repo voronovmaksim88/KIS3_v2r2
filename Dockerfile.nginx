@@ -1,0 +1,6 @@
+FROM nginx:stable-alpine
+
+COPY nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /etc/nginx/ssl
+COPY /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem /etc/nginx/ssl/fullchain.pem
+COPY /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem /etc/nginx/ssl/privkey.pem
