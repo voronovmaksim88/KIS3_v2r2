@@ -13,31 +13,13 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem:/etc/nginx/ssl/privkey.pem:ro
     command: >
       sh -c "
-      echo 'Listing /etc/letsencrypt directory:' &&
-      ls -R /etc/letsencrypt &&
-      if [ -f /etc/letsencrypt/live/sibplc-kis3.ru/fullchain.pem ] && [ -f /etc/letsencrypt/live/sibplc-kis3.ru/privkey.pem ]; then
-        cp /etc/letsencrypt/live/sibplc-kis3.ru/fullchain.pem /etc/nginx/ssl/fullchain.pem &&
-        cp /etc/letsencrypt/live/sibplc-kis3.ru/privkey.pem /etc/nginx/ssl/privkey.pem &&
-        chmod 644 /etc/nginx/ssl/fullchain.pem &&
-        chmod 600 /etc/nginx/ssl/privkey.pem &&
-        echo 'Certificates copied successfully' &&
-        ls -l /etc/nginx/ssl/
-      else
-        echo 'Certificate files not found in live directory' &&
-        if [ -f /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem ] && [ -f /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem ]; then
-          cp /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem /etc/nginx/ssl/fullchain.pem &&
-          cp /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem /etc/nginx/ssl/privkey.pem &&
-          chmod 644 /etc/nginx/ssl/fullchain.pem &&
-          chmod 600 /etc/nginx/ssl/privkey.pem &&
-          echo 'Certificates copied successfully from archive' &&
-          ls -l /etc/nginx/ssl/
-        else
-          echo 'Certificate files not found in archive directory'
-        fi
-      fi &&
+      ls -l /etc/nginx/ssl/ &&
+      chmod 644 /etc/nginx/ssl/fullchain.pem &&
+      chmod 600 /etc/nginx/ssl/privkey.pem &&
       nginx -g 'daemon off;'"
     user: root
     depends_on:
