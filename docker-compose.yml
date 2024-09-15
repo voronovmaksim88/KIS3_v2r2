@@ -11,7 +11,7 @@ services:
       - "443:443"
     volumes:
       - './nginx.conf:/etc/nginx/nginx.conf'
-      - /etc/letsencrypt:/etc/letsencrypt:ro,Z
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
     networks:
