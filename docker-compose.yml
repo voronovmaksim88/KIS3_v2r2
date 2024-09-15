@@ -11,6 +11,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - /etc/letsencrypt/archive/sibplc-kis3.ru/fullchain2.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/archive/sibplc-kis3.ru/privkey2.pem:/etc/nginx/ssl/privkey.pem:ro
     depends_on:
       - backend
     networks:
