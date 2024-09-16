@@ -18,7 +18,7 @@ from test_views import router as test_router
 # from models.models import Country, Manufacturer
 
 
-app = FastAPI()
+app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
 
 # Настройка CORS
