@@ -25,7 +25,7 @@ app.include_router(test_router)  # Добавляем роутер для тес
 app.add_middleware(
     CORSMiddleware,  # type: ignore
     # allow_origins=["*"],  # Разрешить все источники (но это работает только для HTTP запросов)
-    allow_origins=["https://voronovmaksim88-kis3-frontend-vue-v2-a3b1.twc1.net", "https://sibplc-kis3.ru:8000"],
+    allow_origins=["https://voronovmaksim88-kis3-frontend-vue-v2-a3b1.twc1.net", "https://sibplc-kis3.ru"],
     allow_credentials=True,
     allow_methods=["*"],  # Разрешить все методы
     allow_headers=["*"],  # Разрешить все заголовки

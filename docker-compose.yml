@@ -11,3 +11,11 @@ services:
       - "8000:8000"
     networks:
       - dev
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    networks:
+      - dev
