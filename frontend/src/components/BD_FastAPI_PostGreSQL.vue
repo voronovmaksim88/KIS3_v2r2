@@ -354,7 +354,7 @@ async function fetchManufacturers() {
       <hr class="mb-5">
 
       <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchTestFile">Get test file</button>
+        <button class="btn btn-p" @click="fetchTestFile">Load test file</button>
         <div v-if="error_TestLoadFile">
           <p style="color: red;">{{ error_TestLoadFile }}</p>
         </div>
