@@ -7,6 +7,7 @@ const userId = ref(null)
 const error = ref(null)
 const errorHello = ref(null)
 const errorHelloName = ref(null)
+const error_TestHTMLPage = ref(null)
 const userName = ref("")
 const hello = ref("")
 const helloName = ref("")
@@ -121,7 +122,7 @@ const fetchUser = async () => {
 
 const fetchTestHTMLPage = async () => {
   user.value = null;
-  error.value = null;
+  error_TestHTMLPage.value = null;
   try {
     const response = await fetch(`${url}test/load_test_html_page`);
 
@@ -132,7 +133,7 @@ const fetchTestHTMLPage = async () => {
 
     htmlContent.value = await response.text();
   } catch (err) {
-    error.value = err.message;
+    error_TestHTMLPage.value = err.message;
   }
 };
 
@@ -344,6 +345,9 @@ async function fetchManufacturers() {
         <button class="btn btn-p" @click="fetchTestHTMLPage">Get HTML page</button>
         <div v-if="htmlContent" class="col-span-2">
           <div v-html="htmlContent" class="bg-white p-4 rounded-md"></div>
+        </div>
+        <div v-if="error_TestHTMLPage">
+          <p style="color: red;">{{ error_TestHTMLPage }}</p>
         </div>
       </div>
       <hr class="mb-5">
