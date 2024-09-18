@@ -8,6 +8,7 @@ const error = ref(null)
 const errorHello = ref(null)
 const errorHelloName = ref(null)
 const error_TestHTMLPage = ref(null)
+const error_TestLoadFile = ref(null)
 const userName = ref("")
 const hello = ref("")
 const helloName = ref("")
@@ -139,7 +140,7 @@ const fetchTestHTMLPage = async () => {
 
 
 const fetchTestFile = async () => {
-  error.value = null;
+  error_TestLoadFile.value = null;
   try {
     const response = await fetch(`${url}test/load_test_file`);
 
@@ -160,7 +161,7 @@ const fetchTestFile = async () => {
     document.body.removeChild(a);
 
   } catch (err) {
-    error.value = err.message;
+    error_TestLoadFile.value = err.message;
   }
 };
 
@@ -354,6 +355,9 @@ async function fetchManufacturers() {
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchTestFile">Get test file</button>
+        <div v-if="error_TestLoadFile">
+          <p style="color: red;">{{ error_TestLoadFile }}</p>
+        </div>
       </div>
       <hr class="mb-5">
 
