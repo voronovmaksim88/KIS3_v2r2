@@ -48,5 +48,5 @@ if __name__ == "__main__":
 def home():
     """Домашняя страница"""
     html_content = "<h2>FastAPI is the best backend framework</h2>"
-    html_content += '<p>Интерактивная документация на <a href="/docs">/docs</a></p>'
+    html_content += '<p>Интерактивная документация на <a href="/api/docs">  /api/docs  </a></p>'
     return HTMLResponse(content=html_content)
