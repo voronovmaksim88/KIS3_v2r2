@@ -488,7 +488,7 @@ def print_list(list_for_print: list):
 # print(get_dict_works())
 
 # Получаем список заказов
-orders = get_list_dict_orders()
+# orders = get_list_dict_orders()
 
 # Определяем заголовки таблицы как словарь
 headers = {
@@ -500,6 +500,6 @@ headers = {
 }
 
 # Выводим таблицу заказов с заголовками
-print(Fore.LIGHTBLUE_EX + tabulate(orders, headers=headers, tablefmt='grid'))
+# print(Fore.LIGHTBLUE_EX + tabulate(orders, headers=headers, tablefmt='grid'))
 
 # print(get_list_works("029-05-2024"))
