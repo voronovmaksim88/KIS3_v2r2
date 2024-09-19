@@ -637,7 +637,7 @@ while answer != "0":
     print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
     print("22 - show table 'Order' in PostgreSQL")
     print("23 - copy table 'Order' from SQlite to PostgreSQL")
-    #print(get_all_countries_set_from_sqlite3())
+    # print(get_all_countries_set_from_sqlite3())
 
     answer = input("")
     if answer == "0":

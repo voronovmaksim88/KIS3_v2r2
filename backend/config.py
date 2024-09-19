@@ -11,3 +11,6 @@ DB_PASS = os.environ.get("DB_PASS")
 
 # для импорта dotenv надо установить:
 # pip install python-dotenv
+
+# путь к базе данных Sqlite
+DB_PATH = os.path.join(os.path.dirname(__file__),"KIS2", "db_test.sqlite3")

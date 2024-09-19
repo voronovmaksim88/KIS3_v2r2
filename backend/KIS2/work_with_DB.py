@@ -7,14 +7,14 @@ from tabulate import tabulate
 from colorama import Fore, init
 import sqlite3
 from typing import Set, Dict
-
+from config import DB_PATH
 
 # Инициализация colorama
 init(autoreset=True)
 
 # Путь к файлу базы данных
-db_path = r".\db_test.sqlite3"
-
+db_path = DB_PATH
+print("путь к базе: " + db_path)
 # Инициализируем colorama
 init(autoreset=True)
 
