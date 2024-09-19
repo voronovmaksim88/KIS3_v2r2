@@ -10,8 +10,8 @@ from pydantic import BaseModel, Field
 import uvicorn
 
 from database import async_session_maker, test_connection
-# from sqlalchemy.ext.asyncio import AsyncSession
-# from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from test_views import router as test_router
 from models.models import Country, Manufacturer
@@ -66,3 +66,51 @@ async def get_db():
 # 4. yield используется вместо return, чтобы сделать эту функцию генератором.
 # Такой подход обеспечивает эффективное управление соединениями с базой данных в асинхронном контексте,
 # гарантируя, что каждый запрос получает свежую сессию, которая правильно закрывается после использования.
+
+
+# далее будут функции которые будут доставать данные из базы данных, их надо потом будет вынести в отдельный файл,
+# и создать отдельный роутер
+
+@app.get("/all_countries")
+async def get_all_countries(db: AsyncSession = Depends(get_db)):
+    try:
+        # Создаем запрос для выборки всех стран
+        query = select(Country)
+
+        # Выполняем запрос
+        result = await db.execute(query)
+
+        # Получаем все записи
+        countries = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        countries_list = [
+            {
+                "id": country.id,
+                "name": country.name
+            }
+            for country in countries
+        ]
+
+        return {"countries": countries_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_manufacturers")
+async def get_all_manufacturers(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех стран
+        query = select(Manufacturer)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        manufacturers = result.fetchall()
+
+        # Преобразуем результат в список словарей
+        manufacturers_list = [{"id": manufacturer.id, "name": manufacturer.name, "country_id": manufacturer.country_id}
+                              for manufacturer in manufacturers]
+
+        return {"manufacturers": manufacturers_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
