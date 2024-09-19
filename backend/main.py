@@ -100,16 +100,22 @@ async def get_all_countries(db: AsyncSession = Depends(get_db)):
 @app.get("/all_manufacturers")
 async def get_all_manufacturers(db: AsyncSession = Depends(get_db)):
     try:
-        # Выполняем запрос для получения всех стран
+        # Выполняем запрос для получения всех производителей
         query = select(Manufacturer)
         result = await db.execute(query)
 
         # Получаем все записи
-        manufacturers = result.fetchall()
+        manufacturers = result.scalars().all()
 
         # Преобразуем результат в список словарей
-        manufacturers_list = [{"id": manufacturer.id, "name": manufacturer.name, "country_id": manufacturer.country_id}
-                              for manufacturer in manufacturers]
+        manufacturers_list = [
+            {
+                "id": manufacturer.id,
+                "name": manufacturer.name,
+                "country_id": manufacturer.country_id
+            }
+            for manufacturer in manufacturers
+        ]
 
         return {"manufacturers": manufacturers_list}
     except Exception as e:
