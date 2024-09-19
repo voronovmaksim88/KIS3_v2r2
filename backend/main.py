@@ -15,7 +15,7 @@ import uvicorn
 # from sqlalchemy import select
 
 from test_views import router as test_router
-# from models.models import Country, Manufacturer
+from models.models import Country, Manufacturer
 
 
 app = FastAPI(root_path="/api")
