@@ -4,7 +4,7 @@ import asyncio
 from sqlalchemy import text
 from colorama import init, Fore
 
-# Инициализируем coloramal
+# Инициализируем colorama
 init(autoreset=True)
 
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -12,7 +12,7 @@ DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{D
 # Создаем асинхронный движок
 engine = create_async_engine(DATABASE_URL, echo=True)
 
-# Создаем асинхронный sessionmaker
+# Создаем асинхронный session_maker
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
