@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+
 import HomePage from "@/components/HomePage.vue";
 import KIS from "@/components/KIS.vue";
 import BoxSerialNum from "@/components/BoxSerialNum.vue";

@@ -1,5 +1,6 @@
 <script setup>
 import {ref, computed} from 'vue'
+import Test_FastAPI_hello_world from "@/components/Test_FastAPI_hello_world.vue";
 
 
 const user = ref(null)
@@ -294,6 +295,8 @@ async function fetchManufacturers() {
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800" id="BD_FastAPI_PostGreSQL">
     <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-1/2 xl:w-1/3 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test FastApi</h1>
+
+      <Test_FastAPI_hello_world/>
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchHello">Get Hello</button>
