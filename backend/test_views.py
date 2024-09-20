@@ -36,6 +36,25 @@ def get_user(user_id: int):
     return JSONResponse(content=user)
 
 
+# Pydantic модель для обновления пользователя
+class UserNameUpdate(BaseModel):
+    new_name: str
+
+
+@router.post("/user/{user_id}")
+def change_user_name(user_id: int, user_update: UserNameUpdate):
+    # current_user = next((user for user in users if user.get("id") == user_id), None)
+    current_user = None
+    for user in users:
+        if user.get("id") == user_id:
+            current_user = user
+            break
+    if current_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    current_user['name'] = user_update.new_name  # Обновляем имя пользователя
+    return {'status': 200, 'data': current_user}
+
+
 @router.get("/load_test_html_page")
 def root():
     return FileResponse("content/HTML_example.html")
