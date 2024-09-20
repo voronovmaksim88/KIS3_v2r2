@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 import uvicorn
 
+
 from database import async_session_maker, test_connection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
