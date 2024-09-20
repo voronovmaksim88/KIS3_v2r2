@@ -1,107 +1,21 @@
 <script setup>
-import {ref, computed} from 'vue'
+import {ref} from 'vue'
 import The_Test_FastAPI_hello_world from "@/components/The_Test_FastAPI_hello_world.vue";
+import The_Test_FastAPI_hello_name from "@/components/The_Test_FastAPI_hello_name.vue";
+import The_Test_FastAPI_fetch_fake_user from "@/components/The_Test_FastAPI_fetch_fake_user.vue";
+import The_Test_FastAPI_get_html_page from "@/components/The_Test_FastAPI_get_html_page.vue";
 
 
-const user = ref(null)
-const userId = ref(null)
-const error = ref(null)
-const errorHelloName = ref(null)
-const error_TestHTMLPage = ref(null)
 const error_TestLoadFile = ref(null)
-const userName = ref("")
-const helloName = ref("")
-const input_name_class = ref("border-2 rounded-md")
-const input_userId_class = ref("border-2 rounded-md")
-const input_error_style = "border-2 border-red-500 rounded-md focus:outline-none focus:ring-2"
+
 // const backend_url = "https://sibplc-kis3.ru/api/"
 const backend_url = "http://localhost:8000/api/"
-const htmlContent = ref('')
 const mul1 = ref(0) //  множитель 1
 const mul2 = ref(0) //  множитель 2
 const composition = ref(0) // произведение
 
-// Вычисляемое свойство лучше определить за пределами функции
-const userIdNumber = computed(() => parseInt(userId.value));
 
 
-
-
-const fetchHelloName = async () => {
-  errorHelloName.value = null;
-  if (userName.value) {
-    try {
-      const response = await fetch(`${backend_url}test/hello?name=${encodeURIComponent(userName.value)}`);
-
-      if (!response.ok) {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error('Failed to fetch hello message');
-      }
-
-      const data = await response.json();
-      console.log(data);
-
-      if (data && data.message) {
-        helloName.value = data.message;
-      } else {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error('Invalid response format');
-      }
-
-    } catch (err) {
-      errorHelloName.value = err.message;
-
-    }
-  } else {
-    // alert("введите имя")
-    input_name_class.value = input_error_style
-    helloName.value = ''
-  }
-}
-
-
-const fetchUser = async () => {
-  user.value = null;
-  error.value = null;
-  if (userId.value) {
-    try {
-      const response = await fetch(`${backend_url}test/user/${userIdNumber.value}`);
-
-      if (!response.ok) {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error('User not found!!!');
-      }
-
-      const data = await response.json();
-      console.log(data);
-
-      user.value = data;
-    } catch (err) {
-      error.value = err.message;
-    }
-  } else {
-    // alert("введите имя")
-    input_userId_class.value = input_error_style
-  }
-}
-
-
-const fetchTestHTMLPage = async () => {
-  user.value = null;
-  error_TestHTMLPage.value = null;
-  try {
-    const response = await fetch(`${backend_url}test/load_test_html_page`);
-
-    if (!response.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error('test_html_page not found!!!');
-    }
-
-    htmlContent.value = await response.text();
-  } catch (err) {
-    error_TestHTMLPage.value = err.message;
-  }
-};
 
 
 const fetchTestFile = async () => {
@@ -127,15 +41,6 @@ const fetchTestFile = async () => {
 
   } catch (err) {
     error_TestLoadFile.value = err.message;
-  }
-};
-
-
-const resetInputClassDynamic = (inputName) => {
-  if (inputName === 'userId') {
-    input_userId_class.value = "border-2 rounded-md";
-  } else if (inputName === 'userName') {
-    input_name_class.value = "border-2 rounded-md";
   }
 };
 
@@ -256,60 +161,16 @@ async function fetchManufacturers() {
 
 <template>
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800" id="BD_FastAPI_PostGreSQL">
-    <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-1/2 xl:w-1/3 space-y-4">
+    <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-2/3 xl:w-5/12 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test FastApi</h1>
 
       <The_Test_FastAPI_hello_world :url="backend_url"/>
+      <The_Test_FastAPI_hello_name :url="backend_url"/>
+      <The_Test_FastAPI_fetch_fake_user :url="backend_url"/>
+      <The_Test_FastAPI_get_html_page :url="backend_url"/>
 
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchHelloName">Get Hello Name</button>
-        <input
-            id="input_name"
-            type="text"
-            v-model="userName"
-            placeholder="Enter user name"
-            :class="input_name_class"
-            @focus="resetInputClassDynamic('userName')"
-        />
-        <p class="text-white">{{ helloName }}</p>
-        <div v-if="errorHelloName">
-          <p style="color: red;">{{ errorHelloName }}</p>
-        </div>
-      </div>
-      <hr class="mb-5">
 
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchUser">Get User by id</button>
-        <input
-            type="number"
-            v-model="userId"
-            placeholder="Enter user ID"
-            :class="input_userId_class"
-            @focus="resetInputClassDynamic('userId')"
-        />
-        <div class="text-white" v-if="user">
-          <h2>User Info</h2>
-          <p>ID: {{ user.id }}</p>
-          <p>Name: {{ user.name }}</p>
-          <!--suppress JSUnresolvedReference -->
-          <p>Age: {{ user.age }}</p>
-        </div>
-        <div v-if="error">
-          <p style="color: red;">{{ error }}</p>
-        </div>
-      </div>
-      <hr class="mb-5">
 
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchTestHTMLPage">Get HTML page</button>
-        <div v-if="htmlContent" class="col-span-2">
-          <div v-html="htmlContent" class="bg-white p-4 rounded-md"></div>
-        </div>
-        <div v-if="error_TestHTMLPage">
-          <p style="color: red;">{{ error_TestHTMLPage }}</p>
-        </div>
-      </div>
-      <hr class="mb-5">
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchTestFile">Load test file</button>
