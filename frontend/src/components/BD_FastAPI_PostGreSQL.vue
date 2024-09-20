@@ -1,23 +1,21 @@
 <script setup>
 import {ref, computed} from 'vue'
-import Test_FastAPI_hello_world from "@/components/Test_FastAPI_hello_world.vue";
+import The_Test_FastAPI_hello_world from "@/components/The_Test_FastAPI_hello_world.vue";
 
 
 const user = ref(null)
 const userId = ref(null)
 const error = ref(null)
-const errorHello = ref(null)
 const errorHelloName = ref(null)
 const error_TestHTMLPage = ref(null)
 const error_TestLoadFile = ref(null)
 const userName = ref("")
-const hello = ref("")
 const helloName = ref("")
 const input_name_class = ref("border-2 rounded-md")
 const input_userId_class = ref("border-2 rounded-md")
 const input_error_style = "border-2 border-red-500 rounded-md focus:outline-none focus:ring-2"
-const url = "https://sibplc-kis3.ru/api/"
-// const url = "http://localhost:8000/api/"
+// const backend_url = "https://sibplc-kis3.ru/api/"
+const backend_url = "http://localhost:8000/api/"
 const htmlContent = ref('')
 const mul1 = ref(0) //  множитель 1
 const mul2 = ref(0) //  множитель 2
@@ -27,48 +25,13 @@ const composition = ref(0) // произведение
 const userIdNumber = computed(() => parseInt(userId.value));
 
 
-const fetchHello = async () => {
-  errorHello.value = null
-  hello.value = ""
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    const response = await fetch(`${url}test/hello_world`, {
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error('Failed to fetch hello message');
-    }
-
-    const data = await response.json();
-    console.log(data);
-
-    if (data && data.message) {
-      hello.value = data.message;
-    } else {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error('Invalid response format');
-    }
-
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      errorHello.value = "нет ответа от сервера";
-    } else {
-      errorHello.value = err.message;
-    }
-  }
-}
 
 const fetchHelloName = async () => {
   errorHelloName.value = null;
   if (userName.value) {
     try {
-      const response = await fetch(`${url}test/hello?name=${encodeURIComponent(userName.value)}`);
+      const response = await fetch(`${backend_url}test/hello?name=${encodeURIComponent(userName.value)}`);
 
       if (!response.ok) {
         // noinspection ExceptionCaughtLocallyJS
@@ -102,7 +65,7 @@ const fetchUser = async () => {
   error.value = null;
   if (userId.value) {
     try {
-      const response = await fetch(`${url}test/user/${userIdNumber.value}`);
+      const response = await fetch(`${backend_url}test/user/${userIdNumber.value}`);
 
       if (!response.ok) {
         // noinspection ExceptionCaughtLocallyJS
@@ -127,7 +90,7 @@ const fetchTestHTMLPage = async () => {
   user.value = null;
   error_TestHTMLPage.value = null;
   try {
-    const response = await fetch(`${url}test/load_test_html_page`);
+    const response = await fetch(`${backend_url}test/load_test_html_page`);
 
     if (!response.ok) {
       // noinspection ExceptionCaughtLocallyJS
@@ -144,7 +107,7 @@ const fetchTestHTMLPage = async () => {
 const fetchTestFile = async () => {
   error_TestLoadFile.value = null;
   try {
-    const response = await fetch(`${url}test/load_test_file`);
+    const response = await fetch(`${backend_url}test/load_test_file`);
 
     if (!response.ok) {
       // noinspection ExceptionCaughtLocallyJS
@@ -183,7 +146,7 @@ const c = ref(0)
 
 async function fetchSumma() {
   // отправляем запрос
-  const response = await fetch(`${url}test/summa`, {
+  const response = await fetch(`${backend_url}test/summa`, {
     method: "POST",
     headers: {"Accept": "application/json", "Content-Type": "application/json"},
     body: JSON.stringify({
@@ -201,7 +164,7 @@ async function fetchSumma() {
 
 async function fetchMultiplication() {
   // отправляем запрос
-  const response = await fetch(`${url}test/mult`, {
+  const response = await fetch(`${backend_url}test/mult`, {
     method: "POST",
     headers: {"Accept": "application/json", "Content-Type": "application/json"},
     body: JSON.stringify({
@@ -222,7 +185,7 @@ const all_countries_error = ref("") // список всех стран
 async function fetchCountry() {
   all_countries.value = ""; // изначально обнуляем список стран
   const timeout = 3000; // 3 секунды
-  const fetchPromise = fetch(`${url}all_countries`);
+  const fetchPromise = fetch(`${backend_url}all_countries`);
   const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), timeout)
   );
@@ -255,7 +218,7 @@ const all_manufacturers_error = ref("") // список всех стран
 async function fetchManufacturers() {
   all_manufacturers.value = ""; // изначально обнуляем список стран
   const timeout = 3000; // 3 секунды
-  const fetchPromise = fetch(`${url}all_manufacturers`);
+  const fetchPromise = fetch(`${backend_url}all_manufacturers`);
   const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), timeout)
   );
@@ -296,16 +259,7 @@ async function fetchManufacturers() {
     <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-1/2 xl:w-1/3 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test FastApi</h1>
 
-      <Test_FastAPI_hello_world/>
-
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchHello">Get Hello</button>
-        <p class="text-white">{{ hello }}</p>
-        <div v-if="errorHello">
-          <p style="color: red;">{{ errorHello }}</p>
-        </div>
-      </div>
-      <hr class="mb-5">
+      <The_Test_FastAPI_hello_world :url="backend_url"/>
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchHelloName">Get Hello Name</button>
