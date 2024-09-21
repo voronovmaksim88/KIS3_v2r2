@@ -5,7 +5,7 @@ import HomePage from "@/components/HomePage.vue";
 import KIS from "@/components/KIS.vue";
 import BoxSerialNum from "@/components/BoxSerialNum.vue";
 import CommercialOffer from "@/components/CommercialOffer.vue";
-import BD_FastAPI_PostGreSQL from "@/components/BD_FastAPI_PostGreSQL.vue";
+import BD_FastAPI_PostGreSQL from "@/components/The_Test_FastAPI.vue";
 
 const show_Home = ref(true)
 const show_KIS = ref(false)

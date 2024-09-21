@@ -80,7 +80,7 @@ class Multiplication(BaseModel):
 
 
 @router.post("/mult")
-def hello(multipliers: Multiplication):
+def mult(multipliers: Multiplication):
     return {"message": f"произведение = {multipliers.m1 * multipliers.m2}"}
 
 

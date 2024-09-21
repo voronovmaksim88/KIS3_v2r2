@@ -4,67 +4,15 @@ import The_Test_FastAPI_hello_world from "@/components/The_Test_FastAPI_hello_wo
 import The_Test_FastAPI_hello_name from "@/components/The_Test_FastAPI_hello_name.vue";
 import The_Test_FastAPI_fetch_fake_user from "@/components/The_Test_FastAPI_fetch_fake_user.vue";
 import The_Test_FastAPI_get_html_page from "@/components/The_Test_FastAPI_get_html_page.vue";
+import The_Test_FastAPI_get_file from "@/components/The_Test_FastAPI_get_file.vue";
+import The_Test_FastAPI_get_sum from "@/components/The_Test_FastAPI_get_sum.vue";
 
-
-const error_TestLoadFile = ref(null)
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
 const backend_url = "http://localhost:8000/api/"
 const mul1 = ref(0) //  множитель 1
 const mul2 = ref(0) //  множитель 2
 const composition = ref(0) // произведение
-
-
-
-
-
-const fetchTestFile = async () => {
-  error_TestLoadFile.value = null;
-  try {
-    const response = await fetch(`${backend_url}test/load_test_file`);
-
-    if (!response.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error('test_file not found!!!');
-    }
-
-    // Здесь нужно добавить обработку успешного ответа
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = 'test_file.txt';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(downloadUrl);
-    document.body.removeChild(a);
-
-  } catch (err) {
-    error_TestLoadFile.value = err.message;
-  }
-};
-
-
-const a = ref(0)
-const b = ref(0)
-const c = ref(0)
-
-async function fetchSumma() {
-  // отправляем запрос
-  const response = await fetch(`${backend_url}test/summa`, {
-    method: "POST",
-    headers: {"Accept": "application/json", "Content-Type": "application/json"},
-    body: JSON.stringify({
-      a: a.value,
-      b: b.value
-    })
-  });
-  if (response.ok) {
-    const data = await response.json();
-    c.value = data.message;
-  } else
-    console.log(response);
-}
 
 
 async function fetchMultiplication() {
@@ -168,37 +116,9 @@ async function fetchManufacturers() {
       <The_Test_FastAPI_hello_name :url="backend_url"/>
       <The_Test_FastAPI_fetch_fake_user :url="backend_url"/>
       <The_Test_FastAPI_get_html_page :url="backend_url"/>
+      <The_Test_FastAPI_get_file :url="backend_url"/>
+      <The_Test_FastAPI_get_sum :url="backend_url"/>
 
-
-
-
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchTestFile">Load test file</button>
-        <div v-if="error_TestLoadFile">
-          <p style="color: red;">{{ error_TestLoadFile }}</p>
-        </div>
-      </div>
-      <hr class="mb-5">
-
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchSumma">Get sum</button>
-        <div class="flex flex-row gap-2">
-          <input
-              class="w-1/2 rounded-md"
-              type="number"
-              v-model="a"
-              title="Введите первое слагаемое"
-          />
-          <input
-              class="w-1/2 rounded-md"
-              type="number"
-              v-model="b"
-              title="Введите второе слагаемое"
-          />
-        </div>
-        <p class="text-white">{{ c }}</p>
-      </div>
-      <hr class="mb-5">
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchMultiplication">Get multiplication</button>
