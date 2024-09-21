@@ -57,7 +57,6 @@ const userIdNumber = computed(() => parseInt(userId.value));
 </script>
 
 <template>
-
   <div class="grid grid-cols-4 gap-2">
     <button class="btn btn-p" @click="fetchUser">Fetch fake user by id</button>
     <input
