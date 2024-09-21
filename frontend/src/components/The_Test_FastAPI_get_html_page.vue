@@ -14,6 +14,7 @@ const props = defineProps({
 
 const fetchTestHTMLPage = async () => {
   error_TestHTMLPage.value = null;
+  htmlContent.value = null;
   try {
     const response = await fetch(`${props.url}test/load_test_html_page`);
 
