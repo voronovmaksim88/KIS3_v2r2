@@ -22,11 +22,12 @@ const backend_url = "http://localhost:8000/api/"
       <The_Test_FastAPI_hello_world :url="backend_url"/>
       <The_Test_FastAPI_hello_name :url="backend_url"/>
       <The_Test_FastAPI_fetch_fake_user :url="backend_url"/>
+      <The_Test_FastAPI_change_user_name :url="backend_url"/>
       <The_Test_FastAPI_get_html_page :url="backend_url"/>
       <The_Test_FastAPI_get_file :url="backend_url"/>
       <The_Test_FastAPI_get_sum :url="backend_url"/>
       <The_Test_FastAPI_get_product :url="backend_url"/>
-      <The_Test_FastAPI_change_user_name :url="backend_url"/>
+
 
     </div>
   </div>

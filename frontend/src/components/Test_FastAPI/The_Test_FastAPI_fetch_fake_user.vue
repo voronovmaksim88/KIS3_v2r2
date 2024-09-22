@@ -20,16 +20,16 @@ const fetchUser = async () => {
   error_user.value = null;
   if (userId.value) {
     try {
-      const response = await fetch(`${props.url}test/user/${userIdNumber.value}`);
-
-      if (!response.ok) {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error('User not found!!!');
-      }
+      const response = await fetch(`${props.url}test/get_user/${userIdNumber.value}`);
 
       if (response.ok) {
         // noinspection ExceptionCaughtLocallyJS
         response_ok.value = "ok";
+      }
+
+      if (!response.ok) {
+        // noinspection ExceptionCaughtLocallyJS
+        throw new Error('User not found!!!');
       }
 
       const data = await response.json();

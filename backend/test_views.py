@@ -28,7 +28,7 @@ users = [
 ]
 
 
-@router.get("/user/{user_id}")
+@router.get("/get_user/{user_id}")
 def get_user(user_id: int):
     user = next((user for user in users if user.get('id') == user_id), None)
     if user is None:
@@ -41,7 +41,7 @@ class UserNameUpdate(BaseModel):
     new_name: str
 
 
-@router.post("/user/{user_id}")
+@router.post("/change_user_name/{user_id}")
 def change_user_name(user_id: int, user_update: UserNameUpdate):
     # current_user = next((user for user in users if user.get("id") == user_id), None)
     current_user = None
@@ -86,12 +86,16 @@ def mult(multipliers: Multiplication):
 
 # Пример данных заказов
 orders = [
-    {'id': 1, 'name': "order1", 'priority': 5},
-    {'id': 2, 'name': "order2", 'priority': 4},
-    {'id': 3, 'name': "order3", 'priority': 3},
-    {'id': 4, 'name': "order4", 'priority': 2},
-    {'id': 5, 'name': "order5", 'priority': 1},
-    {'id': 6, 'name': "order6", 'priority': 1},
+    {'id': 1, 'name': "order1", 'priority': 10},
+    {'id': 2, 'name': "order2", 'priority': 9},
+    {'id': 3, 'name': "order3", 'priority': 8},
+    {'id': 4, 'name': "order4", 'priority': 7},
+    {'id': 5, 'name': "order5", 'priority': 6},
+    {'id': 6, 'name': "order6", 'priority': 5},
+    {'id': 7, 'name': "order7", 'priority': 4},
+    {'id': 8, 'name': "order8", 'priority': 3},
+    {'id': 9, 'name': "order9", 'priority': 2},
+    {'id': 10, 'name': "order10", 'priority': 1},
 ]
 
 
