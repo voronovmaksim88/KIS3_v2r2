@@ -4,7 +4,7 @@
 // - "Product" — это итог (результат) операции (например, 6 является произведением 2 и 3).
 // - "Multiplication" — это операция (то, что происходит, когда вы умножаете).
 // Поэтому в контексте "произведение двух чисел" правильнее использовать "product".
-import {ref, defineProps} from "vue";
+import {ref} from "vue";
 
 const error_get_product = ref(null)
 const response_ok = ref("")

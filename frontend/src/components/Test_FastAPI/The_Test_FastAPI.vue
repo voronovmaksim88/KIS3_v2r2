@@ -8,6 +8,7 @@ import The_Test_FastAPI_get_file from "@/components/Test_FastAPI/The_Test_FastAP
 import The_Test_FastAPI_get_sum from "@/components/Test_FastAPI/The_Test_FastAPI_get_sum.vue";
 import The_Test_FastAPI_get_product from "@/components/Test_FastAPI/The_Test_FastAPI_get_product.vue";
 import The_Test_FastAPI_change_user_name from "@/components/Test_FastAPI/The_Test_FastAPI_change_user_name.vue";
+import The_Test_FastAPI_fetch_fake_order from  "@/components/Test_FastAPI/The_Test_FastAPI_fetch_fake_order.vue";
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
 const backend_url = "http://localhost:8000/api/"
@@ -27,7 +28,7 @@ const backend_url = "http://localhost:8000/api/"
       <The_Test_FastAPI_get_file :url="backend_url"/>
       <The_Test_FastAPI_get_sum :url="backend_url"/>
       <The_Test_FastAPI_get_product :url="backend_url"/>
-
+      <The_Test_FastAPI_fetch_fake_order :url="backend_url"/>
 
     </div>
   </div>

@@ -1,5 +1,5 @@
 <script setup>
-import {ref, defineProps} from "vue";
+import {ref} from "vue";
 
 const error_get_file = ref(null)
 const response_ok = ref("")

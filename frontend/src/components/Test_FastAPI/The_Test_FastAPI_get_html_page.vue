@@ -1,5 +1,5 @@
 <script setup>
-import {ref, defineProps} from "vue";
+import {ref} from "vue";
 
 const error_TestHTMLPage = ref(null)
 const htmlContent = ref('')
