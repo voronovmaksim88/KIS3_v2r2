@@ -1,7 +1,8 @@
-from fastapi import APIRouter, FastAPI, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import JSONResponse
-from starlette.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel, Field
+from starlette.responses import FileResponse
+from pydantic import BaseModel
+from datetime import datetime
 
 router = APIRouter(prefix="/test")
 
@@ -102,3 +103,9 @@ orders = [
 @router.get("/order")
 def get_orders(offset: int = 0, limit: int = 10):  # Увеличен по умолчанию limit до 10
     return orders[offset:offset + limit]
+
+
+@router.get("/current_datetime")
+def get_current_datetime():
+    now = datetime.now()  # получение текущей даты и времени
+    return {"current_datetime": now.isoformat()}  # возвращаем время в формате ISO 8601
