@@ -35,7 +35,7 @@ const fetchUser = async () => {
 
       if (!response.ok) {
         // noinspection ExceptionCaughtLocallyJS
-        throw new Error('User not found!!!');
+        throw new Error('Order not found!!!');
       }
 
       const data = await response.json();
@@ -77,15 +77,14 @@ const resetInputClassDynamic = (inputName) => {
           class="w-1/2 rounded-md"
           type="number"
           v-model="order_qty"
-          title="Введите количесво  заказов"
+          title="Введите количество  заказов"
           placeholder="qty"
           @focus="resetInputClassDynamic('order_qty')"
       />
     </div>
 
     <div class="text-white" v-if="orders">
-      <h2>User Info</h2>
-      <p>{{ orders }}</p>
+      <p v-for="order in orders" :key="order.id">{{ order }}</p>
     </div>
     <div v-else>
     </div>
