@@ -2,7 +2,8 @@
 import {ref} from 'vue'
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
-const backend_url = "http://localhost:8000/api/"
+// const backend_url = "http://localhost:8000/api/"
+const backend_url = import.meta.env.VITE_API_URL; // Если используете Vite
 
 
 // функция получает список всех стран из БД PostgreSQL

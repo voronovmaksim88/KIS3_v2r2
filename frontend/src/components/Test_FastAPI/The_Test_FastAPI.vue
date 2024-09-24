@@ -11,8 +11,9 @@ import The_Test_FastAPI_change_user_name from "@/components/Test_FastAPI/The_Tes
 import The_Test_FastAPI_fetch_fake_order from  "@/components/Test_FastAPI/The_Test_FastAPI_fetch_fake_order.vue";
 import The_Test_FastAPI_get_datetime from "@/components/Test_FastAPI/The_Test_FastAPI_get_datetime.vue";
 
-const backend_url = "https://sibplc-kis3.ru/api/"
+//const backend_url = "https://sibplc-kis3.ru/api/"
 //const backend_url = "http://localhost:8000/api/"
+const backend_url = import.meta.env.VITE_API_URL; // Если используете Vite
 
 </script>
 
