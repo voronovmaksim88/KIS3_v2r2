@@ -1,8 +1,9 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
-const error_TestHTMLPage = ref(null)
+const error = ref("")
 const htmlContent = ref('')
 const response_ok = ref("")
 
@@ -14,7 +15,7 @@ const props = defineProps({
 });
 
 const fetchTestHTMLPage = async () => {
-  error_TestHTMLPage.value = null;
+  error.value = ''
   htmlContent.value = null;
   try {
     const response = await fetch(`${props.url}test/load_test_html_page`);
@@ -31,7 +32,7 @@ const fetchTestHTMLPage = async () => {
 
     htmlContent.value = await response.text();
   } catch (err) {
-    error_TestHTMLPage.value = err.message;
+    error.value = err.message;
   }
 };
 </script>
@@ -46,11 +47,8 @@ const fetchTestHTMLPage = async () => {
     <div v-else class="col-span-2">
     </div>
 
-    <div v-if="error_TestHTMLPage">
-      <p style="color: red;">{{ error_TestHTMLPage }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">

@@ -1,8 +1,9 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
-const error = ref(null)
+const error = ref("")
 const input_startId_class = ref("border-2 rounded-md")
 const input_qty_class = ref("border-2 rounded-md")
 const input_error_style = "border-2 border-red-500 rounded-md focus:outline-none focus:ring-2"
@@ -19,7 +20,7 @@ const props = defineProps({
 });
 
 const fetchUser = async () => {
-  error.value = null
+  error.value = ''
   orders.value = null
   response_ok.value = null
   if (start_ID.value && order_qty.value) {
@@ -90,11 +91,8 @@ const resetInputClassDynamic = (inputName) => {
     <div v-else>
     </div>
 
-    <div v-if="error">
-      <p style="color: red;">{{ error }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">

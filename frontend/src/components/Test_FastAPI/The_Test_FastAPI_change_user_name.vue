@@ -1,10 +1,11 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
 const user = ref(null)
 const userId = ref(null)
-const error = ref(null)
+const error = ref("")
 const input_userId_class = ref("border-2 rounded-md")
 const input_new_name_class = ref("border-2 rounded-md")
 const input_error_style = "border-2 border-red-500 rounded-md focus:outline-none focus:ring-2"
@@ -20,9 +21,9 @@ const props = defineProps({
 });
 
 async function ChangeUserName() {
-  if(userId.value && new_name.value){
+  if (userId.value && new_name.value) {
     try {
-      error.value = null;
+      error.value = ''
       // отправляем запрос
       const response = await fetch(`${props.url}test/change_user_name/${userId.value}`, {
         method: 'POST',
@@ -53,10 +54,10 @@ async function ChangeUserName() {
     }
 
   } else {
-    if (!new_name.value){
+    if (!new_name.value) {
       input_new_name_class.value = input_error_style
     }
-    if (!userId.value ){
+    if (!userId.value) {
       input_userId_class.value = input_error_style
     }
   }
@@ -103,11 +104,8 @@ const resetInputClassDynamic = (inputName) => {
     <div v-else>
     </div>
 
-    <div v-if="error">
-      <p style="color: red;">{{ error }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">

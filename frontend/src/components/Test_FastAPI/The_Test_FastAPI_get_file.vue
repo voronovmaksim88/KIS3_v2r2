@@ -1,8 +1,9 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
-const error_get_file = ref(null)
+const error = ref("")
 const response_ok = ref("")
 
 const props = defineProps({
@@ -13,7 +14,7 @@ const props = defineProps({
 });
 
 const fetchTestFile = async () => {
-  error_get_file.value = null;
+  error.value = ''
   try {
     const response = await fetch(`${props.url}test/load_test_file`);
 
@@ -39,7 +40,7 @@ const fetchTestFile = async () => {
     document.body.removeChild(a);
 
   } catch (err) {
-    error_get_file.value = err.message;
+    error.value = err.message;
   }
 };
 
@@ -52,11 +53,8 @@ const fetchTestFile = async () => {
     <div></div>
     <div></div>
 
-    <div v-if="error_get_file">
-      <p style="color: red;">{{ error_get_file }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
   </div>
   <hr class="mb-5">
 

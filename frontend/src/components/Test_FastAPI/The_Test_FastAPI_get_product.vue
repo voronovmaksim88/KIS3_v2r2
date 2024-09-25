@@ -6,8 +6,9 @@
 // Поэтому в контексте "произведение двух чисел" правильнее использовать "product".
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
-const error_get_product = ref(null)
+const error = ref("")
 const response_ok = ref("")
 
 const props = defineProps({
@@ -22,6 +23,7 @@ const mul2 = ref(0) //  множитель 2
 const composition = ref(0) // произведение
 
 async function fetchMultiplication() {
+  error.value = ''
   try {
     // отправляем запрос
     const response = await fetch(`${props.url}test/mult`, {
@@ -33,13 +35,13 @@ async function fetchMultiplication() {
       })
     });
     if (response.ok) {
-      const data = await response.json();
-      composition.value = data.message;
-      response_ok.value = "ok";
+      const data = await response.json()
+      composition.value = data.message
+      response_ok.value = "ok"
     } else
       console.log(response);
   } catch (err) {
-    error_get_product.value = err.message;
+    error.value = err.message;
   }
 }
 </script>
@@ -64,11 +66,8 @@ async function fetchMultiplication() {
 
     <p class="text-white">{{ composition }}</p>
 
-    <div v-if="error_get_product">
-      <p style="color: red;">{{ error_get_product }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">

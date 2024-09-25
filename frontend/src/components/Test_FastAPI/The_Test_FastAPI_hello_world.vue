@@ -1,6 +1,7 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
 const props = defineProps({
   url: {
@@ -9,14 +10,14 @@ const props = defineProps({
   }
 });
 
-const errorHello = ref(null)
+const error = ref("")
 const hello = ref("")
 const response_ok = ref("")
 
 const fetchHello = async () => {
-  errorHello.value = null
-  response_ok.value = null
-  hello.value = ""
+  error.value = ''
+  response_ok.value = ''
+  hello.value = ''
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -49,9 +50,9 @@ const fetchHello = async () => {
 
   } catch (err) {
     if (err.name === 'AbortError') {
-      errorHello.value = "нет ответа от сервера!";
+      error.value = "Нет ответа от сервера!";
     } else {
-      errorHello.value = err.message;
+      error.value = err.message;
     }
   }
 }
@@ -69,11 +70,8 @@ const fetchHello = async () => {
     <div v-else>
     </div>
 
-
-    <div v-if="errorHello">
-      <p style="color: red;">{{ errorHello }}</p>
-    </div>
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">

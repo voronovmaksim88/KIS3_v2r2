@@ -1,10 +1,11 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
 const userName = ref("")
 const helloName = ref("")
-const errorHelloName = ref(null)
+const error = ref("")
 const input_name_class = ref("border-2 rounded-md")
 const input_error_style = "border-2 border-red-500 rounded-md focus:outline-none focus:ring-2"
 const response_ok = ref("")
@@ -17,7 +18,7 @@ const props = defineProps({
 });
 
 const fetchHelloName = async () => {
-  errorHelloName.value = null;
+  error.value = ''
   if (userName.value) {
     try {
       const response = await fetch(`${props.url}test/hello?name=${encodeURIComponent(userName.value)}`);
@@ -43,7 +44,7 @@ const fetchHelloName = async () => {
       }
 
     } catch (err) {
-      errorHelloName.value = err.message;
+      error.value = err.message;
 
     }
   } else {
@@ -72,10 +73,8 @@ const resetInputClassDynamic = (inputName) => {
         @focus="resetInputClassDynamic('userName')"
     />
     <p class="text-white">{{ helloName }}</p>
-    <div v-if="errorHelloName">
-      <p style="color: red;">{{ errorHelloName }}</p>
-    </div>
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
   </div>
   <hr class="mb-5">
 </template>

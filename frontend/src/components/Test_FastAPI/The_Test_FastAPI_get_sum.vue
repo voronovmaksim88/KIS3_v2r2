@@ -1,8 +1,9 @@
 <script setup>
 import {ref} from "vue";
 import ResponseOk from './ResponseOk.vue';
+import ErrorMessage from './ErrorMessage.vue';
 
-const error_get_sum = ref(null)
+const error = ref("")
 const response_ok = ref("")
 
 const props = defineProps({
@@ -18,7 +19,7 @@ const c = ref(0)
 
 async function getSumma() {
   try {
-    error_get_sum.value = null;
+    error.value = ''
     // отправляем запрос
     const response = await fetch(`${props.url}test/summa`, {
       method: "POST",
@@ -35,7 +36,7 @@ async function getSumma() {
     } else
       console.log(response);
   } catch (err) {
-    error_get_sum.value = err.message;
+    error.value = err.message;
   }
 }
 </script>
@@ -59,11 +60,8 @@ async function getSumma() {
     </div>
     <p class="text-white">{{ c }}</p>
 
-    <div v-if="error_get_sum">
-      <p style="color: red;">{{ error_get_sum }}</p>
-    </div>
-
-    <ResponseOk v-if="response_ok" :message="response_ok" />
+    <ErrorMessage v-if="error" :message="error"/>
+    <ResponseOk v-if="response_ok" :message="response_ok"/>
 
   </div>
   <hr class="mb-5">
