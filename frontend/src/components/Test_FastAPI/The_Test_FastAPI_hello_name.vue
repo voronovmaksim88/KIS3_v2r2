@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue";
+import ResponseOk from './ResponseOk.vue';
 
 const userName = ref("")
 const helloName = ref("")
@@ -74,9 +75,7 @@ const resetInputClassDynamic = (inputName) => {
     <div v-if="errorHelloName">
       <p style="color: red;">{{ errorHelloName }}</p>
     </div>
-    <div v-if="response_ok">
-      <p class="font-bold text-green-500">{{ response_ok }}</p>
-    </div>
+    <ResponseOk v-if="response_ok" :message="response_ok" />
   </div>
   <hr class="mb-5">
 </template>

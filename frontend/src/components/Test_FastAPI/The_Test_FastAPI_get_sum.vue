@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue";
+import ResponseOk from './ResponseOk.vue';
 
 const error_get_sum = ref(null)
 const response_ok = ref("")
@@ -62,9 +63,7 @@ async function getSumma() {
       <p style="color: red;">{{ error_get_sum }}</p>
     </div>
 
-    <div v-if="response_ok">
-      <p class="font-bold text-green-500">{{ response_ok }}</p>
-    </div>
+    <ResponseOk v-if="response_ok" :message="response_ok" />
 
   </div>
   <hr class="mb-5">

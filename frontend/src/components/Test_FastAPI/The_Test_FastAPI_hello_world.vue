@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue";
+import ResponseOk from './ResponseOk.vue';
 
 const props = defineProps({
   url: {
@@ -72,9 +73,7 @@ const fetchHello = async () => {
     <div v-if="errorHello">
       <p style="color: red;">{{ errorHello }}</p>
     </div>
-    <div v-else-if="response_ok">
-      <p class="font-bold text-green-500">{{ response_ok }}</p>
-    </div>
+    <ResponseOk v-if="response_ok" :message="response_ok" />
 
   </div>
   <hr class="mb-5">

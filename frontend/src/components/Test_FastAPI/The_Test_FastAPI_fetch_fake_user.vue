@@ -1,5 +1,6 @@
 <script setup>
 import {ref, computed} from "vue";
+import ResponseOk from './ResponseOk.vue';
 
 const user = ref(null)
 const userId = ref(null)
@@ -81,9 +82,7 @@ const userIdNumber = computed(() => parseInt(userId.value));
       <p style="color: red;">{{ error_user }}</p>
     </div>
 
-    <div v-if="response_ok">
-      <p class="font-bold text-green-500">{{ response_ok }}</p>
-    </div>
+    <ResponseOk v-if="response_ok" :message="response_ok" />
 
   </div>
   <hr class="mb-5">

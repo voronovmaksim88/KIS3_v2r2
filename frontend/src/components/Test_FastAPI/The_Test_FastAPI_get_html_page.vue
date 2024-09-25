@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from "vue";
+import ResponseOk from './ResponseOk.vue';
 
 const error_TestHTMLPage = ref(null)
 const htmlContent = ref('')
@@ -49,9 +50,7 @@ const fetchTestHTMLPage = async () => {
       <p style="color: red;">{{ error_TestHTMLPage }}</p>
     </div>
 
-    <div v-else-if="response_ok">
-      <p class="font-bold text-green-500">{{ response_ok }}</p>
-    </div>
+    <ResponseOk v-if="response_ok" :message="response_ok" />
 
   </div>
   <hr class="mb-5">
