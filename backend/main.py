@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import Country, Manufacturer
+from models.models import Country, Manufacturer, EquipmentType
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -118,5 +118,29 @@ async def get_all_manufacturers(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"manufacturers": manufacturers_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_equipment_type")
+async def get_all_equipment_types(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех производителей
+        query = select(EquipmentType)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        equipment_types = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        equipment_types_list = [
+            {
+                "id": equipment_type.id,
+                "name": equipment_type.name,
+            }
+            for equipment_type in equipment_types
+        ]
+
+        return {"equipment_types": equipment_types_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}

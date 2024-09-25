@@ -695,5 +695,3 @@ while answer != "0":
     else:
         print(Fore.RED + "Please enter a valid number.")
     print("")
-
-
