@@ -1,43 +1,11 @@
 <script setup>
 import {ref} from 'vue'
+import The_Test_DB_countries from "./The_Test_DB_countries.vue";
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
 // const backend_url = "http://localhost:8000/api/"
 const backend_url = import.meta.env.VITE_API_URL; // Если используете Vite
 
-
-// функция получает список всех стран из БД PostgreSQL
-const all_countries = ref("") // список всех стран
-const all_countries_error = ref("") // список всех стран
-async function fetchCountry() {
-  all_countries.value = ""; // изначально обнуляем список стран
-  const timeout = 3000; // 3 секунды
-  const fetchPromise = fetch(`${backend_url}all_countries`);
-  const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), timeout)
-  );
-
-  try {
-    const response = await Promise.race([fetchPromise, timeoutPromise]);
-    console.log('Response status:', response.status);
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Received data:', data);
-      all_countries.value = data.countries;
-      all_countries_error.value = ""; // если получен ответ скидываем ошибку
-    } else {
-      console.log('Response not OK:', response);
-    }
-  } catch (error) {
-    if (error.message === 'Request timed out') {
-      console.error('Request timed out after', timeout, 'ms');
-    } else {
-      console.error('Error fetching countries:', error);
-    }
-    all_countries_error.value = error;
-    all_countries.value = "";
-  }
-}
 
 // функция получает список всех производителей из БД PostgreSQL
 const all_manufacturers = ref("") // список всех стран
@@ -86,25 +54,7 @@ async function fetchManufacturers() {
     <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-2/3 xl:w-5/12 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test FastApi</h1>
 
-      <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-p" @click="fetchCountry">Get country from DB</button>
-        <div v-if="all_countries && all_countries.length > 0">
-          <table class="text-white">
-            <thead>
-            <tr>
-              <th>id</th>
-              <th>name</th>
-            </tr>
-            </thead>
-            <tr v-for="country in all_countries" :key="country.id">
-              <td>{{ country.id }}</td>
-              <td>{{ country.name }}</td>
-            </tr>
-          </table>
-        </div>
-        <p class="text-red-400" v-if="all_countries_error">{{ all_countries_error }}</p>
-      </div>
-      <hr class="mb-5">
+      <The_Test_DB_countries :url="backend_url"/>
 
       <div class="grid grid-cols-3 gap-2">
         <button class="btn btn-p" @click="fetchManufacturers">Get Manufacturers from DB</button>
