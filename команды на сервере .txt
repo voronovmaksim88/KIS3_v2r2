@@ -4,3 +4,4 @@ git pull https://github.com/voronovmaksim88/KIS3_v2r2.git
 docker compose up -d --build
 
 docker logs kis3_v2r2-backend-1
+
