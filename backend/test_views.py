@@ -72,7 +72,7 @@ def root():
 def summa(data=Body()):
     a = data["a"]
     b = data["b"]
-    return {"message": f"сумма а + в = {a + b}"}
+    return {"message": f"а + в = {a + b}"}
 
 
 class Multiplication(BaseModel):
@@ -82,7 +82,7 @@ class Multiplication(BaseModel):
 
 @router.post("/mult")
 def mult(multipliers: Multiplication):
-    return {"message": f"произведение = {multipliers.m1 * multipliers.m2}"}
+    return {"message": f"а * в = {multipliers.m1 * multipliers.m2}"}
 
 
 # Пример данных заказов
