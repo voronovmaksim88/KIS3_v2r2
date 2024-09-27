@@ -2,6 +2,7 @@
 
 import The_Test_DB_countries from "./The_Test_DB_countries.vue";
 import The_Test_DB_manufacturers from "./The_Test_DB_manufacturers.vue";
+import The_Test_DB_equipment_types from "./The_Test_DB_equipment_types.vue";
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
 // const backend_url = "http://localhost:8000/api/"
@@ -17,6 +18,7 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
 
       <The_Test_DB_countries :url="backend_url"/>
       <The_Test_DB_manufacturers :url="backend_url"/>
+      <The_Test_DB_equipment_types :url="backend_url"/>
 
     </div>
   </div>
