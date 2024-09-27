@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import Country, Manufacturer, EquipmentType, Currency, City
+from models.models import Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -187,5 +187,29 @@ async def get_all_cities(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"cities_list": cities_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_counterparty_forms")
+async def get_all_counterparty_forms(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех форм контрагентов
+        query = select(CounterpartyForm)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        counterparty_forms = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        counterparty_forms_list = [
+            {
+                "id": form.id,
+                "name": form.name,
+            }
+            for form in counterparty_forms
+        ]
+
+        return {"counterparty_forms_list": counterparty_forms_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
