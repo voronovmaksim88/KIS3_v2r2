@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm
+from models.models import Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -211,5 +211,64 @@ async def get_all_counterparty_forms(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"counterparty_forms_list": counterparty_forms_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_counterparties")
+async def get_all_counterparties(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех контрагентов
+        query = select(Counterparty)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        counterparties = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        counterparties_list = [
+            {
+                "id": counterparty.id,
+                "name": counterparty.name,
+                "note": counterparty.note,
+                "city_id": counterparty.city_id,
+                "form_id": counterparty.form_id
+            }
+            for counterparty in counterparties
+        ]
+
+        return {"counterparties_list": counterparties_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_people")
+async def get_all_people(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех людей
+        query = select(Person)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        people = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        people_list = [
+            {
+                "id": person.id,
+                "name": person.name,
+                "patronymic": person.patronymic,
+                "surname": person.surname,
+                "phone": person.phone,
+                "email": person.email,
+                "counterparty_id": person.counterparty_id,
+                "birth_date": person.birth_date,
+                "active": person.active,
+                "note": person.note,
+            }
+            for person in people
+        ]
+
+        return {"people_list": people_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
