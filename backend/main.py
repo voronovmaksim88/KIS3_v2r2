@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person
+from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person,
+                           Work, OrderStatus, Order)
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -270,5 +271,82 @@ async def get_all_people(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"people_list": people_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_works")
+async def get_all_works(db: AsyncSession = Depends(get_db)):
+    try:
+        query = select(Work)
+        result = await db.execute(query)
+        works = result.scalars().all()
+
+        works_list = [
+            {
+                "id": work.id,
+                "name": work.name,
+                "description": work.description,
+                "active": work.active
+            }
+            for work in works
+        ]
+
+        return {"works": works_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_order_statuses")
+async def get_all_order_statuses(db: AsyncSession = Depends(get_db)):
+    try:
+        query = select(OrderStatus)
+        result = await db.execute(query)
+        order_statuses = result.scalars().all()
+
+        order_statuses_list = [
+            {
+                "id": status.id,
+                "name": status.name,
+                "description": status.description
+            }
+            for status in order_statuses
+        ]
+
+        return {"order_statuses": order_statuses_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_orders")
+async def get_all_orders(db: AsyncSession = Depends(get_db)):
+    try:
+        query = select(Order)
+        result = await db.execute(query)
+        orders = result.scalars().all()
+
+        orders_list = [
+            {
+                "serial": order.serial,
+                "name": order.name,
+                "customer_id": order.customer_id,
+                "priority": order.priority,
+                "status_id": order.status_id,
+                "start_moment": order.start_moment,
+                "deadline_moment": order.deadline_moment,
+                "end_moment": order.end_moment,
+                "materials_cost": order.materials_cost,
+                "materials_paid": order.materials_paid,
+                "products_cost": order.products_cost,
+                "products_paid": order.products_paid,
+                "work_cost": order.work_cost,
+                "work_paid": order.work_paid,
+                "debt": order.debt,
+                "debt_paid": order.debt_paid
+            }
+            for order in orders
+        ]
+
+        return {"orders": orders_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
