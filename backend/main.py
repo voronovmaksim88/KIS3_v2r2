@@ -5,12 +5,12 @@ from starlette.responses import HTMLResponse
 
 import uvicorn
 
-from database import async_session_maker, test_connection
+from database import async_session_maker
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import Country, Manufacturer, EquipmentType, Currency
+from models.models import Country, Manufacturer, EquipmentType, Currency, City
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -162,5 +162,30 @@ async def get_all_currencies(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"currencies_list": currencies_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_cities")
+async def get_all_cities(db: AsyncSession = Depends(get_db)):
+    try:
+        # Выполняем запрос для получения всех городов
+        query = select(City)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        cities = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        cities_list = [
+            {
+                "id": city.id,
+                "name": city.name,
+                "country_id": city.country_id  # Если нужно возвратить country_id
+            }
+            for city in cities
+        ]
+
+        return {"cities_list": cities_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
