@@ -57,12 +57,22 @@ async function fetchData() {
     connectionError.value = error.message;
   }
 }
+
+function clearData() {
+  tableData.value = []
+  tableHeaders.value = []
+  connectionError.value = ""
+}
 </script>
 
 <template>
   <div class="grid grid-cols-4 gap-2">
-    <div class="col-span-4">
-      <button class="btn btn-p" @click="fetchData">{{ buttonText }}</button>
+    <div class="col-span-2">
+      <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
+    </div>
+
+    <div>
+      <button class="btn btn-s"  @click="clearData"> свернуть </button>
     </div>
 
     <div class="col-span-4" v-if="tableData.length > 0">
@@ -83,6 +93,6 @@ async function fetchData() {
     </div>
 
     <p class="text-red-400 col-span-4" v-if="connectionError">{{ connectionError }}</p>
-    <hr class="col-span-4 mb-8">
+    <hr class="col-span-4">
   </div>
 </template>
