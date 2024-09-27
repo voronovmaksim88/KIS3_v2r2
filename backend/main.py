@@ -145,7 +145,7 @@ async def get_all_equipment_types(db: AsyncSession = Depends(get_db)):
 @app.get("/all_currencies")
 async def get_all_currencies(db: AsyncSession = Depends(get_db)):
     try:
-        # Выполняем запрос для получения всех производителей
+        # Выполняем запрос для получения всех валют
         query = select(Currency)
         result = await db.execute(query)
 

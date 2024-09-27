@@ -11,7 +11,7 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
 
 <template>
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800" id="BD_FastAPI_PostGreSQL">
-    <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-2/3 xl:w-5/12 space-y-4">
+    <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-2/3 xl:w-10/12 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test Data Base</h1>
 
       <Test_DB_universal_table
@@ -37,6 +37,31 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
           endpoint="all_currencies"
           buttonText="Валюты"
       />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_cities"
+          buttonText="Города"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_counterparty_forms"
+          buttonText="Формы контрагентов"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_counterparties"
+          buttonText="Контрагенты"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_people"
+          buttonText="Люди"
+      />
+
 
     </div>
   </div>
