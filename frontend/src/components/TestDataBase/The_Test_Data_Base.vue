@@ -1,7 +1,6 @@
 <script setup>
 
-import The_Test_DB_countries from "./The_Test_DB_countries.vue";
-import The_Test_DB_manufacturers from "./The_Test_DB_manufacturers.vue";
+import Test_DB_universal_table from "./Test_DB_universal_table.vue";
 
 // const backend_url = "https://sibplc-kis3.ru/api/"
 // const backend_url = "http://localhost:8000/api/"
@@ -15,8 +14,29 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
     <div class="flex flex-col w-full sm:w-1/2 md:w-2/3 lg:w-2/3 xl:w-5/12 space-y-4">
       <h1 class="text-green-400 text-3xl mb-5">Test FastApi</h1>
 
-      <The_Test_DB_countries :url="backend_url"/>
-      <The_Test_DB_manufacturers :url="backend_url"/>
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_countries"
+          buttonText="Получить страны"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_manufacturers"
+          buttonText="Получить производителей"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_equipment_types"
+          buttonText="Получить типы оборудования"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_currencies"
+          buttonText="Получить названия валют"
+      />
 
     </div>
   </div>
