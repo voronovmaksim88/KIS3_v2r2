@@ -150,6 +150,7 @@ class Work(Base):
 
 class OrderStatus(Base):
     """
+
     Статусы заказов
     1 = "Не определён"
     2 = "На согласовании"
