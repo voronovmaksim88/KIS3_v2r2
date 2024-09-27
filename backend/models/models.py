@@ -150,7 +150,6 @@ class Work(Base):
 
 class OrderStatus(Base):
     """
-
     Статусы заказов
     1 = "Не определён"
     2 = "На согласовании"
@@ -160,7 +159,6 @@ class OrderStatus(Base):
     6 = "Выполнено НЕ в срок"
     7 = "Не согласовано"
     8 = "На паузе"
-
     """
     __tablename__ = 'order_statuses'
 
