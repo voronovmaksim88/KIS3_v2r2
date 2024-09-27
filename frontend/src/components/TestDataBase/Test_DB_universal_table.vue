@@ -13,6 +13,10 @@ const props = defineProps({
   buttonText: {
     type: String,
     default: 'Получить данные'
+  },
+  maxHeight: {
+    type: String,
+    default: '400px'
   }
 });
 
@@ -38,7 +42,6 @@ async function fetchData() {
       const data = await response.json();
       console.log('Полученные данные:', data);
 
-      // Находим первый ключ объекта, значение которого является массивом
       const arrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
 
       if (arrayKey && data[arrayKey].length > 0) {
@@ -72,27 +75,39 @@ function clearData() {
     </div>
 
     <div>
-      <button class="btn btn-s"  @click="clearData"> свернуть </button>
+      <button class="btn btn-s" @click="clearData">Свернуть</button>
     </div>
 
     <div class="col-span-4" v-if="tableData.length > 0">
-      <table class="w-full">
-        <thead>
-        <tr>
-          <th v-for="header in tableHeaders" :key="header">{{ header }}</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(row, index) in tableData" :key="index">
-          <td v-for="header in tableHeaders" :key="header">
-            {{ row[header] }}
-          </td>
-        </tr>
-        </tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <div :style="{ maxHeight: props.maxHeight, overflowY: 'auto' }">
+          <table class="w-full bg-gray-700">
+            <thead>
+            <tr>
+              <th v-for="header in tableHeaders" :key="header" class="sticky bg-gray-600 top-0 z-10">{{ header }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(row, index) in tableData" :key="index">
+              <td v-for="header in tableHeaders" :key="header">
+                {{ row[header] }}
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <p class="text-red-400 col-span-4" v-if="connectionError">{{ connectionError }}</p>
-    <hr class="col-span-4">
+
   </div>
 </template>
+
+<style scoped>
+th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+</style>

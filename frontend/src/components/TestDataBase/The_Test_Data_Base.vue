@@ -62,8 +62,29 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
           buttonText="Люди"
       />
 
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_works"
+          buttonText="Работы"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_order_statuses"
+          buttonText="Статусы заказов"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_orders"
+          buttonText="Заказы"
+      />
+
+      <!-- Добавляем отступ после последней таблицы -->
+      <div class="h-16"></div>
 
     </div>
+
   </div>
 </template>
 
