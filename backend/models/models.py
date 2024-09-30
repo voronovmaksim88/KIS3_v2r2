@@ -123,6 +123,15 @@ class Person(Base):
     def __repr__(self) -> str:
         return f"Person(id={self.id!r}, name={self.name!r}, surname={self.surname!r})"
 
+    # relations
+    developed_boxes = relationship("BoxAccounting", back_populates="scheme_developer",
+                                   foreign_keys="[BoxAccounting.scheme_developer_id]")
+    assembled_boxes = relationship("BoxAccounting", back_populates="assembler",
+                                   foreign_keys="[BoxAccounting.assembler_id]")
+    programmed_boxes = relationship("BoxAccounting", back_populates="programmer",
+                                    foreign_keys="[BoxAccounting.programmer_id]")
+    tested_boxes = relationship("BoxAccounting", back_populates="tester", foreign_keys="[BoxAccounting.tester_id]")
+
 
 # Вспомогательная таблица для связи многие-ко-многим между Order и Work
 order_work = Table(
@@ -225,99 +234,29 @@ class Order(Base):
     def __repr__(self) -> str:
         return f"Order(serial={self.serial!r}, name={self.name!r})"
 
-# class Order(models.Model):  # таблица заказов (заявок, проектов)
-#     # Название, краткое описание, объект, что вообще от нас хотели
-#     name = models.CharField(max_length=64, null=True)
-#     serial = models.CharField(max_length=16, null=False, primary_key=True)
-#     # Серийный номер заказа, формат NNN-MM-YYYY
-#     # NNN - порядковый номер в этом году
-#     # MM - месяц создания
-#     # YYYY - год создания
-#     customer = models.ForeignKey(
-#         Company, on_delete=models.SET_NULL, null=True)  # Заказчик
-#     priority = models.IntegerField(
-#         null=True, validators=[MinValueValidator(1), MaxValueValidator(10)])
-#     # Приоритет от 1 до 10, 1-самое важное, 10 самое НЕ важное.
-#     # Значение none будет означать что приоритета нет
-#     status = models.IntegerField(null=True, validators=[
-#         MinValueValidator(0), MaxValueValidator(7)])
-#     """
-#     0 = "Не определён"
-#     1 = "На согласовании"
-#     2 = "В работе"
-#     3 = "Просрочено"
-#     4 = "Выполнено в срок"
-#     5 = "Выполнено НЕ в срок"
-#     6 = "Не согласовано"
-#     7 = "На паузе"
-#     else = "?"
-#     """
-#     start_moment = models.DateTimeField(default=None, null=True, blank=True)  # Дата и время создания заказа
-#     dedline_moment = models.DateTimeField(default=None, null=True, blank=True)  # Крайний срок завершения
-#     end_moment = models.DateTimeField(default=None, null=True, blank=True)  # Фактический срок завершения
-#     works = models.ManyToManyField('Work', related_name='orders')  # Работы, выполняемые по этому заказу
-#     materialsCost = models.IntegerField(default=0)  # Стоимость материалов
-#     materialsPaid = models.BooleanField(default=False)  # Материалы оплачены
-#     productsCost = models.IntegerField(default=0)  # Стоимость товаров
-#     productsPaid = models.BooleanField(default=False)  # Товары оплачены
-#     workCost = models.IntegerField(default=0)  # Стоимость работ
-#     workPaid = models.BooleanField(default=False)  # Работы оплачены
-#     debt = models.IntegerField(default=0)  # Задолженность нам
-#     debtPaid = models.BooleanField(default=False)  # Задолженность оплачена
-#
-#
-#
-# class Box_Accounting(models.Model):  # учёт шкафов
-#     serial_num = models.IntegerField(  # Серийный номер
-#         unique=True,
-#         primary_key=True,
-#         verbose_name="Серийный номер"
-#     )
-#     name = models.CharField(  # Название шкафа
-#         max_length=64,
-#         null=False,
-#         verbose_name="Название"
-#     )
-#     order = models.ForeignKey(  # Заказ(через него и заказчика найдём)
-#         Order, null=False,
-#         on_delete=models.CASCADE,
-#         verbose_name="Заказ"
-#     )
-#     scheme_developer = models.ForeignKey(  # Разработчик схемы
-#         Person,
-#         on_delete=models.CASCADE,
-#         null=False,
-#         # Уникальное имя 'related_name' для scheme_developer
-#         related_name="developed_boxes",
-#         verbose_name="Разработчик схемы"
-#     )
-#     assembler = models.ForeignKey(  # Сборщик
-#         Person,
-#         # on_delete=models.SET_NULL,
-#         on_delete=models.CASCADE,
-#         null=False,
-#         related_name="assembled_boxes",  # Уникальное имя 'related_name' для assembler
-#         verbose_name="Сборщик"
-#     )
-#     programmer = models.ForeignKey(  # Программист
-#         Person,
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         related_name="programmer_boxes",  # Уникальное имя 'related_name' для programmer
-#         verbose_name="Программист"
-#     )
-#     tester = models.ForeignKey(  # Тестировщик
-#         Person,
-#         # on_delete=models.SET_NULL,
-#         on_delete=models.CASCADE,
-#         null=False,
-#         blank=True,  # Монжно не вводить
-#         related_name="tested_boxes",  # Уникальное имя 'related_name' для tester
-#         verbose_name="Тестировщик")
+    # relations
+    boxes: Mapped[List["BoxAccounting"]] = relationship(back_populates="order")
 
 
-#
-#
+class BoxAccounting(Base):
+    """Таблица учёта шкафов """
+    __tablename__ = 'box_accounting'
+    serial_num: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)  # Название шкафа
+    order_id: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
+    scheme_developer_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Разработчик схемы
+    assembler_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Сборщик
+    programmer_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Программист
+    tester_id: Mapped[int | None] = mapped_column(ForeignKey('person.id'), nullable=False, default=0)  # Тестировщик
+
+    # Определяем отношения. Пока не знаю зачем
+    order = relationship("Order", back_populates="boxes")
+    scheme_developer = relationship("Person", foreign_keys="[BoxAccounting.scheme_developer_id]",
+                                    back_populates="developed_boxes")
+    assembler = relationship("Person", foreign_keys="[BoxAccounting.assembler_id]", back_populates="assembled_boxes")
+    programmer = relationship("Person", foreign_keys="[BoxAccounting.programmer_id]", back_populates="programmed_boxes")
+    tester = relationship("Person", foreign_keys="[BoxAccounting.tester_id]", back_populates="tested_boxes")
+
 # class OrderComent(models.Model):  # Люди
 #     moment_of_creation = models.DateTimeField()  # Дата и время пубикации комментария
 #     #  moment_of_creation = models.DateTimeField(auto_now_add=True)  # Дата и время пубикации комментария
