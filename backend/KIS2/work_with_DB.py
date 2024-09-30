@@ -474,6 +474,27 @@ def get_list_dict_orders():
     return all_order_list_dict  # список словарей заказов 'work_cost': get_list_works(order[0]),
 
 
+def get_list_dict_box_accounting():
+    """
+    :return: список словарей записей учёта шкафов.
+    Каждый словарь содержит ключ:
+        'serial_num' - серийный номер,
+        'name' - имя,
+        'order_id' - заказ,
+        'scheme_developer_id' - разработчик схемы,
+        'assembler_id' - сборщик,
+        'programmer_id' - программист,
+        'tester_id' - тестировщик,
+    """
+    results = execute_query(
+        "SELECT serial_num, name, order_id, scheme_developer_id, assembler_id, programmer_id, tester_id"
+        "  FROM main_box_accounting")
+    all_box_accounting_list_dict = []
+    dict_companies = get_dict_companies()
+    all_box_accounting_list_dict = results
+    return all_box_accounting_list_dict
+
+
 def print_list(list_for_print: list):
     for element in list_for_print:
         print(element)
@@ -503,3 +524,4 @@ headers = {
 # print(Fore.LIGHTBLUE_EX + tabulate(orders, headers=headers, tablefmt='grid'))
 
 # print(get_list_works("029-05-2024"))
+print_list(get_list_dict_box_accounting())
