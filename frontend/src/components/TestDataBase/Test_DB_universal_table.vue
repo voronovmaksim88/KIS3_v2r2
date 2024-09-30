@@ -70,7 +70,7 @@ function clearData() {
 
 <template>
   <div class="grid grid-cols-4 gap-2">
-    <div class="col-span-1">
+    <div class="col-span-2 sm:col-span-1">
       <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
     </div>
 
