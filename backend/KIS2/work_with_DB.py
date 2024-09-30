@@ -286,6 +286,25 @@ def get_list_dict_person():
         return []  # empty list
 
 
+def get_dict_person():
+    """
+    :return: словарь людей, ключ - id человека, значение - фамилия, имя, отчество,
+    Например:
+    {1:'Воронов Максим Владимирович',
+    2:'Иванов Иван Иванович',
+    3:'Петров Пётр Петрович'}
+    """
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id, surname, name, patronymic FROM main_person")
+            person_dic = {person[0]: person[1] + person[2] + person[3] for person in cur.fetchall()}
+            return person_dic
+    except sqlite3.Error as e:
+        print(f"Ошибка при работе с базой данных: {e}")
+        return set()
+
+
 def get_set_work():
     """
     :return: множество названий работ выполняемых по заказам
@@ -486,12 +505,34 @@ def get_list_dict_box_accounting():
         'programmer_id' - программист,
         'tester_id' - тестировщик,
     """
+    dict_person = get_dict_person()
     results = execute_query(
         "SELECT serial_num, name, order_id, scheme_developer_id, assembler_id, programmer_id, tester_id"
         "  FROM main_box_accounting")
     all_box_accounting_list_dict = []
     dict_companies = get_dict_companies()
-    all_box_accounting_list_dict = results
+    for res in results:
+        # res[0] - serial_num
+        # res[1] - name
+        # res[2] - order_id
+        # res[3] - scheme_developer_id
+        # res[4] - assembler_id
+        # res[5] - programmer_id
+        # res[6] - tester_id
+        if res[5]:
+            programmer_id = dict_person[res[5]]
+        else:
+            programmer_id = 0
+        all_box_accounting_list_dict.append({
+            'serial_num': res[0],
+            'name': res[1],
+            'order_id': res[2],
+            'scheme_developer_id': dict_person[res[3]],
+            'assembler_id': dict_person[res[4]],
+            'programmer_id': programmer_id,
+            'tester_id': dict_person[res[6]],
+        })
+
     return all_box_accounting_list_dict
 
 
@@ -525,3 +566,4 @@ headers = {
 
 # print(get_list_works("029-05-2024"))
 print_list(get_list_dict_box_accounting())
+# print(get_dict_person())
