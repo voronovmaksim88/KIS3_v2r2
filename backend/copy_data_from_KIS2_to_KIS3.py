@@ -4,6 +4,7 @@ from sqlalchemy.sql import text as sql_text
 from sqlalchemy import select, insert
 from sqlalchemy.dialects.postgresql import insert as insert_pg
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from alembic.config import Config
 from alembic import command
@@ -18,9 +19,12 @@ from KIS2.work_with_DB import get_list_dict_companies as get_list_dict_companies
 from KIS2.work_with_DB import get_list_dict_person as get_list_dict_person_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_work as get_list_dict_work_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_sqlite3
+from KIS2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
 
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
-                           Person, Work, OrderStatus, Order)
+                           Person, Work, OrderStatus, Order, BoxAccounting)
+
+import logging
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -384,7 +388,7 @@ def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies):
                 print(Fore.GREEN + "Все типы компаний  уже существуют в базе данных PostgreSQL.")
 
 
-def show_table_person_in_postgre_sql():
+def show_table_people_in_postgre_sql():
     with engine.connect() as connection:
         result = connection.execute(sql_text("SELECT * FROM people"))
         columns = list(result.keys())
@@ -393,70 +397,72 @@ def show_table_person_in_postgre_sql():
         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
-def copy_table_person_from_sqlite_to_postgresql(list_dict_person):
+def copy_table_people_from_sqlite_to_postgresql(list_dict_person):
     if not isinstance(list_dict_person, list):
         raise TypeError("Argument must be a list")
 
-    set_counterparties_from_postgre_sql = get_dict_counterparties_from_postgre_sql()
+    # Получаем сопоставление компаний и их ID
+    counterparty_map = get_dict_counterparties_from_postgre_sql()
 
-    with engine.connect() as connection:
-        try:
-            with connection.begin():
-                # Получаем существующие записи о людях из базы данных PostgreSQL
-                existing_people = connection.execute(
-                    select(Person.id, Person.surname, Person.name, Person.patronymic)
-                ).fetchall()
+    try:
+        with engine.begin() as connection:
+            # Получаем существующие записи о людях
+            existing_people = connection.execute(
+                select(Person.id, Person.surname, Person.name, Person.patronymic)
+            ).fetchall()
+            existing_keys = {
+                f"{row.surname}{row.name}{row.patronymic}": row.id
+                for row in existing_people
+            }
 
-                existing_people_dict = {
-                    (row.surname + row.name + row.patronymic): row.id
-                    for row in existing_people
+            insert_data = []
+            update_data = []
+
+            for person in list_dict_person:
+                key = f"{person['surname']}{person['name']}{person['patronymic']}"
+                person_entry = {
+                    'name': person['name'],
+                    'surname': person['surname'],
+                    'patronymic': person['patronymic'],
+                    'phone': person.get('phone'),
+                    'email': person.get('email'),
+                    'counterparty_id': counterparty_map.get(person['company'])
                 }
 
-                insert_data = []
-                update_data = []
+                if key in existing_keys:
+                    person_entry['id'] = existing_keys[key]
+                    update_data.append(person_entry)
+                else:
+                    insert_data.append(person_entry)
 
-                for person in list_dict_person:
-                    key = person['surname'] + person['name'] + person['patronymic']
-                    person_data = {
-                        'name': person['name'],
-                        'surname': person['surname'],
-                        'patronymic': person['patronymic'],
-                        'phone': person['phone'],
-                        'email': person['email'],
-                        'counterparty_id': set_counterparties_from_postgre_sql[person['company']]
+            # Вставка новых записей
+            if insert_data:
+                connection.execute(insert(Person), insert_data)
+                print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей")
+            else:
+                print(Fore.GREEN + "Новых записей для добавления нет.")
+
+            # Обновление существующих записей
+            if update_data:
+                stmt = pg_insert(Person).values(update_data)
+                update_stmt = stmt.on_conflict_do_update(
+                    index_elements=['id'],
+                    set_={
+                        'phone': stmt.excluded.phone,
+                        'email': stmt.excluded.email,
+                        'counterparty_id': stmt.excluded.counterparty_id
                     }
-                    if key in existing_people_dict:
-                        person_data['id'] = existing_people_dict[key]
-                        update_data.append(person_data)
-                    else:
-                        insert_data.append(person_data)
-
-                if insert_data:
-                    connection.execute(insert(Person), insert_data)
-                    print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей")
-                else:  # Если нет новых записей
-                    print(Fore.GREEN + "Новых записей для добавления нет.")
-
-                if update_data:
-                    stmt = insert_pg(Person).values(update_data)
-                    stmt = stmt.on_conflict_do_update(
-                        index_elements=['id'],
-                        set_={
-                            'phone': stmt.excluded.phone,
-                            'email': stmt.excluded.email,
-                            'counterparty_id': stmt.excluded.counterparty_id
-                        }
-                    )
-                    result = connection.execute(stmt)
-                    print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
-                else:  # Если нет новых записей
-                    print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
-        except SQLAlchemyError as err:
-            print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
-            connection.rollback()
-        except Exception as err:
-            print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
-            connection.rollback()
+                )
+                result = connection.execute(update_stmt)
+                print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
+            else:
+                print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
+    except SQLAlchemyError as err:
+        print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
+        raise  # Повторно возбуждаем исключение после логирования
+    except Exception as err:
+        print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
+        raise  # Повторно возбуждаем исключение после логирования
 
 
 def show_table_work_in_postgre_sql():
@@ -610,6 +616,95 @@ def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders):
             connection.rollback()
 
 
+def show_table_box_accounting_in_postgre_sql():
+    with engine.connect() as connection:
+        result = connection.execute(sql_text("SELECT * FROM box_accounting"))
+        columns = list(result.keys())
+        data = result.fetchall()
+        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'box_accounting' в базе данных PostgreSQL:")
+        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+
+
+def get_dict_people_from_postgre_sql():
+    with engine.connect() as connection:
+        # Формируем словарь людей из базы данных PostrgeSQL
+        dict_people = dict()
+        for row in connection.execute(sql_text("SELECT id, surname, name, patronymic  FROM people")):
+            dict_people[row[1] + row[2] + row[3]] = row[0]
+    return dict_people
+
+
+def copy_table_box_accounting_in_postgre_sql(list_dict_box_accounting):
+    if not isinstance(list_dict_box_accounting, list):
+        raise TypeError("Argument must be a list")
+
+    people_dict_from_postgre_sql = get_dict_people_from_postgre_sql()
+    logging.info(f"Получен словарь людей: {people_dict_from_postgre_sql}")
+
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                existing_box_accounting = connection.execute(select(BoxAccounting.serial_num)).fetchall()
+                existing_box_accounting_set = {row.serial_num for row in existing_box_accounting}
+
+                insert_data = []
+                update_data = []
+                for box_accounting in list_dict_box_accounting:
+                    key = box_accounting['serial_num']
+                    box_accounting_data = {
+                        'serial_num': box_accounting['serial_num'],
+                        'name': box_accounting['name'],
+                        'order_id': box_accounting.get('order_id'),
+                        'scheme_developer_id': people_dict_from_postgre_sql.get(box_accounting.get('scheme_developer')),
+                        'assembler_id': people_dict_from_postgre_sql.get(box_accounting.get('assembler')),
+                        'programmer_id': people_dict_from_postgre_sql.get(box_accounting.get('programmer')),
+                        'tester_id': people_dict_from_postgre_sql.get(box_accounting.get('tester'))
+                    }
+                    if key in existing_box_accounting_set:
+                        update_data.append(box_accounting_data)
+                    else:
+                        insert_data.append(box_accounting_data)
+
+                if insert_data:
+                    connection.execute(insert(BoxAccounting), insert_data)
+                    print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей о серийных номерах шкафов")
+                    logging.info(f"Добавлено {len(insert_data)} новых записей")
+                else:
+                    print(Fore.GREEN + "Новых записей для добавления нет.")
+                    logging.info("Новых записей для добавления нет.")
+
+                if update_data:
+                    stmt = insert_pg(BoxAccounting).values(update_data)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['serial_num'],
+                        set_={
+                            'name': stmt.excluded.name,
+                            'order_id': stmt.excluded.order_id,
+                            'scheme_developer_id': stmt.excluded.scheme_developer_id,
+                            'assembler_id': stmt.excluded.assembler_id,
+                            'programmer_id': stmt.excluded.programmer_id,
+                            'tester_id': stmt.excluded.tester_id
+                        }
+                    )
+                    result = connection.execute(stmt)
+                    print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
+                    logging.info(f"Обновлено {result.rowcount} существующих записей")
+                else:
+                    print(Fore.GREEN + "Нет записей для обновления.")
+                    logging.info("Нет записей для обновления.")
+        except SQLAlchemyError as err:
+            print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
+            logging.error(f"Ошибка SQLAlchemy: {err}")
+            connection.rollback()
+        except Exception as err:
+            print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
+            logging.error(f"Непредвиденная ошибка: {err}")
+            connection.rollback()
+        else:
+            print(Fore.GREEN + "Операция успешно завершена.")
+            logging.info("Операция успешно завершена.")
+
+
 answer = ""
 while answer != "0":
     print("Change action:")
@@ -637,6 +732,8 @@ while answer != "0":
     print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
     print("22 - show table 'Order' in PostgreSQL")
     print("23 - copy table 'Order' from SQlite to PostgreSQL")
+    print("24 - show table box_accounting in PostgreSQL")
+    print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
     # print(get_all_countries_set_from_sqlite3())
 
     answer = input("")
@@ -677,9 +774,9 @@ while answer != "0":
     elif answer == "15":
         copy_table_counterparties_from_sqlite_to_postgresql(get_list_dict_companies_from_sqlite3())
     elif answer == "16":
-        show_table_person_in_postgre_sql()
+        show_table_people_in_postgre_sql()
     elif answer == "17":
-        copy_table_person_from_sqlite_to_postgresql(get_list_dict_person_from_sqlite3())
+        copy_table_people_from_sqlite_to_postgresql(get_list_dict_person_from_sqlite3())
     elif answer == "18":
         show_table_work_in_postgre_sql()
     elif answer == "19":
@@ -692,6 +789,10 @@ while answer != "0":
         show_table_orders_in_postgre_sql()
     elif answer == "23":
         copy_table_orders_from_sqlite_to_postgresql(get_list_dict_orders_from_sqlite3())
+    elif answer == "24":
+        show_table_box_accounting_in_postgre_sql()
+    elif answer == "25":
+        copy_table_box_accounting_in_postgre_sql(get_list_dict_box_accounting_from_sqlite3())
     else:
         print(Fore.RED + "Please enter a valid number.")
     print("")

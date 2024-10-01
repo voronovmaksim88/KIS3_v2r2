@@ -527,10 +527,10 @@ def get_list_dict_box_accounting():
             'serial_num': res[0],
             'name': res[1],
             'order_id': res[2],
-            'scheme_developer_id': dict_person[res[3]],
-            'assembler_id': dict_person[res[4]],
-            'programmer_id': programmer_id,
-            'tester_id': dict_person[res[6]],
+            'scheme_developer': dict_person[res[3]],
+            'assembler': dict_person[res[4]],
+            'programmer': programmer_id,
+            'tester': dict_person[res[6]],
         })
 
     return all_box_accounting_list_dict
@@ -565,5 +565,5 @@ headers = {
 # print(Fore.LIGHTBLUE_EX + tabulate(orders, headers=headers, tablefmt='grid'))
 
 # print(get_list_works("029-05-2024"))
-print_list(get_list_dict_box_accounting())
+# print_list(get_list_dict_box_accounting())
 # print(get_dict_person())

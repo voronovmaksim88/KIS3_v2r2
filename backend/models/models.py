@@ -244,10 +244,10 @@ class BoxAccounting(Base):
     serial_num: Mapped[int] = mapped_column(primary_key=True, unique=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)  # Название шкафа
     order_id: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
-    scheme_developer_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Разработчик схемы
-    assembler_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Сборщик
-    programmer_id: Mapped[int] = mapped_column(ForeignKey('person.id'), nullable=False)  # Программист
-    tester_id: Mapped[int | None] = mapped_column(ForeignKey('person.id'), nullable=False, default=0)  # Тестировщик
+    scheme_developer_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Разработчик схемы
+    assembler_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Сборщик
+    programmer_id: Mapped[int | None] = mapped_column(ForeignKey('people.id'), nullable=True)  # Программист
+    tester_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Тестировщик
 
     # Определяем отношения. Пока не знаю зачем
     order = relationship("Order", back_populates="boxes")
