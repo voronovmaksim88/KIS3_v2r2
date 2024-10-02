@@ -799,10 +799,6 @@ while answer1 != "e":
             elif answer2 == "3":
                 copy_table_country_from_sqlite_to_postgresql(get_all_countries_set_from_sqlite3())
             elif answer2 == "5":
-                copy_table_manufacturers_from_sqlite_to_postgresql([
-                    {'name': "Zentec", 'country': "Россия"},
-                    {'name': "Segnetics", 'country': "Россия"}
-                ])  # сюда надо поставить функцию, которая из sqlite возвращает список словарей производителей
                 copy_table_manufacturers_from_sqlite_to_postgresql(get_all_manufacturers_from_sqlite3())
             elif answer2 == "7":
                 copy_table_equipment_type_from_sqlite_to_postgresql(get_all_equipment_types_from_sqlite3())
