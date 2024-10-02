@@ -724,7 +724,53 @@ while answer1 != "e":
             print("")
             print("What show ?")
             print("e - exit")
+            print("1 - show all tables name in PostgreSQL")
+            print("2 - show table 'Country' in PostgreSQL")
+            print("4 - show table 'Manufacturers' in PostgreSQL")
+            print("6 - show table 'EquipmentType' in PostgreSQL")
+            print("8 - show table 'Currency' in PostgreSQL")
+            print("10 - show table 'City' in PostgreSQL")
+            print("12 - show table 'CounterpartyForm' in PostgreSQL")
+            print("14 - show table 'Counterparties' in PostgreSQL")
+            print("16 - show table 'Person' in PostgreSQL")
+            print("18 - show table 'Work' in PostgreSQL")
+            print("20 - show table 'OrderStatus' in PostgreSQL")
+            print("22 - show table 'Order' in PostgreSQL")
+            print("24 - show table box_accounting in PostgreSQL")
+
             answer2 = input()
+
+            if answer2 == "0":
+                break
+            elif answer2 == "1":
+                get_all_tables_name_from_postgre_sql()
+            elif answer2 == "2":
+                show_table_country_in_postgre_sql()
+            elif answer2 == "4":
+                show_table_manufacturers_in_postgre_sql()
+            elif answer2 == "6":
+                show_table_equipment_type_in_postgre_sql()
+            elif answer2 == "8":
+                show_table_currency_in_postgre_sql()
+            elif answer2 == "10":
+                show_table_city_in_postgre_sql()
+            elif answer2 == "12":
+                show_table_counterparty_form_in_postgre_sql()
+            elif answer2 == "14":
+                show_table_counterparties_in_postgre_sql()
+            elif answer2 == "16":
+                show_table_people_in_postgre_sql()
+            elif answer2 == "18":
+                show_table_work_in_postgre_sql()
+            elif answer2 == "20":
+                show_table_order_status_in_postgre_sql()
+            elif answer2 == "22":
+                show_table_orders_in_postgre_sql()
+            elif answer2 == "24":
+                show_table_box_accounting_in_postgre_sql()
+            else:
+                print(Fore.RED + "Please enter a valid number.")
+            print("")
 
     elif answer1 == "2":
         while answer2 != "e":
