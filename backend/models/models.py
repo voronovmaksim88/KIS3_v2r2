@@ -1,5 +1,3 @@
-import datetime
-
 from sqlalchemy import MetaData, Integer, String, ForeignKey, Date, Boolean, Text, DateTime, Table, Column
 from sqlalchemy.orm import validates
 from sqlalchemy.orm import DeclarativeBase
@@ -263,24 +261,12 @@ class OrderComment(Base):
     """Таблица комментариев к заказам """
     __tablename__ = 'order_comment'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
     moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,
                                                                    nullable=True)  # Дата и время публикации комментария
+    text: Mapped[str] = mapped_column(Text, null=False)  # Текст комментария
+    person_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Автор комментария
 
-# class OrderComent(models.Model):  #
-#     moment_of_creation = models.DateTimeField()  # Дата и время публикации комментария
-#     #  moment_of_creation = models.DateTimeField(auto_now_add=True)  # Дата и время публикации комментария
-#     #  пока импортируем из старой БД комментарии в новой не получается автоматом присваивать время создания
-#     text = models.TextField(null=False)  # Текст комментария
-#     person = models.ForeignKey(
-#         Person, null=True, on_delete=models.SET_NULL)  # Человек
-#     order = models.ForeignKey(  # Заказ(через него и заказчика найдём)
-#         Order, null=True,
-#         on_delete=models.CASCADE,
-#         verbose_name="Заказ"
-#     )
-#     objects = models.Manager()
-#
-#
 # @add_str_method
 # class TaskStatus(models.Model):  # Статусы задач
 #     name = models.CharField(null=False, max_length=16, verbose_name="Статус")  # Название статуса задачи
@@ -326,7 +312,7 @@ class OrderComment(Base):
 #         TaskStatus,
 #         null=True,
 #         on_delete=models.SET_NULL)
-#     cost = models.IntegerField(  # Стоимость выполнения задачи, т.е. сколько денег надо зплатить исполнителю, руб
+#     cost = models.IntegerField(  # Стоимость выполнения задачи, т.е. сколько денег надо заплатить исполнителю, руб
 #         null=True,
 #         blank=True,
 #         verbose_name="Цена задачи",
@@ -368,7 +354,7 @@ class OrderComment(Base):
 # class Equipment(models.Model):  # Класс "Оборудование"
 #     name = models.CharField(max_length=32)  # Имя
 #     model = models.CharField(max_length=32, blank=True, unique=True)  # Модель
-#     vendore_code = models.CharField(
+#     vendor_code = models.CharField(
 #         max_length=32, blank=True, unique=True)  # Артикул, код поставщика
 #     description = models.TextField(blank=True)  # Описание
 #     type = models.ForeignKey(
