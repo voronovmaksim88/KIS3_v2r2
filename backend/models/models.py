@@ -257,9 +257,9 @@ class BoxAccounting(Base):
     programmer = relationship("Person", foreign_keys="[BoxAccounting.programmer_id]", back_populates="programmed_boxes")
     tester = relationship("Person", foreign_keys="[BoxAccounting.tester_id]", back_populates="tested_boxes")
 
-# class OrderComent(models.Model):  # Люди
-#     moment_of_creation = models.DateTimeField()  # Дата и время пубикации комментария
-#     #  moment_of_creation = models.DateTimeField(auto_now_add=True)  # Дата и время пубикации комментария
+# class OrderComent(models.Model):  #
+#     moment_of_creation = models.DateTimeField()  # Дата и время публикации комментария
+#     #  moment_of_creation = models.DateTimeField(auto_now_add=True)  # Дата и время публикации комментария
 #     #  пока импортируем из старой БД комментарии в новой не получается автоматом присваивать время создания
 #     text = models.TextField(null=False)  # Текст комментария
 #     person = models.ForeignKey(
@@ -289,8 +289,8 @@ class BoxAccounting(Base):
 # class PaymentStatus(models.Model):  # Статусы оплаты за задачу
 #     name = models.CharField(null=False, max_length=16, verbose_name="Статус")  # Название статуса задачи
 #     """
-#     1 = "Нет оплаты", задача не редполагает оплату
-#     2 = "Возможна", задача в работе если исполнтель сделает её вовремя и качесвенно, то получит оплату
+#     1 = "Нет оплаты", задача не предполагает оплату
+#     2 = "Возможна", задача в работе если исполнитель сделает её вовремя и качественно, то получит оплату
 #     3 = "Начислена", задача выполнена оплата начислена
 #     4 = "Оплачена", задача выполнена и оплачена исполнителю
 #     else = "?"
