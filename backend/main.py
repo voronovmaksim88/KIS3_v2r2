@@ -352,7 +352,7 @@ async def get_all_orders(db: AsyncSession = Depends(get_db)):
         return {"error": f"An error occurred: {str(e)}"}
 
 
-@app.get("/all_boxes")
+@app.get("/all_boxes")  # Учёт шкафов автоматики
 async def get_all_boxes(db: AsyncSession = Depends(get_db)):
     try:
         query = select(BoxAccounting)

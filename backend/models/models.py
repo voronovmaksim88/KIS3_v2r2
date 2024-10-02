@@ -8,6 +8,7 @@ from sqlalchemy.orm import mapped_column  # функция для определ
 from sqlalchemy.orm import relationship  # используется для связи таблиц
 from typing import Optional, List
 from datetime import date
+from datetime import datetime
 
 # Переменная, которая хранит информацию о таблицах
 metadata = MetaData()
@@ -256,6 +257,14 @@ class BoxAccounting(Base):
     assembler = relationship("Person", foreign_keys="[BoxAccounting.assembler_id]", back_populates="assembled_boxes")
     programmer = relationship("Person", foreign_keys="[BoxAccounting.programmer_id]", back_populates="programmed_boxes")
     tester = relationship("Person", foreign_keys="[BoxAccounting.tester_id]", back_populates="tested_boxes")
+
+
+class OrderComment(Base):
+    """Таблица комментариев к заказам """
+    __tablename__ = 'order_comment'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,
+                                                                   nullable=True)  # Дата и время публикации комментария
 
 # class OrderComent(models.Model):  #
 #     moment_of_creation = models.DateTimeField()  # Дата и время публикации комментария
