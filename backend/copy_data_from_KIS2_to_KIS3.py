@@ -705,35 +705,55 @@ def copy_table_box_accounting_in_postgre_sql(list_dict_box_accounting):
             logging.info("Операция успешно завершена.")
 
 
-answer = ""
-while answer != "0":
+answer1 = ""
+answer2 = ""
+while answer1 != "0":
     print("Change action:")
     print("0 - exit")
-    print("1 - show all tables name in PostgreSQL")
-    print("2 - show table 'Country' in PostgreSQL")
-    print("3 - copy table 'Country' from sqlite to PostgreSQL")
-    print("4 - show table 'Manufacturers' in PostgreSQL")
-    print("5 - copy table 'Manufacturers' from sqlite to PostgreSQL")
-    print("6 - show table 'EquipmentType' in PostgreSQL")
-    print("7 - copy table 'EquipmentType' from sqlite to PostgreSQL")
-    print("8 - show table 'Currency' in PostgreSQL")
-    print("9 - fill in the table 'Currency'")
-    print("10 - show table 'City' in PostgreSQL")
-    print("11 - copy table 'City' from SQlite to PostgreSQL")
-    print("12 - show table 'CounterpartyForm' in PostgreSQL")
-    print("13 - copy table 'CounterpartyForm' from SQlite to PostgreSQL")
-    print("14 - show table 'Counterparties' in PostgreSQL")
-    print("15 - copy table 'Counterparties' from SQlite to PostgreSQL")
-    print("16 - show table 'Person' in PostgreSQL")
-    print("17 - copy table 'Person' from SQlite to PostgreSQL")
-    print("18 - show table 'Work' in PostgreSQL")
-    print("19 - copy table 'Work' from SQlite to PostgreSQL")
-    print("20 - show table 'OrderStatus' in PostgreSQL")
-    print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
-    print("22 - show table 'Order' in PostgreSQL")
-    print("23 - copy table 'Order' from SQlite to PostgreSQL")
-    print("24 - show table box_accounting in PostgreSQL")
-    print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
+    print("1 - show ")
+    print("2 - copy")
+
+    answer1 = input()
+    if answer1 == "1":
+        while answer2 != "0":
+            print("Change action:")
+            print("0 - exit")
+            answer2 = input()
+
+    if answer1 == "2":
+        while answer2 != "0":
+            print("Change action:")
+            print("0 - exit")
+            answer2 = input()
+
+
+    # print("Change action:")
+    # print("0 - exit")
+    # print("1 - show all tables name in PostgreSQL")
+    # print("2 - show table 'Country' in PostgreSQL")
+    # print("3 - copy table 'Country' from sqlite to PostgreSQL")
+    # print("4 - show table 'Manufacturers' in PostgreSQL")
+    # print("5 - copy table 'Manufacturers' from sqlite to PostgreSQL")
+    # print("6 - show table 'EquipmentType' in PostgreSQL")
+    # print("7 - copy table 'EquipmentType' from sqlite to PostgreSQL")
+    # print("8 - show table 'Currency' in PostgreSQL")
+    # print("9 - fill in the table 'Currency'")
+    # print("10 - show table 'City' in PostgreSQL")
+    # print("11 - copy table 'City' from SQlite to PostgreSQL")
+    # print("12 - show table 'CounterpartyForm' in PostgreSQL")
+    # print("13 - copy table 'CounterpartyForm' from SQlite to PostgreSQL")
+    # print("14 - show table 'Counterparties' in PostgreSQL")
+    # print("15 - copy table 'Counterparties' from SQlite to PostgreSQL")
+    # print("16 - show table 'Person' in PostgreSQL")
+    # print("17 - copy table 'Person' from SQlite to PostgreSQL")
+    # print("18 - show table 'Work' in PostgreSQL")
+    # print("19 - copy table 'Work' from SQlite to PostgreSQL")
+    # print("20 - show table 'OrderStatus' in PostgreSQL")
+    # print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
+    # print("22 - show table 'Order' in PostgreSQL")
+    # print("23 - copy table 'Order' from SQlite to PostgreSQL")
+    # print("24 - show table box_accounting in PostgreSQL")
+    # print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
     # print(get_all_countries_set_from_sqlite3())
 
     answer = input("")

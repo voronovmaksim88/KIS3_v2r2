@@ -264,7 +264,7 @@ class OrderComment(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
     moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,
                                                                    nullable=True)  # Дата и время публикации комментария
-    text: Mapped[str] = mapped_column(Text, null=False)  # Текст комментария
+    text: Mapped[str] = mapped_column(Text, nullable=False)  # Текст комментария
     person_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Автор комментария
 
 # @add_str_method

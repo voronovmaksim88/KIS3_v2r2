@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from test_views import router as test_router
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person,
-                           Work, OrderStatus, Order, BoxAccounting)
+                           Work, OrderStatus, Order, BoxAccounting, OrderComment)
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -373,5 +373,28 @@ async def get_all_boxes(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"boxes": boxes_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_order_comments")
+async def get_all_order_comments(db: AsyncSession = Depends(get_db)):
+    try:
+        query = select(OrderComment)
+        result = await db.execute(query)
+        comments = result.scalars().all()
+
+        comments_list = [
+            {
+                "id": comment.id,
+                "order_id": comment.order_id,
+                "moment_of_creation": comment.moment_of_creation.isoformat() if comment.moment_of_creation else None,
+                "text": comment.text,
+                "person_id": comment.person_id
+            }
+            for comment in comments
+        ]
+
+        return {"order_comments": comments_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
