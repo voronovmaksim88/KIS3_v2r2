@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from test_views import router as test_router
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person,
-                           Work, OrderStatus, Order)
+                           Work, OrderStatus, Order, BoxAccounting)
 
 app = FastAPI(root_path="/api")
 app.include_router(test_router)  # Добавляем роутер для тестовых запросов
@@ -348,5 +348,30 @@ async def get_all_orders(db: AsyncSession = Depends(get_db)):
         ]
 
         return {"orders": orders_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_boxes")
+async def get_all_boxes(db: AsyncSession = Depends(get_db)):
+    try:
+        query = select(BoxAccounting)
+        result = await db.execute(query)
+        boxes = result.scalars().all()
+
+        boxes_list = [
+            {
+                "serial_num": box.serial_num,
+                "name": box.name,
+                "order_id": box.order_id,
+                "scheme_developer_id": box.scheme_developer_id,
+                "assembler_id": box.assembler_id,
+                "programmer_id": box.programmer_id,
+                "tester_id": box.tester_id
+            }
+            for box in boxes
+        ]
+
+        return {"boxes": boxes_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
