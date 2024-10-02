@@ -707,25 +707,34 @@ def copy_table_box_accounting_in_postgre_sql(list_dict_box_accounting):
 
 answer1 = ""
 answer2 = ""
-while answer1 != "0":
+while answer1 != "e":
+    print("")
     print("Change action:")
-    print("0 - exit")
+    print("e - exit")
     print("1 - show ")
     print("2 - copy")
-
+    answer2 = ""
     answer1 = input()
-    if answer1 == "1":
-        while answer2 != "0":
-            print("Change action:")
-            print("0 - exit")
+
+    if answer1 == "e":
+        break
+
+    elif answer1 == "1":
+        while answer2 != "e":
+            print("")
+            print("What show ?")
+            print("e - exit")
             answer2 = input()
 
-    if answer1 == "2":
-        while answer2 != "0":
-            print("Change action:")
-            print("0 - exit")
+    elif answer1 == "2":
+        while answer2 != "e":
+            print("")
+            print("What copy ?")
+            print("e - exit")
             answer2 = input()
 
+    else:
+        print(Fore.RED + "Please enter a valid number.")
 
     # print("Change action:")
     # print("0 - exit")
@@ -756,63 +765,63 @@ while answer1 != "0":
     # print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
     # print(get_all_countries_set_from_sqlite3())
 
-    answer = input("")
-    if answer == "0":
-        break
-    elif answer == "1":
-        get_all_tables_name_from_postgre_sql()
-    elif answer == "2":
-        show_table_country_in_postgre_sql()
-    elif answer == "3":
-        copy_table_country_from_sqlite_to_postgresql(get_all_countries_set_from_sqlite3())
-    elif answer == "4":
-        show_table_manufacturers_in_postgre_sql()
-    elif answer == "5":
-        copy_table_manufacturers_from_sqlite_to_postgresql([
-            {'name': "Zentec", 'country': "Россия"},
-            {'name': "Segnetics", 'country': "Россия"}
-        ])  # сюда надо поставить функцию, которая из sqlite возвращает список словарей производителей
-        copy_table_manufacturers_from_sqlite_to_postgresql(get_all_manufacturers_from_sqlite3())
-    elif answer == "6":
-        show_table_equipment_type_in_postgre_sql()
-    elif answer == "7":
-        copy_table_equipment_type_from_sqlite_to_postgresql(get_all_equipment_types_from_sqlite3())
-    elif answer == "8":
-        show_table_currency_in_postgre_sql()
-    elif answer == "9":
-        fill_in_table_currency_in_postgre_sql()
-    elif answer == "10":
-        show_table_city_in_postgre_sql()
-    elif answer == "11":
-        copy_table_city_from_sqlite_to_postgresql(get_set_cities_from_sqlite3())
-    elif answer == "12":
-        show_table_counterparty_form_in_postgre_sql()
-    elif answer == "13":
-        copy_table_companies_form_from_sqlite_to_postgresql(get_set_companies_form_from_sqlite3())
-    elif answer == "14":
-        show_table_counterparties_in_postgre_sql()
-    elif answer == "15":
-        copy_table_counterparties_from_sqlite_to_postgresql(get_list_dict_companies_from_sqlite3())
-    elif answer == "16":
-        show_table_people_in_postgre_sql()
-    elif answer == "17":
-        copy_table_people_from_sqlite_to_postgresql(get_list_dict_person_from_sqlite3())
-    elif answer == "18":
-        show_table_work_in_postgre_sql()
-    elif answer == "19":
-        copy_table_work_from_sqlite_to_postgresql(get_list_dict_work_from_sqlite3())
-    elif answer == "20":
-        show_table_order_status_in_postgre_sql()
-    elif answer == "21":
-        fill_in_table_order_status_in_postgre_sql()
-    elif answer == "22":
-        show_table_orders_in_postgre_sql()
-    elif answer == "23":
-        copy_table_orders_from_sqlite_to_postgresql(get_list_dict_orders_from_sqlite3())
-    elif answer == "24":
-        show_table_box_accounting_in_postgre_sql()
-    elif answer == "25":
-        copy_table_box_accounting_in_postgre_sql(get_list_dict_box_accounting_from_sqlite3())
-    else:
-        print(Fore.RED + "Please enter a valid number.")
-    print("")
+    # answer = input("")
+    # if answer == "0":
+    #     break
+    # elif answer == "1":
+    #     get_all_tables_name_from_postgre_sql()
+    # elif answer == "2":
+    #     show_table_country_in_postgre_sql()
+    # elif answer == "3":
+    #     copy_table_country_from_sqlite_to_postgresql(get_all_countries_set_from_sqlite3())
+    # elif answer == "4":
+    #     show_table_manufacturers_in_postgre_sql()
+    # elif answer == "5":
+    #     copy_table_manufacturers_from_sqlite_to_postgresql([
+    #         {'name': "Zentec", 'country': "Россия"},
+    #         {'name': "Segnetics", 'country': "Россия"}
+    #     ])  # сюда надо поставить функцию, которая из sqlite возвращает список словарей производителей
+    #     copy_table_manufacturers_from_sqlite_to_postgresql(get_all_manufacturers_from_sqlite3())
+    # elif answer == "6":
+    #     show_table_equipment_type_in_postgre_sql()
+    # elif answer == "7":
+    #     copy_table_equipment_type_from_sqlite_to_postgresql(get_all_equipment_types_from_sqlite3())
+    # elif answer == "8":
+    #     show_table_currency_in_postgre_sql()
+    # elif answer == "9":
+    #     fill_in_table_currency_in_postgre_sql()
+    # elif answer == "10":
+    #     show_table_city_in_postgre_sql()
+    # elif answer == "11":
+    #     copy_table_city_from_sqlite_to_postgresql(get_set_cities_from_sqlite3())
+    # elif answer == "12":
+    #     show_table_counterparty_form_in_postgre_sql()
+    # elif answer == "13":
+    #     copy_table_companies_form_from_sqlite_to_postgresql(get_set_companies_form_from_sqlite3())
+    # elif answer == "14":
+    #     show_table_counterparties_in_postgre_sql()
+    # elif answer == "15":
+    #     copy_table_counterparties_from_sqlite_to_postgresql(get_list_dict_companies_from_sqlite3())
+    # elif answer == "16":
+    #     show_table_people_in_postgre_sql()
+    # elif answer == "17":
+    #     copy_table_people_from_sqlite_to_postgresql(get_list_dict_person_from_sqlite3())
+    # elif answer == "18":
+    #     show_table_work_in_postgre_sql()
+    # elif answer == "19":
+    #     copy_table_work_from_sqlite_to_postgresql(get_list_dict_work_from_sqlite3())
+    # elif answer == "20":
+    #     show_table_order_status_in_postgre_sql()
+    # elif answer == "21":
+    #     fill_in_table_order_status_in_postgre_sql()
+    # elif answer == "22":
+    #     show_table_orders_in_postgre_sql()
+    # elif answer == "23":
+    #     copy_table_orders_from_sqlite_to_postgresql(get_list_dict_orders_from_sqlite3())
+    # elif answer == "24":
+    #     show_table_box_accounting_in_postgre_sql()
+    # elif answer == "25":
+    #     copy_table_box_accounting_in_postgre_sql(get_list_dict_box_accounting_from_sqlite3())
+    # else:
+    #     print(Fore.RED + "Please enter a valid number.")
+    # print("")
