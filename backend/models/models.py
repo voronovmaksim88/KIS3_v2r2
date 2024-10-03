@@ -259,7 +259,7 @@ class BoxAccounting(Base):
 
 class OrderComment(Base):
     """Таблица комментариев к заказам """
-    __tablename__ = 'order_comment'
+    __tablename__ = 'comments_on_orders'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
     moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,

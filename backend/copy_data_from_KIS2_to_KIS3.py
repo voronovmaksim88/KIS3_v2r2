@@ -20,9 +20,11 @@ from KIS2.work_with_DB import get_list_dict_person as get_list_dict_person_from_
 from KIS2.work_with_DB import get_list_dict_work as get_list_dict_work_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
+from KIS2.work_with_DB import get_list_dict_order_comment as get_list_dict_order_comment_from_sqlite3
+
 
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
-                           Person, Work, OrderStatus, Order, BoxAccounting)
+                           Person, Work, OrderStatus, Order, BoxAccounting, OrderComment)
 
 import logging
 
@@ -705,6 +707,75 @@ def copy_table_box_accounting_in_postgre_sql(list_dict_box_accounting):
             logging.info("Операция успешно завершена.")
 
 
+def show_table_comments_on_orders_in_postgre_sql():
+    with engine.connect() as connection:
+        result = connection.execute(sql_text("SELECT * FROM comments_on_orders"))
+        columns = list(result.keys())
+        data = result.fetchall()
+        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'comments_on_orders' в базе данных PostgreSQL:")
+        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+
+
+def copy_table_comments_on_orders_from_sqlite_to_postgresql(list_dict_order_comment):
+    if not isinstance(list_dict_order_comment, list):
+        raise TypeError("Argument must be a list")
+
+    people_dict_from_postgre_sql = get_dict_people_from_postgre_sql()
+    logging.info(f"Получен словарь людей: {people_dict_from_postgre_sql}")
+
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                # Получаем существующие комментарии
+                existing_comments = connection.execute(
+                    select(OrderComment.order_id, OrderComment.moment_of_creation)
+                ).fetchall()
+                existing_comment_set = {(row.order_id, row.moment_of_creation) for row in existing_comments}
+
+                insert_data = []
+                skipped_count = 0
+
+                for order_comment in list_dict_order_comment:
+                    order_id = order_comment['order_id']
+                    moment_of_creation = order_comment['moment_of_creation']
+
+                    # Проверяем, существует ли уже комментарий с таким же order_id и moment_of_creation
+                    if (order_id, moment_of_creation) not in existing_comment_set:
+                        order_comment_data = {
+                            'order_id': order_id,
+                            'text': order_comment['text'],
+                            'moment_of_creation': moment_of_creation,
+                            'person_id': people_dict_from_postgre_sql.get(order_comment['person'])
+                        }
+                        insert_data.append(order_comment_data)
+                    else:
+                        skipped_count += 1
+
+                if insert_data:
+                    connection.execute(insert(OrderComment), insert_data)
+                    print(Fore.GREEN + f"Добавлено {len(insert_data)} новых комментариев к заказам")
+                    logging.info(f"Добавлено {len(insert_data)} новых комментариев к заказам")
+                else:
+                    print(Fore.GREEN + "Новых комментариев для добавления нет.")
+                    logging.info("Новых комментариев для добавления нет.")
+
+                if skipped_count > 0:
+                    print(Fore.YELLOW + f"Пропущено {skipped_count} существующих комментариев.")
+                    logging.info(f"Пропущено {skipped_count} существующих комментариев.")
+
+        except SQLAlchemyError as err:
+            print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
+            logging.error(f"Ошибка SQLAlchemy: {err}")
+            connection.rollback()
+        except Exception as err:
+            print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
+            logging.error(f"Непредвиденная ошибка: {err}")
+            connection.rollback()
+        else:
+            print(Fore.GREEN + "Операция успешно завершена.")
+            logging.info("Операция успешно завершена.")
+
+
 answer1 = ""
 answer2 = ""
 while answer1 != "e":
@@ -737,6 +808,7 @@ while answer1 != "e":
             print("20 - show table 'OrderStatus' in PostgreSQL")
             print("22 - show table 'Order' in PostgreSQL")
             print("24 - show table box_accounting in PostgreSQL")
+            print("26 - show table 'comments_on_orders' in PostgreSQL")
 
             answer2 = input()
 
@@ -768,6 +840,8 @@ while answer1 != "e":
                 show_table_orders_in_postgre_sql()
             elif answer2 == "24":
                 show_table_box_accounting_in_postgre_sql()
+            elif answer2 == "26":
+                show_table_comments_on_orders_in_postgre_sql()
             else:
                 print(Fore.RED + "Please enter a valid number.")
             print("")
@@ -789,6 +863,7 @@ while answer1 != "e":
             print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
             print("23 - copy table 'Order' from SQlite to PostgreSQL")
             print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
+            print("27 - copy table 'comments_on_orders' from SQlite to PostgreSQL")
 
             answer2 = input()
 
@@ -820,6 +895,8 @@ while answer1 != "e":
                 copy_table_orders_from_sqlite_to_postgresql(get_list_dict_orders_from_sqlite3())
             elif answer2 == "25":
                 copy_table_box_accounting_in_postgre_sql(get_list_dict_box_accounting_from_sqlite3())
+            elif answer2 == "27":
+                copy_table_comments_on_orders_from_sqlite_to_postgresql(get_list_dict_order_comment_from_sqlite3())
             else:
                 print(Fore.RED + "Please enter a valid number.")
             print("")

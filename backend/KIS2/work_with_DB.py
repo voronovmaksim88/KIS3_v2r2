@@ -558,7 +558,7 @@ def get_list_dict_order_comment():
             'order_id': res[0],
             'text': res[1],
             'moment_of_creation': res[2],
-            'person_id': dict_person[res[3]],
+            'person': dict_person[res[3]],
         })
 
     return all_order_comment_list_dict
@@ -595,4 +595,4 @@ headers = {
 # print(get_list_works("029-05-2024"))
 # print_list(get_list_dict_box_accounting())
 # print(get_dict_person())
-print_list(get_list_dict_order_comment())
+# print_list(get_list_dict_order_comment())
