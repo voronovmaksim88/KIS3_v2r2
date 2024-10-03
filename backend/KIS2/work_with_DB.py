@@ -3,8 +3,9 @@
 тупо скопировал файл БД в папку
 """
 # Импорт необходимых библиотек
-from tabulate import tabulate
-from colorama import Fore, init
+# from tabulate import tabulate
+# from colorama import Fore
+from colorama import init
 import sqlite3
 from typing import Set, Dict
 from config import DB_PATH
@@ -510,7 +511,6 @@ def get_list_dict_box_accounting():
         "SELECT serial_num, name, order_id, scheme_developer_id, assembler_id, programmer_id, tester_id"
         "  FROM main_box_accounting")
     all_box_accounting_list_dict = []
-    dict_companies = get_dict_companies()
     for res in results:
         # res[0] - serial_num
         # res[1] - name
@@ -549,7 +549,6 @@ def get_list_dict_order_comment():
     results = execute_query(
         "SELECT order_id, text, moment_of_creation, person_id FROM main_ordercoment")
     all_order_comment_list_dict = []
-    dict_companies = get_dict_companies()
     for res in results:
         # res[0] - order_id
         # res[1] - text
