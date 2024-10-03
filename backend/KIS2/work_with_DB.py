@@ -536,6 +536,35 @@ def get_list_dict_box_accounting():
     return all_box_accounting_list_dict
 
 
+def get_list_dict_order_comment():
+    """
+    :return: список словарей комментариев к заказам.
+    Каждый словарь содержит ключ:
+        'order_id' - заказ,
+        'text' - комментарий,
+        'moment_of_creation' - дата создания,
+        'person_id' - автор комментария,
+    """
+    dict_person = get_dict_person()
+    results = execute_query(
+        "SELECT order_id, text, moment_of_creation, person_id FROM main_ordercoment")
+    all_order_comment_list_dict = []
+    dict_companies = get_dict_companies()
+    for res in results:
+        # res[0] - order_id
+        # res[1] - text
+        # res[2] - moment_of_creation
+        # res[3] - person_id
+        all_order_comment_list_dict.append({
+            'order_id': res[0],
+            'text': res[1],
+            'moment_of_creation': res[2],
+            'person_id': dict_person[res[3]],
+        })
+
+    return all_order_comment_list_dict
+
+
 def print_list(list_for_print: list):
     for element in list_for_print:
         print(element)
@@ -567,3 +596,4 @@ headers = {
 # print(get_list_works("029-05-2024"))
 # print_list(get_list_dict_box_accounting())
 # print(get_dict_person())
+print_list(get_list_dict_order_comment())
