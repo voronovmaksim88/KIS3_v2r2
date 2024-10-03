@@ -10,6 +10,7 @@ from alembic.config import Config
 from alembic import command
 from tabulate import tabulate  # Для красивого вывода таблицы
 from colorama import init, Fore
+
 from KIS2.work_with_DB import get_set_countries as get_all_countries_set_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_manufacturers as get_all_manufacturers_from_sqlite3
 from KIS2.work_with_DB import get_set_equipment_types as get_all_equipment_types_from_sqlite3
@@ -21,7 +22,6 @@ from KIS2.work_with_DB import get_list_dict_work as get_list_dict_work_from_sqli
 from KIS2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
 from KIS2.work_with_DB import get_list_dict_order_comment as get_list_dict_order_comment_from_sqlite3
-
 
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
                            Person, Work, OrderStatus, Order, BoxAccounting, OrderComment)
@@ -62,22 +62,42 @@ def get_all_tables_name_from_postgre_sql():
 
     if tables:
         print(Fore.LIGHTBLUE_EX + "Список таблиц в базе данных:")
-        i = 1
-        for table in tables:
+        for i, table in enumerate(tables, 1):
             print(Fore.LIGHTBLUE_EX + f" {i}. {table}")
-            i += 1
     else:
         print(Fore.RED + "Нет таблиц в базе данных.")
     print()
 
 
-def show_table_country_in_postgre_sql():
+def show_table_in_postgre_sql(table_name: str):
     with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM countries"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print("nСодержимое таблицы 'Country' в базе данных PostgreSQL:")
-        print(tabulate(data, headers=columns, tablefmt='grid'))
+        try:
+            # Используем форматирование строки для имени таблицы
+            # Это безопасно, так как мы не принимаем имя таблицы от пользователя напрямую
+            query = sql_text(f"SELECT * FROM {table_name}")
+            result = connection.execute(query)
+
+            columns = list(result.keys())
+            data = result.fetchall()
+
+            if data:
+                print(Fore.LIGHTBLUE_EX + f"\nСодержимое таблицы '{table_name}' в базе данных PostgreSQL:")
+                print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+            else:
+                print(Fore.YELLOW + f"\nТаблица '{table_name}' пуста.")
+        except SQLAlchemyError as e1:
+            print(Fore.RED + f"\nОшибка SQL при попытке отобразить таблицу '{table_name}': {str(e1)}")
+        except Exception as e1:
+            print(Fore.RED + f"\nНепредвиденная ошибка при попытке отобразить таблицу '{table_name}': {str(e1)}")
+
+
+# def show_table_country_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM countries"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print("nСодержимое таблицы 'Country' в базе данных PostgreSQL:")
+#         print(tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_country_from_sqlite_to_postgresql(countries_set):
@@ -104,13 +124,13 @@ def copy_table_country_from_sqlite_to_postgresql(countries_set):
                 print(Fore.GREEN + "Все страны уже существуют в базе данных.")
 
 
-def show_table_manufacturers_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM manufacturers"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print("nСодержимое таблицы 'Manufacturer' в базе данных PostgreSQL:")
-        print(tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_manufacturers_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM manufacturers"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print("nСодержимое таблицы 'Manufacturer' в базе данных PostgreSQL:")
+#         print(tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_manufacturers_from_sqlite_to_postgresql(manufacturers_list_dict):
@@ -160,13 +180,13 @@ def copy_table_manufacturers_from_sqlite_to_postgresql(manufacturers_list_dict):
                 print(Fore.GREEN + "Все производители уже существуют в базе данных.")
 
 
-def show_table_equipment_type_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM equipment_types"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print("nСодержимое таблицы 'EquipmentType' в базе данных PostgreSQL:")
-        print(tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_equipment_type_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM equipment_types"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print("nСодержимое таблицы 'EquipmentType' в базе данных PostgreSQL:")
+#         print(tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_equipment_type_from_sqlite_to_postgresql(equipment_type_set):
@@ -193,13 +213,13 @@ def copy_table_equipment_type_from_sqlite_to_postgresql(equipment_type_set):
                 print(Fore.GREEN + "Все типы оборудования уже существуют в базе данных.")
 
 
-def show_table_currency_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM currencies"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\nСодержимое таблицы 'Money' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_currency_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM currencies"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\nСодержимое таблицы 'Money' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def fill_in_table_currency_in_postgre_sql():
@@ -215,13 +235,13 @@ def fill_in_table_currency_in_postgre_sql():
                 print(Fore.RED + f"Ошибка: {err}")
 
 
-def show_table_city_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM cities"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'City' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_city_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM cities"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'City' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def get_set_cities_from_postgre_sql():
@@ -260,13 +280,13 @@ def copy_table_city_from_sqlite_to_postgresql(set_cities):
                 print(Fore.GREEN + "Все города уже существуют в базе данных.")
 
 
-def show_table_counterparty_form_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM counterparty_form"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'CompaniesForm' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_counterparty_form_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM counterparty_form"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'CompaniesForm' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def get_set_counterparty_form_from_postgre_sql():
@@ -390,13 +410,13 @@ def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies):
                 print(Fore.GREEN + "Все типы компаний  уже существуют в базе данных PostgreSQL.")
 
 
-def show_table_people_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM people"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Person' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_people_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM people"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Person' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_people_from_sqlite_to_postgresql(list_dict_person):
@@ -467,13 +487,13 @@ def copy_table_people_from_sqlite_to_postgresql(list_dict_person):
         raise  # Повторно возбуждаем исключение после логирования
 
 
-def show_table_work_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM works"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Work' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_work_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM works"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Work' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_work_from_sqlite_to_postgresql(list_dict_work):
@@ -511,13 +531,13 @@ def copy_table_work_from_sqlite_to_postgresql(list_dict_work):
                 print(Fore.GREEN + "Все виды работ по заказам  уже записаны в базе данных PostgreSQL.")
 
 
-def show_table_order_status_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM order_statuses"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'OrderStatus' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_order_status_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM order_statuses"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'OrderStatus' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def fill_in_table_order_status_in_postgre_sql():
@@ -549,13 +569,13 @@ def get_dict_order_status_from_postgre_sql():
     return dict_order_status
 
 
-def show_table_orders_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM orders"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Orders' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_orders_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM orders"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'Orders' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders):
@@ -618,13 +638,13 @@ def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders):
             connection.rollback()
 
 
-def show_table_box_accounting_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM box_accounting"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'box_accounting' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_box_accounting_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM box_accounting"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'box_accounting' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def get_dict_people_from_postgre_sql():
@@ -707,13 +727,13 @@ def copy_table_box_accounting_in_postgre_sql(list_dict_box_accounting):
             logging.info("Операция успешно завершена.")
 
 
-def show_table_comments_on_orders_in_postgre_sql():
-    with engine.connect() as connection:
-        result = connection.execute(sql_text("SELECT * FROM comments_on_orders"))
-        columns = list(result.keys())
-        data = result.fetchall()
-        print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'comments_on_orders' в базе данных PostgreSQL:")
-        print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
+# def show_table_comments_on_orders_in_postgre_sql():
+#     with engine.connect() as connection:
+#         result = connection.execute(sql_text("SELECT * FROM comments_on_orders"))
+#         columns = list(result.keys())
+#         data = result.fetchall()
+#         print(Fore.LIGHTBLUE_EX + "\n Содержимое таблицы 'comments_on_orders' в базе данных PostgreSQL:")
+#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
 
 
 def copy_table_comments_on_orders_from_sqlite_to_postgresql(list_dict_order_comment):
@@ -807,7 +827,7 @@ while answer1 != "e":
             print("18 - show table 'Work' in PostgreSQL")
             print("20 - show table 'OrderStatus' in PostgreSQL")
             print("22 - show table 'Order' in PostgreSQL")
-            print("24 - show table box_accounting in PostgreSQL")
+            print("24 - show table 'box_accounting' in PostgreSQL")
             print("26 - show table 'comments_on_orders' in PostgreSQL")
 
             answer2 = input()
@@ -817,31 +837,44 @@ while answer1 != "e":
             elif answer2 == "1":
                 get_all_tables_name_from_postgre_sql()
             elif answer2 == "2":
-                show_table_country_in_postgre_sql()
+                # show_table_country_in_postgre_sql()
+                show_table_in_postgre_sql("countries")
             elif answer2 == "4":
-                show_table_manufacturers_in_postgre_sql()
+                # show_table_manufacturers_in_postgre_sql()
+                show_table_in_postgre_sql("manufacturers")
             elif answer2 == "6":
-                show_table_equipment_type_in_postgre_sql()
+                # show_table_equipment_type_in_postgre_sql()
+                show_table_in_postgre_sql("equipment_types")
             elif answer2 == "8":
-                show_table_currency_in_postgre_sql()
+                # show_table_currency_in_postgre_sql()
+                show_table_in_postgre_sql("currencies")
             elif answer2 == "10":
-                show_table_city_in_postgre_sql()
+                # show_table_city_in_postgre_sql()
+                show_table_in_postgre_sql("cities")
             elif answer2 == "12":
-                show_table_counterparty_form_in_postgre_sql()
+                # show_table_counterparty_form_in_postgre_sql()
+                show_table_in_postgre_sql("counterparty_form")
             elif answer2 == "14":
-                show_table_counterparties_in_postgre_sql()
+                # show_table_counterparties_in_postgre_sql()
+                show_table_in_postgre_sql("counterparty")
             elif answer2 == "16":
-                show_table_people_in_postgre_sql()
+                # show_table_people_in_postgre_sql()
+                show_table_in_postgre_sql("people")
             elif answer2 == "18":
-                show_table_work_in_postgre_sql()
+                # show_table_work_in_postgre_sql()
+                show_table_in_postgre_sql("works")
             elif answer2 == "20":
-                show_table_order_status_in_postgre_sql()
+                # show_table_order_status_in_postgre_sql()
+                show_table_in_postgre_sql("order_statuses")
             elif answer2 == "22":
-                show_table_orders_in_postgre_sql()
+                # show_table_orders_in_postgre_sql()
+                show_table_in_postgre_sql("orders")
             elif answer2 == "24":
-                show_table_box_accounting_in_postgre_sql()
+                # show_table_box_accounting_in_postgre_sql()
+                show_table_in_postgre_sql("box_accounting")
             elif answer2 == "26":
-                show_table_comments_on_orders_in_postgre_sql()
+                # show_table_comments_on_orders_in_postgre_sql()
+                show_table_in_postgre_sql("comments_on_orders")
             else:
                 print(Fore.RED + "Please enter a valid number.")
             print("")
@@ -850,7 +883,6 @@ while answer1 != "e":
         while answer2 != "e":
             print("")
             print("What copy ?")
-            print("e - exit")
             print("3 - copy table 'Country' from sqlite to PostgreSQL")
             print("5 - copy table 'Manufacturers' from sqlite to PostgreSQL")
             print("7 - copy table 'EquipmentType' from sqlite to PostgreSQL")
@@ -864,13 +896,12 @@ while answer1 != "e":
             print("23 - copy table 'Order' from SQlite to PostgreSQL")
             print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
             print("27 - copy table 'comments_on_orders' from SQlite to PostgreSQL")
+            print("e - exit")
 
             answer2 = input()
 
-            if answer2 == "0":
+            if answer2 == "e":
                 break
-            elif answer2 == "2":
-                show_table_country_in_postgre_sql()
             elif answer2 == "3":
                 copy_table_country_from_sqlite_to_postgresql(get_all_countries_set_from_sqlite3())
             elif answer2 == "5":
