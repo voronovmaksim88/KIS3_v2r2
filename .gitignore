@@ -4,3 +4,10 @@
 .idea/
 *.iml
 /backend/.env
+
+backend/KIS2/__pycache__/
+backend/__pycache__/
+backend/migrations/__pycache__/
+backend/migrations/versions/__pycache__/
+backend/models/__pycache__/
+
