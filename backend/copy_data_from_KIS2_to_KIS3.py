@@ -118,99 +118,86 @@ def show_table_in_postgre_sql(table_name: str):
             print(Fore.RED + f"\nНепредвиденная ошибка при попытке отобразить таблицу '{table_name}': {str(e1)}")
 
 
-def copy_table_country_from_sqlite_to_postgresql(countries_set):
-    if not isinstance(countries_set, set):
-        raise TypeError("Argument must be a set")
+@database_operation
+def copy_table_country_from_sqlite_to_postgresql(countries_list, connection):
+    countries_set = set(countries_list)
 
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Получаем существующие страны из базы данных
-            existing_countries = set(row[0] for row in connection.execute(sql_text("SELECT name FROM countries")))
+    # Получаем существующие страны из базы данных
+    existing_countries = set(connection.execute(select(Country.name)).scalars().all())
 
-            # Находим новые страны, которых еще нет в базе данных
-            new_countries = countries_set - existing_countries
+    # Находим новые страны, которых еще нет в базе данных
+    new_countries = countries_set - existing_countries
 
-            if new_countries:
-                # Подготавливаем данные для вставки
-                insert_data = [{"name": country} for country in new_countries]
+    if new_countries:
+        # Подготавливаем данные для вставки
+        insert_data = [{"name": country} for country in new_countries]
 
-                # Выполняем вставку новых стран
-                connection.execute(insert(Country), insert_data)  # type: ignore
-                print(f"Добавлено {len(new_countries)} новых стран в базу данных.")
-            else:
-                print(Fore.GREEN + "Все страны уже существуют в базе данных.")
-
-
-def copy_table_manufacturers_from_sqlite_to_postgresql(manufacturers_list_dict):
-    # Это список словарей, каждый словарь хранит запись о производителе
-    # Ключи: name-название, country-страна. Например, {'name':"Zentec", 'country':"Россия"}
-    # Множество словарей создать в python нельзя
-    if not isinstance(manufacturers_list_dict, list):
-        raise TypeError("Argument must be a list")
-
-    manufacturers_set = set()
-    for manufacturers_dict in manufacturers_list_dict:
-        manufacturers_set.add(manufacturers_dict['name'])
-    print(manufacturers_set)
-
-    with (engine.connect() as connection):
-        # Начинаем транзакцию
-        with connection.begin():
-
-            # Формируем словарь стран из базы данных PostrgeSQL
-            countries_dict = {}
-            for row in connection.execute(sql_text("SELECT name, id FROM countries")):
-                countries_dict[row[0]] = row[1]
-
-            # Получаем существующие записи о производителях из базы данных PostrgeSQL
-            existing_manufacturers = set(
-                row[0] for row in connection.execute(sql_text("SELECT name FROM manufacturers")))
-
-            # Формируем список новых производителей, которых еще нет в базе данных
-            new_manufacturers_list = []
-            for manufacturers_dict in manufacturers_list_dict:
-                print(manufacturers_dict)
-                if manufacturers_dict['name'] not in existing_manufacturers:
-                    new_manufacturers_list.append(manufacturers_dict)
-            print(new_manufacturers_list)
-
-            if new_manufacturers_list:
-                # Подготавливаем данные для вставки
-                insert_data = [
-                    {"name": manufacturer_dict['name'], "country_id": countries_dict[manufacturer_dict['country']]} for
-                    manufacturer_dict in new_manufacturers_list]
-                print('insert_data', insert_data)
-                # Выполняем вставку новых производителей
-                connection.execute(insert(Manufacturer), insert_data)  # type: ignore
-                print(f"Добавлено {len(insert_data)} новых производителей в базу данных.")
-
-            else:
-                print(Fore.GREEN + "Все производители уже существуют в базе данных.")
+        # Выполняем вставку новых стран
+        stmt = pg_insert(Country).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых стран в базу данных.")
+    else:
+        print(Fore.GREEN + "Все страны уже существуют в базе данных.")
 
 
-def copy_table_equipment_type_from_sqlite_to_postgresql(equipment_type_set):
-    if not isinstance(equipment_type_set, set):
-        raise TypeError("Argument must be a set")
+@database_operation
+def copy_table_manufacturers_from_sqlite_to_postgresql(manufacturers_list_dict, connection):
 
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Получаем существующие типы оборудования из базы данных
-            existing_type_set = set(row[0] for row in connection.execute(sql_text("SELECT name FROM equipment_types")))
+    # Формируем словарь стран из базы данных PostgreSQL
+    countries_dict = dict(connection.execute(select(Country.name, Country.id)).fetchall())
 
-            # Находим новые типы оборудования, которых еще нет в базе данных кис3
-            new_equipment_type_set = equipment_type_set - existing_type_set
+    # Получаем существующие записи о производителях из базы данных PostgreSQL
+    existing_manufacturers = set(connection.execute(select(Manufacturer.name)).scalars().all())
 
-            if new_equipment_type_set:
-                # Подготавливаем данные для вставки
-                insert_data = [{"name": equipment_type} for equipment_type in new_equipment_type_set]
+    # Формируем список новых производителей, которых еще нет в базе данных
+    new_manufacturers_list = [
+        manufacturer for manufacturer in manufacturers_list_dict
+        if manufacturer['name'] not in existing_manufacturers
+    ]
+    print("Новые производители:", new_manufacturers_list)
 
-                # Выполняем вставку новых типов оборудования
-                connection.execute(insert(EquipmentType), insert_data)  # type: ignore
-                print(f"Добавлено {len(new_equipment_type_set)} новых типов оборудования в базу данных КИС3.")
-            else:
-                print(Fore.GREEN + "Все типы оборудования уже существуют в базе данных.")
+    if new_manufacturers_list:
+        # Подготавливаем данные для вставки
+        insert_data = [
+            {
+                "name": manufacturer['name'],
+                "country_id": countries_dict[manufacturer['country']]
+            }
+            for manufacturer in new_manufacturers_list
+        ]
+        print('Данные для вставки:', insert_data)
+
+        # Выполняем вставку новых производителей
+        stmt = pg_insert(Manufacturer).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых производителей в базу данных.")
+    else:
+        print(Fore.GREEN + "Все производители уже существуют в базе данных.")
+
+
+@database_operation
+def copy_table_equipment_type_from_sqlite_to_postgresql(equipment_type_list, connection):
+    equipment_type_set = set(equipment_type_list)
+
+    # Получаем существующие типы оборудования из базы данных
+    existing_type_set = set(connection.execute(select(EquipmentType.name)).scalars().all())
+
+    # Находим новые типы оборудования, которых еще нет в базе данных КИС3
+    new_equipment_type_set = equipment_type_set - existing_type_set
+
+    if new_equipment_type_set:
+        # Подготавливаем данные для вставки
+        insert_data = [{"name": equipment_type} for equipment_type in new_equipment_type_set]
+
+        # Выполняем вставку новых типов оборудования
+        stmt = pg_insert(EquipmentType).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых типов оборудования в базу данных КИС3.")
+    else:
+        print(Fore.GREEN + "Все типы оборудования уже существуют в базе данных.")
 
 
 def fill_in_table_currency_in_postgre_sql():
@@ -779,44 +766,44 @@ while answer1 != "e":
         while answer2 != "e":
             print("")
             print("What copy ?")
-            print("3 - copy table 'Country' from sqlite to PostgreSQL")
-            print("5 - copy table 'Manufacturers' from sqlite to PostgreSQL")
-            print("7 - copy table 'EquipmentType' from sqlite to PostgreSQL")
-            print("9 - fill in the table 'Currency'")
-            print("11 - copy table 'City' from SQlite to PostgreSQL")
-            print("13 - copy table 'CounterpartyForm' from SQlite to PostgreSQL")
-            print("15 - copy table 'Counterparties' from SQlite to PostgreSQL")
-            print("17 - copy table 'Person' from SQlite to PostgreSQL")
-            print("19 - copy table 'Work' from SQlite to PostgreSQL")
-            print("21 - fill table 'OrderStatus' from SQlite to PostgreSQL")
-            print("23 - copy table 'Order' from SQlite to PostgreSQL")
-            print("25 - copy table 'box_accounting' from SQlite to PostgreSQL")
-            print("27 - copy table 'comments_on_orders' from SQlite to PostgreSQL")
+            print("1 - copy table 'Country' from sqlite to PostgreSQL")
+            print("2 - copy table 'Manufacturers' from sqlite to PostgreSQL")
+            print("3 - copy table 'EquipmentType' from sqlite to PostgreSQL")
+            print("4 - fill in the table 'Currency'")
+            print("5 - copy table 'City' from SQlite to PostgreSQL")
+            print("6 - copy table 'CounterpartyForm' from SQlite to PostgreSQL")
+            print("7 - copy table 'Counterparties' from SQlite to PostgreSQL")
+            print("8 - copy table 'Person' from SQlite to PostgreSQL")
+            print("9 - copy table 'Work' from SQlite to PostgreSQL")
+            print("10 - fill table 'OrderStatus' from SQlite to PostgreSQL")
+            print("11 - copy table 'Order' from SQlite to PostgreSQL")
+            print("12 - copy table 'box_accounting' from SQlite to PostgreSQL")
+            print("13 - copy table 'comments_on_orders' from SQlite to PostgreSQL")
             print("e - exit")
 
             answer2 = input()
 
             if answer2 == "e":
                 break
-            elif answer2 == "3":
-                copy_table_country_from_sqlite_to_postgresql(get_all_countries_set_from_sqlite3())
-            elif answer2 == "5":
+            elif answer2 == "1":
+                copy_table_country_from_sqlite_to_postgresql(list(get_all_countries_set_from_sqlite3()))
+            elif answer2 == "2":
                 copy_table_manufacturers_from_sqlite_to_postgresql(get_all_manufacturers_from_sqlite3())
-            elif answer2 == "7":
-                copy_table_equipment_type_from_sqlite_to_postgresql(get_all_equipment_types_from_sqlite3())
-            elif answer2 == "9":
+            elif answer2 == "3":
+                copy_table_equipment_type_from_sqlite_to_postgresql(list(get_all_equipment_types_from_sqlite3()))
+            elif answer2 == "4":
                 fill_in_table_currency_in_postgre_sql()
-            elif answer2 == "11":
+            elif answer2 == "5":
                 copy_table_city_from_sqlite_to_postgresql(get_set_cities_from_sqlite3())
-            elif answer2 == "13":
+            elif answer2 == "6":
                 copy_table_companies_form_from_sqlite_to_postgresql(get_set_companies_form_from_sqlite3())
-            elif answer2 == "15":
+            elif answer2 == "7":
                 copy_table_counterparties_from_sqlite_to_postgresql(get_list_dict_companies_from_sqlite3())
-            elif answer2 == "17":
+            elif answer2 == "8":
                 copy_table_people_from_sqlite_to_postgresql(get_list_dict_person_from_sqlite3())
-            elif answer2 == "19":
+            elif answer2 == "9":
                 copy_table_work_from_sqlite_to_postgresql(get_list_dict_work_from_sqlite3())
-            elif answer2 == "21":
+            elif answer2 == "10":
                 fill_in_table_order_status_in_postgre_sql(
                     [
                         {"name": 'Не определён'},
@@ -828,11 +815,11 @@ while answer1 != "e":
                         {"name": 'Не согласовано'},
                         {"name": 'На паузе'}
                     ])  # Передаем список
-            elif answer2 == "23":
+            elif answer2 == "11":
                 copy_table_orders_from_sqlite_to_postgresql(get_list_dict_orders_from_sqlite3())
-            elif answer2 == "25":
+            elif answer2 == "12":
                 copy_table_box_accounting_in_postgre_sql(get_list_dict_box_accounting_from_sqlite3())
-            elif answer2 == "27":
+            elif answer2 == "13":
                 copy_table_comments_on_orders_from_sqlite_to_postgresql(get_list_dict_order_comment_from_sqlite3())
             else:
                 print(Fore.RED + "Please enter a valid number.")
