@@ -200,17 +200,28 @@ def copy_table_equipment_type_from_sqlite_to_postgresql(equipment_type_list, con
         print(Fore.GREEN + "Все типы оборудования уже существуют в базе данных.")
 
 
-def fill_in_table_currency_in_postgre_sql():
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            insert_data = [{"name": 'RUB'}, {"name": 'USD'}, {"name": 'EUR'}]
-            # Выполняем вставку новых валют
-            try:
-                connection.execute(insert(Currency), insert_data)  # type: ignore
-                print(f"Добавлено {len(insert_data)} новых названия валют в базу данных PostgreSQL.")
-            except Exception as err:
-                print(Fore.RED + f"Ошибка: {err}")
+@database_operation
+def fill_in_table_currency_in_postgre_sql(currency_list, connection):
+    # Преобразуем список в множество для удаления дубликатов
+    currency_set = set(currency_list)
+
+    # Получаем существующие валюты из базы данных
+    existing_currencies = set(connection.execute(select(Currency.name)).scalars().all())
+
+    # Находим новые валюты, которых еще нет в базе данных
+    new_currencies = currency_set - existing_currencies
+
+    if new_currencies:
+        # Подготавливаем данные для вставки
+        insert_data = [{"name": currency} for currency in new_currencies]
+
+        # Выполняем вставку новых валют
+        stmt = pg_insert(Currency).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых названий валют в базу данных PostgreSQL.")
+    else:
+        print(Fore.GREEN + "Все указанные валюты уже существуют в базе данных.")
 
 
 def get_set_cities_from_postgre_sql():
@@ -792,7 +803,7 @@ while answer1 != "e":
             elif answer2 == "3":
                 copy_table_equipment_type_from_sqlite_to_postgresql(list(get_all_equipment_types_from_sqlite3()))
             elif answer2 == "4":
-                fill_in_table_currency_in_postgre_sql()
+                fill_in_table_currency_in_postgre_sql(['RUB', 'USD', 'EUR', 'GBP', 'JPY'])
             elif answer2 == "5":
                 copy_table_city_from_sqlite_to_postgresql(get_set_cities_from_sqlite3())
             elif answer2 == "6":
