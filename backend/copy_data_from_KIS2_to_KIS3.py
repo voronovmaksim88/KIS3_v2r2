@@ -314,32 +314,6 @@ def get_dict_counterparties_from_postgre_sql():
     return counterparties_dict
 
 
-# def show_table_counterparties_in_postgre_sql():
-#     counterparties_dict = get_dict_counterparties_from_postgre_sql()
-#
-#     if not counterparties_dict:
-#         print(Fore.RED + "Таблица 'Counterparties' в базе данных PostgreSQL пуста.")
-#         return
-#     else:
-#         with engine.connect() as connection:
-#             # Получаем полную информацию о контрагентах
-#             result = connection.execute(sql_text("""
-#                 SELECT c.id, c.name, c.note, ci.name as city, cf.name as form
-#                 FROM counterparty c
-#                 LEFT JOIN cities ci ON c.city_id = ci.id
-#                 LEFT JOIN counterparty_form cf ON c.form_id = cf.id
-#                 ORDER BY c.id
-#             """))
-#
-#             columns = list(result.keys())
-#             data = result.fetchall()
-#
-#         print(Fore.LIGHTBLUE_EX + "\nСодержимое таблицы 'Counterparties' в базе данных PostgreSQL:")
-#         print(Fore.LIGHTBLUE_EX + tabulate(data, headers=columns, tablefmt='grid'))
-#
-#         # Дополнительная информация о количестве контрагентов
-#         print(Fore.GREEN + f"\nОбщее количество контрагентов: {len(counterparties_dict)}")
-
 
 def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies):
     if not isinstance(list_dict_companies, list):
@@ -710,19 +684,19 @@ while answer1 != "e":
             print("What show ?")
             print("e - exit")
             print("1 - show all tables name in PostgreSQL")
-            print("2 - show table 'Country' in PostgreSQL")
-            print("4 - show table 'Manufacturers' in PostgreSQL")
-            print("6 - show table 'EquipmentType' in PostgreSQL")
-            print("8 - show table 'Currency' in PostgreSQL")
-            print("10 - show table 'City' in PostgreSQL")
-            print("12 - show table 'CounterpartyForm' in PostgreSQL")
-            print("14 - show table 'Counterparties' in PostgreSQL")
-            print("16 - show table 'Person' in PostgreSQL")
-            print("18 - show table 'Work' in PostgreSQL")
-            print("20 - show table 'OrderStatus' in PostgreSQL")
-            print("22 - show table 'Order' in PostgreSQL")
-            print("24 - show table 'box_accounting' in PostgreSQL")
-            print("26 - show table 'comments_on_orders' in PostgreSQL")
+            print("2 - show table 'countries' in PostgreSQL")
+            print("3 - show table 'manufacturers' in PostgreSQL")
+            print("4 - show table 'equipment_types' in PostgreSQL")
+            print("5 - show table 'currencies' in PostgreSQL")
+            print("6 - show table 'cities' in PostgreSQL")
+            print("7 - show table 'counterparty_form' in PostgreSQL")
+            print("8 - show table 'counterparty' in PostgreSQL")
+            print("9 - show table 'people' in PostgreSQL")
+            print("10 - show table 'works' in PostgreSQL")
+            print("11 - show table 'order_statuses' in PostgreSQL")
+            print("12 - show table 'orders' in PostgreSQL")
+            print("13 - show table 'box_accounting' in PostgreSQL")
+            print("14 - show table 'comments_on_orders' in PostgreSQL")
 
             answer2 = input()
 
@@ -733,40 +707,40 @@ while answer1 != "e":
             elif answer2 == "2":
                 # show_table_country_in_postgre_sql()
                 show_table_in_postgre_sql("countries")
-            elif answer2 == "4":
+            elif answer2 == "3":
                 # show_table_manufacturers_in_postgre_sql()
                 show_table_in_postgre_sql("manufacturers")
-            elif answer2 == "6":
+            elif answer2 == "4":
                 # show_table_equipment_type_in_postgre_sql()
                 show_table_in_postgre_sql("equipment_types")
-            elif answer2 == "8":
+            elif answer2 == "5":
                 # show_table_currency_in_postgre_sql()
                 show_table_in_postgre_sql("currencies")
-            elif answer2 == "10":
+            elif answer2 == "6":
                 # show_table_city_in_postgre_sql()
                 show_table_in_postgre_sql("cities")
-            elif answer2 == "12":
+            elif answer2 == "7":
                 # show_table_counterparty_form_in_postgre_sql()
                 show_table_in_postgre_sql("counterparty_form")
-            elif answer2 == "14":
+            elif answer2 == "8":
                 # show_table_counterparties_in_postgre_sql()
                 show_table_in_postgre_sql("counterparty")
-            elif answer2 == "16":
+            elif answer2 == "9":
                 # show_table_people_in_postgre_sql()
                 show_table_in_postgre_sql("people")
-            elif answer2 == "18":
+            elif answer2 == "10":
                 # show_table_work_in_postgre_sql()
                 show_table_in_postgre_sql("works")
-            elif answer2 == "20":
+            elif answer2 == "11":
                 # show_table_order_status_in_postgre_sql()
                 show_table_in_postgre_sql("order_statuses")
-            elif answer2 == "22":
+            elif answer2 == "12":
                 # show_table_orders_in_postgre_sql()
                 show_table_in_postgre_sql("orders")
-            elif answer2 == "24":
+            elif answer2 == "13":
                 # show_table_box_accounting_in_postgre_sql()
                 show_table_in_postgre_sql("box_accounting")
-            elif answer2 == "26":
+            elif answer2 == "14":
                 # show_table_comments_on_orders_in_postgre_sql()
                 show_table_in_postgre_sql("comments_on_orders")
             else:
