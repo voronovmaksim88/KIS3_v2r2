@@ -1,10 +1,12 @@
 # Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import text as sql_text
-from sqlalchemy import select, insert
+from sqlalchemy import insert
 from sqlalchemy.dialects.postgresql import insert as insert_pg
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy import select
+# from sqlalchemy import func
 
 from alembic.config import Config
 from alembic import command
@@ -143,7 +145,6 @@ def copy_table_country_from_sqlite_to_postgresql(countries_list, connection):
 
 @database_operation
 def copy_table_manufacturers_from_sqlite_to_postgresql(manufacturers_list_dict, connection):
-
     # Формируем словарь стран из базы данных PostgreSQL
     countries_dict = dict(connection.execute(select(Country.name, Country.id)).fetchall())
 
@@ -233,31 +234,31 @@ def get_set_cities_from_postgre_sql():
     return cities_dict
 
 
-def copy_table_city_from_sqlite_to_postgresql(set_cities):
-    if not isinstance(set_cities, set):
-        raise TypeError("Argument must be a set")  # Проверка типа
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Формируем словарь стран из базы данных PostrgeSQL
-            countries_dict = {}
-            for row in connection.execute(sql_text("SELECT name, id FROM countries")):
-                countries_dict[row[0]] = row[1]
+@database_operation
+def copy_table_city_from_sqlite_to_postgresql(cities_list, connection):
+    cities_set = set(cities_list)
 
-            # Получаем существующие города из базы данных
-            existing_cities = set(row[0] for row in connection.execute(sql_text("SELECT name FROM cities")))
+    # Получаем id страны 'Россия'
+    query = select(Country.id).where(Country.name.ilike('Россия'))
+    russia_id = connection.execute(query).scalar_one()
 
-            # Находим новые города, которых еще нет в базе данных кис3
-            new_cities = set_cities - existing_cities
+    # Получаем существующие города из базы данных
+    existing_cities = set(connection.execute(select(City.name)).scalars().all())
 
-            if new_cities:
-                # Подготавливаем данные для вставки
-                insert_data = [{"name": city, "country_id": countries_dict['Россия']} for city in new_cities]
-                # Выполняем вставку новых городов, в КИС2 все города Российские
-                connection.execute(insert(City), insert_data)  # type: ignore
-                print(f"Добавлено {len(new_cities)} новых городов в базу данных КИС3.")
-            else:
-                print(Fore.GREEN + "Все города уже существуют в базе данных.")
+    # Находим новые города, которых еще нет в базе данных КИС3
+    new_cities = cities_set - existing_cities
+
+    if new_cities:
+        # Подготавливаем данные для вставки
+        insert_data = [{"name": city, "country_id": russia_id} for city in new_cities]
+
+        # Выполняем вставку новых городов
+        stmt = pg_insert(City).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых городов в базу данных КИС3.")
+    else:
+        print(Fore.GREEN + "Все города уже существуют в базе данных.")
 
 
 def get_set_counterparty_form_from_postgre_sql():
@@ -312,7 +313,6 @@ def get_dict_counterparties_from_postgre_sql():
         for row in connection.execute(sql_text("SELECT name, id FROM counterparty")):
             counterparties_dict[row[0]] = row[1]
     return counterparties_dict
-
 
 
 def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies):
@@ -779,7 +779,7 @@ while answer1 != "e":
             elif answer2 == "4":
                 fill_in_table_currency_in_postgre_sql(['RUB', 'USD', 'EUR', 'GBP', 'JPY'])
             elif answer2 == "5":
-                copy_table_city_from_sqlite_to_postgresql(get_set_cities_from_sqlite3())
+                copy_table_city_from_sqlite_to_postgresql(list(get_set_cities_from_sqlite3()))
             elif answer2 == "6":
                 copy_table_companies_form_from_sqlite_to_postgresql(get_set_companies_form_from_sqlite3())
             elif answer2 == "7":
