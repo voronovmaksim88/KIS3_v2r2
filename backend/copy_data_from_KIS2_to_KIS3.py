@@ -14,6 +14,8 @@ from alembic import command
 from tabulate import tabulate  # Для красивого вывода таблицы
 from colorama import init, Fore
 
+from typing import List, Any
+
 import functools
 
 from KIS2.work_with_DB import get_set_countries as get_all_countries_set_from_sqlite3
@@ -274,31 +276,28 @@ def get_set_counterparty_form_from_postgre_sql():
     return counterparty_forms_dict
 
 
-def copy_table_companies_form_from_sqlite_to_postgresql(set_companies_form):
-    if not isinstance(set_companies_form, set):
-        raise TypeError("Argument must be a set")
+@database_operation
+def copy_table_counterparty_form_from_sqlite_to_postgresql(companies_form_list: List[str], connection: Any) -> None:
+    # Преобразуем список в множество для удаления дубликатов
+    companies_form_set = set(companies_form_list)
 
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Получаем существующие типы компаний из базы данных
-            existing_companies_form_set = set(
-                row[0] for row in connection.execute(sql_text("SELECT name FROM counterparty_form")))
+    # Получаем существующие формы компаний из базы данных
+    existing_forms = set(connection.execute(select(CounterpartyForm.name)).scalars().all())
 
-            # Находим новые типы компаний, которых еще нет в базе данных кис3
-            new_companies_form_set = set_companies_form - existing_companies_form_set
+    # Находим новые формы компаний, которых еще нет в базе данных
+    new_forms = companies_form_set - existing_forms
 
-            if new_companies_form_set:
-                # Подготавливаем данные для вставки
-                insert_data = [{"name": companies_form} for companies_form in new_companies_form_set]
+    if new_forms:
+        # Подготавливаем данные для вставки
+        insert_data = [{"name": form} for form in new_forms]
 
-                # Выполняем вставку новых типов компаний
-                connection.execute(insert(CounterpartyForm), insert_data)  # type: ignore
-                print(Fore.GREEN +
-                      f"Добавлено {len(new_companies_form_set)} новых ОПФ(организационно правовых форм)"
-                      f" в базу данных PostgreSQL.")
-            else:
-                print(Fore.GREEN + "Все ОПФ(организационно правовые формы)  уже существуют в базе данных PostgreSQL.")
+        # Выполняем вставку новых форм компаний
+        stmt = pg_insert(CounterpartyForm).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(f"Добавлено {result.rowcount} новых форм компаний в базу данных.")
+    else:
+        print(Fore.GREEN + "Все формы компаний уже существуют в базе данных.")
 
 
 def get_dict_counterparties_from_postgre_sql():
@@ -760,7 +759,7 @@ while answer1 != "e":
             print("3 - copy table 'EquipmentType' from sqlite to PostgreSQL")
             print("4 - fill in the table 'Currency'")
             print("5 - copy table 'City' from SQlite to PostgreSQL")
-            print("6 - copy table 'CounterpartyForm' from SQlite to PostgreSQL")
+            print("6 - copy table 'counterparty_form' from SQlite to PostgreSQL")
             print("7 - copy table 'Counterparties' from SQlite to PostgreSQL")
             print("8 - copy table 'Person' from SQlite to PostgreSQL")
             print("9 - copy table 'Work' from SQlite to PostgreSQL")
@@ -785,7 +784,7 @@ while answer1 != "e":
             elif answer2 == "5":
                 copy_table_city_from_sqlite_to_postgresql(list(get_set_cities_from_sqlite3()))
             elif answer2 == "6":
-                copy_table_companies_form_from_sqlite_to_postgresql(get_set_companies_form_from_sqlite3())
+                copy_table_counterparty_form_from_sqlite_to_postgresql(list(get_set_companies_form_from_sqlite3()))
             elif answer2 == "7":
                 copy_table_counterparties_from_sqlite_to_postgresql(get_list_dict_companies_from_sqlite3())
             elif answer2 == "8":
