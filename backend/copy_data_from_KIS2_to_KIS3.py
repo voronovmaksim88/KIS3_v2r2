@@ -14,7 +14,7 @@ from alembic import command
 from tabulate import tabulate  # Для красивого вывода таблицы
 from colorama import init, Fore
 
-from typing import List, Any
+from typing import List, Any, Dict
 
 import functools
 
@@ -320,44 +320,43 @@ def get_dict_counterparties_from_postgre_sql():
     return counterparties_dict
 
 
-def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies):
-    if not isinstance(list_dict_companies, list):
-        raise TypeError("Argument must be a list")
-    set_companies_from_sqlite = {companies['name'] for companies in list_dict_companies}
+@database_operation
+def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies: List[Dict[str, Any]],
+                                                        connection: Any) -> None:
+    set_companies_from_sqlite = {company['name'] for company in list_dict_companies}
 
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Получаем существующие типы компаний из базы данных
-            existing_counterparties_set = set(
-                row[0] for row in connection.execute(sql_text("SELECT name FROM counterparty")))
+    # Получаем существующие компании из базы данных
+    existing_counterparties = set(connection.execute(select(Counterparty.name)).scalars().all())
 
-            # Находим новые типы компаний, которых еще нет в базе данных кис3
-            new_counterparties_set = set_companies_from_sqlite - existing_counterparties_set
-            new_counterparties_list_dict = []
-            if new_counterparties_set:
-                for company in list_dict_companies:
-                    if company['name'] in new_counterparties_set:
-                        new_counterparties_list_dict.append(company)
+    # Находим новые компании, которых еще нет в базе данных
+    new_counterparties_set = set_companies_from_sqlite - existing_counterparties
+    new_counterparties_list_dict = [
+        company for company in list_dict_companies if company['name'] in new_counterparties_set
+    ]
 
-            if new_counterparties_list_dict:
-                # Выполняем вставку новых типов компаний
-                set_cities_from_postgre_sql = get_set_cities_from_postgre_sql()
-                set_counterparty_form_from_postgre_sql = get_set_counterparty_form_from_postgre_sql()
-                insert_data = []
-                for new_counterparty_dict in new_counterparties_list_dict:
-                    insert_data.append({'name': new_counterparty_dict['name'],
-                                        'note': new_counterparty_dict['note'],
-                                        'city_id': set_cities_from_postgre_sql[new_counterparty_dict['city']],
-                                        'form_id': set_counterparty_form_from_postgre_sql[new_counterparty_dict['form']]
-                                        })
+    if new_counterparties_list_dict:
+        # Получаем словари городов и форм контрагентов
+        set_cities_from_postgre_sql = get_set_cities_from_postgre_sql()
+        set_counterparty_form_from_postgre_sql = get_set_counterparty_form_from_postgre_sql()
 
-                # Выполняем вставку новых типов компаний
-                connection.execute(insert(Counterparty), insert_data)  # type: ignore
-                print(Fore.GREEN +
-                      f"Добавлено {len(new_counterparties_set)} новых контрагентов в базу данных PostgreSQL.")
-            else:
-                print(Fore.GREEN + "Все типы компаний  уже существуют в базе данных PostgreSQL.")
+        # Подготавливаем данные для вставки
+        insert_data = [
+            {
+                'name': company['name'],
+                'note': company['note'],
+                'city_id': set_cities_from_postgre_sql[company['city']],
+                'form_id': set_counterparty_form_from_postgre_sql[company['form']]
+            }
+            for company in new_counterparties_list_dict
+        ]
+
+        # Выполняем вставку новых компаний
+        stmt = pg_insert(Counterparty).values(insert_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['name'])
+        result = connection.execute(stmt)
+        print(Fore.GREEN + f"Добавлено {result.rowcount} новых контрагентов в базу данных PostgreSQL.")
+    else:
+        print(Fore.GREEN + "Все компании уже существуют в базе данных PostgreSQL.")
 
 
 def copy_table_people_from_sqlite_to_postgresql(list_dict_person):
@@ -688,64 +687,64 @@ while answer1 != "e":
             print("")
             print("What show ?")
             print("e - exit")
-            print("1 - show all tables name in PostgreSQL")
-            print("2 - show table 'countries' in PostgreSQL")
-            print("3 - show table 'manufacturers' in PostgreSQL")
-            print("4 - show table 'equipment_types' in PostgreSQL")
-            print("5 - show table 'currencies' in PostgreSQL")
-            print("6 - show table 'cities' in PostgreSQL")
-            print("7 - show table 'counterparty_form' in PostgreSQL")
-            print("8 - show table 'counterparty' in PostgreSQL")
-            print("9 - show table 'people' in PostgreSQL")
-            print("10 - show table 'works' in PostgreSQL")
-            print("11 - show table 'order_statuses' in PostgreSQL")
-            print("12 - show table 'orders' in PostgreSQL")
-            print("13 - show table 'box_accounting' in PostgreSQL")
-            print("14 - show table 'comments_on_orders' in PostgreSQL")
+            print("0 - show all tables name in PostgreSQL")
+            print("1 - show table 'countries' in PostgreSQL")
+            print("2 - show table 'manufacturers' in PostgreSQL")
+            print("3 - show table 'equipment_types' in PostgreSQL")
+            print("4 - show table 'currencies' in PostgreSQL")
+            print("5 - show table 'cities' in PostgreSQL")
+            print("6 - show table 'counterparty_form' in PostgreSQL")
+            print("7 - show table 'counterparty' in PostgreSQL")
+            print("8 - show table 'people' in PostgreSQL")
+            print("9 - show table 'works' in PostgreSQL")
+            print("10 - show table 'order_statuses' in PostgreSQL")
+            print("11 - show table 'orders' in PostgreSQL")
+            print("12 - show table 'box_accounting' in PostgreSQL")
+            print("13 - show table 'comments_on_orders' in PostgreSQL")
 
             answer2 = input()
 
-            if answer2 == "0":
+            if answer2 == "e":
                 break
-            elif answer2 == "1":
+            elif answer2 == "0":
                 get_all_tables_name_from_postgre_sql()
-            elif answer2 == "2":
+            elif answer2 == "1":
                 # show_table_country_in_postgre_sql()
                 show_table_in_postgre_sql("countries")
-            elif answer2 == "3":
+            elif answer2 == "2":
                 # show_table_manufacturers_in_postgre_sql()
                 show_table_in_postgre_sql("manufacturers")
-            elif answer2 == "4":
+            elif answer2 == "3":
                 # show_table_equipment_type_in_postgre_sql()
                 show_table_in_postgre_sql("equipment_types")
-            elif answer2 == "5":
+            elif answer2 == "4":
                 # show_table_currency_in_postgre_sql()
                 show_table_in_postgre_sql("currencies")
-            elif answer2 == "6":
+            elif answer2 == "5":
                 # show_table_city_in_postgre_sql()
                 show_table_in_postgre_sql("cities")
-            elif answer2 == "7":
+            elif answer2 == "6":
                 # show_table_counterparty_form_in_postgre_sql()
                 show_table_in_postgre_sql("counterparty_form")
-            elif answer2 == "8":
+            elif answer2 == "7":
                 # show_table_counterparties_in_postgre_sql()
                 show_table_in_postgre_sql("counterparty")
-            elif answer2 == "9":
+            elif answer2 == "8":
                 # show_table_people_in_postgre_sql()
                 show_table_in_postgre_sql("people")
-            elif answer2 == "10":
+            elif answer2 == "9":
                 # show_table_work_in_postgre_sql()
                 show_table_in_postgre_sql("works")
-            elif answer2 == "11":
+            elif answer2 == "10":
                 # show_table_order_status_in_postgre_sql()
                 show_table_in_postgre_sql("order_statuses")
-            elif answer2 == "12":
+            elif answer2 == "11":
                 # show_table_orders_in_postgre_sql()
                 show_table_in_postgre_sql("orders")
-            elif answer2 == "13":
+            elif answer2 == "12":
                 # show_table_box_accounting_in_postgre_sql()
                 show_table_in_postgre_sql("box_accounting")
-            elif answer2 == "14":
+            elif answer2 == "13":
                 # show_table_comments_on_orders_in_postgre_sql()
                 show_table_in_postgre_sql("comments_on_orders")
             else:
