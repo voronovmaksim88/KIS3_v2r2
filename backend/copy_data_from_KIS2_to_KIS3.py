@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy import select
 # from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from alembic.config import Config
 from alembic import command
@@ -262,12 +263,15 @@ def copy_table_city_from_sqlite_to_postgresql(cities_list, connection):
 
 
 def get_set_counterparty_form_from_postgre_sql():
-    with engine.connect() as connection:
-        # Формируем словарь типов компаний из базы данных PostrgeSQL
-        companies_form_dict = {}
-        for row in connection.execute(sql_text("SELECT name, id FROM counterparty_form")):
-            companies_form_dict[row[0]] = row[1]
-    return companies_form_dict
+    with Session(engine) as session:
+        # Формируем словарь форм контрагентов из базы данных PostgreSQL
+        query = select(CounterpartyForm.name, CounterpartyForm.id)
+        result = session.execute(query)
+
+        # Явно преобразуем результат в список кортежей, а затем в словарь
+        counterparty_forms_dict = dict([(str(name), id) for name, id in result])
+
+    return counterparty_forms_dict
 
 
 def copy_table_companies_form_from_sqlite_to_postgresql(set_companies_form):
