@@ -302,19 +302,21 @@ def copy_table_counterparty_form_from_sqlite_to_postgresql(companies_form_list: 
 
 def get_dict_counterparties_from_postgre_sql():
     """
-    :return: Словарь контрагентов из базы данных PostrgeSQL
+    :return: Словарь контрагентов из базы данных PostgreSQL
     в котором ключи это название контрагента, а значение это идентификатор(id)
     Пример:
     {"СИБПЛК": 1,
     "Вентавтоматика": 2,
     "Барион": 3}
-    
     """
-    with engine.connect() as connection:
-        # Формируем словарь контрагентов из базы данных PostrgeSQL
-        counterparties_dict = {}
-        for row in connection.execute(sql_text("SELECT name, id FROM counterparty")):
-            counterparties_dict[row[0]] = row[1]
+    with Session(engine) as session:
+        # Формируем запрос на получение имени и id контрагентов
+        query = select(Counterparty.name, Counterparty.id)
+
+        # Выполняем запрос и формируем словарь
+        result = session.execute(query)
+        counterparties_dict = {str(name): id for name, id in result}
+
     return counterparties_dict
 
 
