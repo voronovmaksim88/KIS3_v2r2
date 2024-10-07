@@ -420,39 +420,58 @@ def copy_table_people_from_sqlite_to_postgresql(list_dict_person, connection):
         print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
 
 
-def copy_table_work_from_sqlite_to_postgresql(list_dict_work):
+@database_operation
+def copy_table_work_from_sqlite_to_postgresql(list_dict_work, connection):
     if not isinstance(list_dict_work, list):
         raise TypeError("Argument must be a list")
-    set_work_from_sqlite = {work['name'] for work in list_dict_work}
-    with engine.connect() as connection:
-        # Начинаем транзакцию
-        with connection.begin():
-            # Получаем существующие записи о видах работ по заказам из базы данных PostgreSQL
-            existing_work_set = set(
-                row[0] for row in
-                connection.execute(sql_text("SELECT name FROM works")))
-            # Находим новые записи о работах, которых еще нет в базе данных кис3
-            new_work_set = set_work_from_sqlite - existing_work_set
-            new_work_list_dict = []
-            if new_work_set:
-                for work in list_dict_work:
-                    if work['name'] in new_work_set:
-                        new_work_list_dict.append(work)
 
-            if new_work_list_dict:
-                # Выполняем добавление новых видов работ по заказам
-                insert_data = []
-                for work in new_work_list_dict:
-                    insert_data.append({'name': work['name'],
-                                        'description': work['description'],
-                                        'active': True,
-                                        })
-                connection.execute(insert(Work), insert_data)
-                print(
-                    Fore.GREEN + f"Добавлено {len(new_work_list_dict)} новых видов работ по заказам"
-                                 f" в базу данных PostgreSQL.")
-            else:
-                print(Fore.GREEN + "Все виды работ по заказам  уже записаны в базе данных PostgreSQL.")
+    # Получаем существующие записи о видах работ
+    existing_works = connection.execute(select(Work.name)).scalars().all()
+    existing_work_set = set(existing_works)
+
+    # Находим новые записи о работах
+    new_work_set = {work['name'] for work in list_dict_work if work['name'] not in existing_work_set}
+
+    if new_work_set:
+        # Подготавливаем данные для вставки
+        insert_data = [
+            {
+                'name': work['name'],
+                'description': work['description'],
+                'active': True
+            }
+            for work in list_dict_work if work['name'] in new_work_set
+        ]
+
+        # Выполняем вставку новых видов работ
+        result = connection.execute(insert(Work), insert_data)
+        print(Fore.GREEN + f"Добавлено {result.rowcount} новых видов работ в базу данных.")
+    else:
+        print(Fore.GREEN + "Все виды работ уже записаны в базе данных.")
+
+    # Обновляем существующие записи
+    update_data = [
+        {
+            'name': work['name'],
+            'description': work['description'],
+            'active': True
+        }
+        for work in list_dict_work if work['name'] in existing_work_set
+    ]
+
+    if update_data:
+        stmt = insert_pg(Work).values(update_data)
+        update_stmt = stmt.on_conflict_do_update(
+            index_elements=['name'],
+            set_={
+                'description': stmt.excluded.description,
+                'active': stmt.excluded.active
+            }
+        )
+        result = connection.execute(update_stmt)
+        print(Fore.GREEN + f"Обновлено {result.rowcount} существующих видов работ.")
+    else:
+        print(Fore.GREEN + "Нет изменений в существующих видах работ.")
 
 
 @database_operation
