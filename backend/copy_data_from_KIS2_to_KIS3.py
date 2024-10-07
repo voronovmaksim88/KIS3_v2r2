@@ -517,64 +517,54 @@ def get_dict_order_status_from_postgre_sql():
     return dict_order_status
 
 
-def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders):
+@database_operation
+def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders, connection):
     if not isinstance(list_dict_orders, list):
         raise TypeError("Argument must be a list")
 
     dict_counterparties_from_postgre_sql = get_dict_counterparties_from_postgre_sql()
     dict_order_status_from_postgre_sql = get_dict_order_status_from_postgre_sql()
-    with engine.connect() as connection:
-        try:
-            with connection.begin():
-                # Получаем существующие записи о заказах из базы данных PostgreSQL
-                existing_orders = connection.execute(
-                    select(Order.serial)
-                ).fetchall()
 
-                existing_order_set = {row.serial for row in existing_orders}
+    # Получаем существующие записи о заказах из базы данных PostgreSQL
+    existing_orders = connection.execute(select(Order.serial)).scalars().all()
+    existing_order_set = set(existing_orders)
 
-                insert_data = []
-                update_data = []
+    insert_data = []
+    update_data = []
 
-                for order_in_sqlite in list_dict_orders:
-                    key = order_in_sqlite['serial']
-                    order_data = {
-                        'serial': order_in_sqlite['serial'],
-                        'name': order_in_sqlite['name'],
-                        'customer_id': dict_counterparties_from_postgre_sql[order_in_sqlite['customer']],
-                        'status_id': dict_order_status_from_postgre_sql[order_in_sqlite['status']],
-                    }
-                    if key in existing_order_set:
-                        order_data['serial'] = key
-                        update_data.append(order_data)
-                    else:
-                        insert_data.append(order_data)
+    for order_in_sqlite in list_dict_orders:
+        order_data = {
+            'serial': order_in_sqlite['serial'],
+            'name': order_in_sqlite['name'],
+            'customer_id': dict_counterparties_from_postgre_sql[order_in_sqlite['customer']],
+            'status_id': dict_order_status_from_postgre_sql[order_in_sqlite['status']],
+        }
 
-                if insert_data:
-                    connection.execute(insert(Order), insert_data)
-                    print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей о заказах")
-                else:  # Если нет новых записей
-                    print(Fore.GREEN + "Новых записей для добавления нет.")
+        if order_data['serial'] in existing_order_set:
+            update_data.append(order_data)
+        else:
+            insert_data.append(order_data)
 
-                if update_data:
-                    stmt = insert_pg(Order).values(update_data)
-                    stmt = stmt.on_conflict_do_update(
-                        index_elements=['serial'],
-                        set_={
-                            'name': stmt.excluded.name,
-                            'customer_id': stmt.excluded.customer_id
-                        }
-                    )
-                    result = connection.execute(stmt)
-                    print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
-                else:  # Если нет новых записей
-                    print(Fore.GREEN + "")
-        except SQLAlchemyError as err:
-            print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
-            connection.rollback()
-        except Exception as err:
-            print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
-            connection.rollback()
+    if insert_data:
+        result = connection.execute(insert(Order), insert_data)
+        print(Fore.GREEN + f"Добавлено {result.rowcount} новых записей о заказах")
+    else:
+        print(Fore.GREEN + "Новых записей для добавления нет.")
+
+    if update_data:
+        stmt = insert_pg(Order).values(update_data)
+        update_stmt = stmt.on_conflict_do_update(
+            index_elements=['serial'],
+            set_={
+                'name': stmt.excluded.name,
+                'customer_id': stmt.excluded.customer_id,
+                'status_id': stmt.excluded.status_id
+            }
+        )
+        result = connection.execute(update_stmt)
+        print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
+    else:
+        print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
 
 
 def get_dict_people_from_postgre_sql():
