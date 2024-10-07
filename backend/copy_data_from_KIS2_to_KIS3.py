@@ -106,6 +106,7 @@ def show_table_in_postgre_sql(table_name: str):
         try:
             # Используем форматирование строки для имени таблицы
             # Это безопасно, так как мы не принимаем имя таблицы от пользователя напрямую
+            # попытки не использовать SQL успехом не увенчались
             query = sql_text(f"SELECT * FROM {table_name}")
             result = connection.execute(query)
 
