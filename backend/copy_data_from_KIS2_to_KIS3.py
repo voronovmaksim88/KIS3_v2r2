@@ -271,7 +271,7 @@ def get_set_counterparty_form_from_postgre_sql():
         result = session.execute(query)
 
         # Явно преобразуем результат в список кортежей, а затем в словарь
-        counterparty_forms_dict = dict([(str(name), id) for name, id in result])
+        counterparty_forms_dict = dict([(str(name), id_form) for name, id_form in result])
 
     return counterparty_forms_dict
 
@@ -315,7 +315,7 @@ def get_dict_counterparties_from_postgre_sql():
 
         # Выполняем запрос и формируем словарь
         result = session.execute(query)
-        counterparties_dict = {str(name): id for name, id in result}
+        counterparties_dict = {str(name): id_counterparties for name, id_counterparties in result}
 
     return counterparties_dict
 
@@ -822,5 +822,3 @@ while answer1 != "e":
 
     else:
         print(Fore.RED + "Please enter a valid number.")
-
-
