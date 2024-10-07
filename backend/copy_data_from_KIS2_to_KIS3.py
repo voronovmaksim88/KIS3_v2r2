@@ -491,11 +491,17 @@ def fill_in_table_order_status_in_postgre_sql(dummy_list, connection):
 
 
 def get_dict_order_status_from_postgre_sql():
-    with engine.connect() as connection:
-        # Формируем словарь контрагентов из базы данных PostrgeSQL
-        dict_order_status = dict()
-        for row in connection.execute(sql_text("SELECT name, id FROM order_statuses")):
-            dict_order_status[row[0]] = row[1]
+    """
+    Получаем все возможные статусы заказов в виде словаря
+    """
+    with Session(engine) as session:
+        # Формируем запрос с использованием ORM
+        query = select(OrderStatus.name, OrderStatus.id)
+
+        # Выполняем запрос и формируем словарь
+        result = session.execute(query)
+        dict_order_status = {name: id_order_status for name, id_order_status in result}
+
     return dict_order_status
 
 
@@ -816,3 +822,5 @@ while answer1 != "e":
 
     else:
         print(Fore.RED + "Please enter a valid number.")
+
+
