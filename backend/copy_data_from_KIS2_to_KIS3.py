@@ -359,72 +359,65 @@ def copy_table_counterparties_from_sqlite_to_postgresql(list_dict_companies: Lis
         print(Fore.GREEN + "Все компании уже существуют в базе данных PostgreSQL.")
 
 
-def copy_table_people_from_sqlite_to_postgresql(list_dict_person):
+@database_operation
+def copy_table_people_from_sqlite_to_postgresql(list_dict_person, connection):
     if not isinstance(list_dict_person, list):
         raise TypeError("Argument must be a list")
 
     # Получаем сопоставление компаний и их ID
     counterparty_map = get_dict_counterparties_from_postgre_sql()
 
-    try:
-        with engine.begin() as connection:
-            # Получаем существующие записи о людях
-            existing_people = connection.execute(
-                select(Person.id, Person.surname, Person.name, Person.patronymic)
-            ).fetchall()
-            existing_keys = {
-                f"{row.surname}{row.name}{row.patronymic}": row.id
-                for row in existing_people
+    # Получаем существующие записи о людях
+    existing_people = connection.execute(
+        select(Person.id, Person.surname, Person.name, Person.patronymic)
+    ).fetchall()
+    existing_keys = {
+        f"{row.surname}{row.name}{row.patronymic}": row.id
+        for row in existing_people
+    }
+
+    insert_data = []
+    update_data = []
+
+    for person in list_dict_person:
+        key = f"{person['surname']}{person['name']}{person['patronymic']}"
+        person_entry = {
+            'name': person['name'],
+            'surname': person['surname'],
+            'patronymic': person['patronymic'],
+            'phone': person.get('phone'),
+            'email': person.get('email'),
+            'counterparty_id': counterparty_map.get(person['company'])
+        }
+
+        if key in existing_keys:
+            person_entry['id'] = existing_keys[key]
+            update_data.append(person_entry)
+        else:
+            insert_data.append(person_entry)
+
+    # Вставка новых записей
+    if insert_data:
+        connection.execute(insert(Person), insert_data)
+        print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей")
+    else:
+        print(Fore.GREEN + "Новых записей для добавления нет.")
+
+    # Обновление существующих записей
+    if update_data:
+        stmt = insert_pg(Person).values(update_data)
+        update_stmt = stmt.on_conflict_do_update(
+            index_elements=['id'],
+            set_={
+                'phone': stmt.excluded.phone,
+                'email': stmt.excluded.email,
+                'counterparty_id': stmt.excluded.counterparty_id
             }
-
-            insert_data = []
-            update_data = []
-
-            for person in list_dict_person:
-                key = f"{person['surname']}{person['name']}{person['patronymic']}"
-                person_entry = {
-                    'name': person['name'],
-                    'surname': person['surname'],
-                    'patronymic': person['patronymic'],
-                    'phone': person.get('phone'),
-                    'email': person.get('email'),
-                    'counterparty_id': counterparty_map.get(person['company'])
-                }
-
-                if key in existing_keys:
-                    person_entry['id'] = existing_keys[key]
-                    update_data.append(person_entry)
-                else:
-                    insert_data.append(person_entry)
-
-            # Вставка новых записей
-            if insert_data:
-                connection.execute(insert(Person), insert_data)
-                print(Fore.GREEN + f"Добавлено {len(insert_data)} новых записей")
-            else:
-                print(Fore.GREEN + "Новых записей для добавления нет.")
-
-            # Обновление существующих записей
-            if update_data:
-                stmt = pg_insert(Person).values(update_data)
-                update_stmt = stmt.on_conflict_do_update(
-                    index_elements=['id'],
-                    set_={
-                        'phone': stmt.excluded.phone,
-                        'email': stmt.excluded.email,
-                        'counterparty_id': stmt.excluded.counterparty_id
-                    }
-                )
-                result = connection.execute(update_stmt)
-                print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
-            else:
-                print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
-    except SQLAlchemyError as err:
-        print(Fore.RED + f"Произошла ошибка при работе с базой данных: {err}")
-        raise  # Повторно возбуждаем исключение после логирования
-    except Exception as err:
-        print(Fore.RED + f"Произошла непредвиденная ошибка: {err}")
-        raise  # Повторно возбуждаем исключение после логирования
+        )
+        result = connection.execute(update_stmt)
+        print(Fore.GREEN + f"Обновлено {result.rowcount} существующих записей")
+    else:
+        print(Fore.GREEN + "Все существующие данные актуальны. Изменения не требуются.")
 
 
 def copy_table_work_from_sqlite_to_postgresql(list_dict_work):
