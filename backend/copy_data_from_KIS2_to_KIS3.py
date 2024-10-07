@@ -568,11 +568,16 @@ def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders, connection):
 
 
 def get_dict_people_from_postgre_sql():
-    with engine.connect() as connection:
-        # Формируем словарь людей из базы данных PostrgeSQL
-        dict_people = dict()
-        for row in connection.execute(sql_text("SELECT id, surname, name, patronymic  FROM people")):
-            dict_people[row[1] + row[2] + row[3]] = row[0]
+    with Session(engine) as session:
+        # Формируем запрос с использованием ORM
+        query = select(Person.id, Person.surname, Person.name, Person.patronymic)
+
+        # Выполняем запрос и формируем словарь
+        result = session.execute(query)
+        dict_people = {
+            f"{row.surname}{row.name}{row.patronymic}": row.id
+            for row in result
+        }
     return dict_people
 
 
