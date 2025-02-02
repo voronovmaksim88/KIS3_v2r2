@@ -12,7 +12,7 @@ COPY pyproject.toml poetry.lock* ./
 
 # Устанавливаем зависимости
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi --no-root
 
 #Эти флаги в команде poetry install имеют следующие значения:
 #--no-dev:
