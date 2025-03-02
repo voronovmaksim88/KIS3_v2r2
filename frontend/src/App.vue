@@ -39,10 +39,6 @@ function ButtonShowYchetSnSkafovClicked() {
   show_Box_SerialNum.value = true
 }
 
-function ButtonShowSaitClicked() {
-  window.open('https://www.sibplc.ru', '_blank')
-}
-
 function ButtonTestFastAPIClicked() {
   hideAllApp()
   show_Test_Fast.value = true
@@ -65,7 +61,6 @@ function ButtonShowTestDataBaseClicked() {
       v-if="show_Home"
       @btnKis="ButtonShowKisClicked"
       @btnYchetSnSkafov="ButtonShowYchetSnSkafovClicked"
-      @btnSait="ButtonShowSaitClicked"
       @btnTestFastAPI="ButtonTestFastAPIClicked"
       @btnCommercialOffer="Button_Commercial_Offer_Clicked"
       @btnTestDataBase="ButtonShowTestDataBaseClicked"
