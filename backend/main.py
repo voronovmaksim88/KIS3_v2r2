@@ -5,21 +5,24 @@ from starlette.responses import HTMLResponse
 
 import uvicorn
 
-from database import async_session_maker
+from database import async_session_maker, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from test_views import router as test_router
-from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty, Person,
-                           Work, OrderStatus, Order, BoxAccounting, OrderComment)
+from models.models import *
+from routers import import_router
 
 app = FastAPI(root_path="/api")
-app.include_router(test_router)  # Добавляем роутер для тестовых запросов
+
+# Подключаем роутеры
+app.include_router(import_router.router)  # роутер для импорта данных
+app.include_router(test_router)  # роутер для тестовых запросов
 
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,  # type: ignore
-    # allow_origins=["*"],  # Разрешить все источники (но это работает только для HTTP запросов)
+    # allow_origins=["*"], # Разрешить все источники (но это работает только для HTTP запросов)
     allow_origins=["https://sibplc-kis3.ru", "http://localhost:3000", "http://localhost:80", "http://localhost",
                    'http://localhost:8000', 'http://localhost:5173'],
     allow_credentials=True,
@@ -46,14 +49,6 @@ def home():
     html_content = "<h2>FastAPI is the best backend framework</h2>"
     html_content += '<p>Интерактивная документация на <a href="/api/docs">  /api/docs  </a></p>'
     return HTMLResponse(content=html_content)
-
-
-#  Зависимость для получения сессии базы данных
-async def get_db():
-    # Используем асинхронный менеджер контекста для создания сессии
-    async with async_session_maker() as session:
-        # Возвращаем сессию через yield
-        yield session
 
 
 # Пояснения:

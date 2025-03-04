@@ -16,6 +16,14 @@ engine = create_async_engine(DATABASE_URL, echo=True)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
+#  Зависимость для получения сессии базы данных
+async def get_db():
+    # Используем асинхронный менеджер контекста для создания сессии
+    async with async_session_maker() as session:
+        # Возвращаем сессию через yield
+        yield session
+
+
 async def test_connection():
     try:
         async with async_session_maker() as session:

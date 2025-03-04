@@ -113,12 +113,13 @@ def import_countries_from_kis2():
             print(Fore.RED + f"Ошибка при импорте стран: {e}")
 
 
-# Проверяем, что подключение к базе данных установлено, перед вызовом функции импорта
-if engine is not None:
-    try:
-        # Вызываем функцию импорта при старте
-        import_countries_from_kis2()
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
-else:
-    print(Fore.RED + "Импорт стран не выполнен: нет подключения к базе данных.")
+# Этот код выполняется только при прямом запуске файла, а не при импорте
+if __name__ == "__main__":
+    if engine is not None:
+        try:
+            # Вызываем функцию импорта при запуске скрипта напрямую
+            import_countries_from_kis2()
+        except Exception as e:
+            print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
+    else:
+        print(Fore.RED + "Импорт стран не выполнен: нет подключения к базе данных.")
