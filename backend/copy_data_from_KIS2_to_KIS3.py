@@ -1,4 +1,5 @@
 # Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
+# Импорт реализован прям подключением к SQlite3.
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import text as sql_text
 from sqlalchemy import insert
