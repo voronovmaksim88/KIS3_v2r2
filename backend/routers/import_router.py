@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 # синхронный эндпоинт, если вы предпочитаете получать результат сразу
-@router.post("/countries/sync", response_model=Dict[str, str])
+@router.post("/countries", response_model=Dict[str, str])
 def import_countries_sync():
     """
     Импортирует страны из КИС2 в КИС3 синхронно.
