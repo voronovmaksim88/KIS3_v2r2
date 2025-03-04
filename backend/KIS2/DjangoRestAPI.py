@@ -99,13 +99,3 @@ def get_countries_set(debug=True):
         print(f"Непредвиденная ошибка: {e}")
         return set()
 
-
-# Получаем множество стран
-countries = get_countries_set()
-
-# Выводим результат
-print("\nСписок стран:")
-for country_name in countries:  # Используем другое имя переменной
-    print(f"- {country_name}")
-
-print(f"\nВсего стран: {len(countries)}")

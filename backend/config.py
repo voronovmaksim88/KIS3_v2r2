@@ -9,8 +9,5 @@ DB_NAME = os.environ.get("DB_NAME")
 DB_USER = os.environ.get("DB_USER")
 DB_PASS = os.environ.get("DB_PASS")
 
-# для импорта dotenv надо установить:
-# pip install python-dotenv
-
 # путь к базе данных Sqlite
-DB_PATH = os.path.join(os.path.dirname(__file__),"KIS2", "db_test.sqlite3")
+DB_PATH = os.path.join(os.path.dirname(__file__), "KIS2", "db_test.sqlite3")

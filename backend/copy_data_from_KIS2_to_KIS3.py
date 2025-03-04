@@ -1,3 +1,4 @@
+# copy_data_from_KIS2_to_KIS3.py
 # Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
 # Импорт реализован прям подключением к SQlite3.
 from sqlalchemy import create_engine, inspect
