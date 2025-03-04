@@ -1,3 +1,4 @@
+#  КИС2/DjangoRestAPI.py
 import requests
 
 
@@ -11,6 +12,7 @@ def get_countries_set(debug=True):
 
     # Создаем сессию для сохранения куки
     session = requests.Session()
+    api_response = None  # Инициализируем переменную
 
     try:
         # Получаем страницу логина для получения CSRF токена
@@ -80,8 +82,8 @@ def get_countries_set(debug=True):
             print(f"Ожидался список, но получен: {type(countries_data)}")
             return set()
 
-        # Создаем множество из названий стран
-        countries_set = {country["name"] for country in countries_data if "name" in country}
+        # Создаем множество из названий стран (используем другое имя переменной)
+        countries_set = {item["name"] for item in countries_data if "name" in item}
 
         return countries_set
 
@@ -90,7 +92,7 @@ def get_countries_set(debug=True):
         return set()
     except ValueError as e:
         print(f"Ошибка при разборе JSON: {e}")
-        if debug and 'api_response' in locals():
+        if debug and api_response is not None:
             print(f"Текст ответа: {api_response.text}")
         return set()
     except Exception as e:
@@ -103,7 +105,7 @@ countries = get_countries_set()
 
 # Выводим результат
 print("\nСписок стран:")
-for country in countries:
-    print(f"- {country}")
+for country_name in countries:  # Используем другое имя переменной
+    print(f"- {country_name}")
 
 print(f"\nВсего стран: {len(countries)}")
