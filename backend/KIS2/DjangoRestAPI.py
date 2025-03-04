@@ -1,5 +1,5 @@
 import requests
-import json
+
 
 def get_countries_set(debug=True):
     base_url = "https://kis2test.sibplc.ru"
@@ -96,6 +96,7 @@ def get_countries_set(debug=True):
     except Exception as e:
         print(f"Непредвиденная ошибка: {e}")
         return set()
+
 
 # Получаем множество стран
 countries = get_countries_set()
