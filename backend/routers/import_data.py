@@ -1,78 +1,71 @@
 # import_data.py
 from KIS2.DjangoRestAPI import get_countries_set as get_countries_set_from_kis2
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database import async_session_maker
-from models.models import *
-
-from colorama import init, Fore
 from sqlalchemy import create_engine, inspect
-import os
+from database import async_session_maker
+from colorama import init, Fore
+from models.models import Country
+
 
 # Инициализируем colorama
 init(autoreset=True)
 
-# Объявляем переменные
-engine = None
-inspector = None
-Session = None  # Добавили переменную для сессии
+def get_database_url_from_config():
+    """Получить URL базы данных из config.py"""
+    try:
+        from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
+        database_url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        print(Fore.YELLOW + "Используем настройки подключения из config.py...")
+        return database_url
+    except ImportError:
+        print(Fore.RED + "Ошибка: Не удалось импортировать настройки из config.py.")
+        return None
 
-try:
-    # Попытаемся сначала импортировать настройки из config.py
-    from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
 
-    # Формируем строку подключения к PostgreSQL
-    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-    print(Fore.YELLOW + "Используем настройки подключения из config.py...")
-
-    # Создание движка SQLAlchemy
-    engine = create_engine(DATABASE_URL)
-
-    # Создаем фабрику сессий
-    Session = sessionmaker(bind=engine)
-
-    # Получение инспектора
-    inspector = inspect(engine)
-
-    # Проверяем подключение
-    with engine.connect() as connection:
-        print(Fore.GREEN + "Соединение с базой данных успешно установлено.")
-
-except ImportError:
-    print(Fore.RED + "Ошибка: Не удалось импортировать настройки из config.py.")
-    print(Fore.YELLOW + "Пытаюсь использовать alembic.ini...")
-
+def get_database_url_from_alembic():
+    """Получить URL базы данных из alembic.ini"""
     try:
         from alembic.config import Config
         from alembic import command
 
-        # Загрузка конфигурации Alembic
+        print(Fore.YELLOW + "Пытаюсь использовать alembic.ini...")
         alembic_cfg = Config("alembic.ini")
-
-        # Получение текущей версии миграции
         command.current(alembic_cfg)
-
-        # Получение URL базы данных из конфигурации Alembic
-        DATABASE_URL = alembic_cfg.get_main_option("sqlalchemy.url")
-
-        # Создание движка SQLAlchemy
-        engine = create_engine(DATABASE_URL)
-
-        # Создаем фабрику сессий
-        Session = sessionmaker(bind=engine)
-
-        # Получение инспектора
-        inspector = inspect(engine)
-
-        print(Fore.GREEN + "Соединение с базой данных через alembic.ini успешно установлено.")
-
+        database_url = alembic_cfg.get_main_option("sqlalchemy.url")
+        return database_url
     except Exception as e:
         print(Fore.RED + f"Ошибка: Не удалось создать подключение через alembic.ini. {e}")
+        return None
 
-except Exception as e:
-    print(Fore.RED + f"Ошибка: Не удалось создать подключение к базе данных. {e}")
-    print(Fore.YELLOW + "Пожалуйста, проверьте настройки подключения в config.py или .env файле.")
+
+def setup_database_connection():
+    """Настройка подключения к базе данных"""
+    # Пытаемся получить URL базы данных сначала из config.py, затем из alembic.ini
+    database_url = get_database_url_from_config()
+    if database_url is None:
+        database_url = get_database_url_from_alembic()
+
+    if database_url is None:
+        print(Fore.RED + "URL базы данных не определен. Невозможно установить соединение.")
+        return None, None
+
+    try:
+        # Создание движка SQLAlchemy
+        engine = create_engine(database_url)
+        # Создаем фабрику сессий
+        session = sessionmaker(bind=engine)
+        # Проверяем подключение
+        with engine.connect() as _:
+            print(Fore.GREEN + "Соединение с базой данных успешно установлено.")
+        return engine, session
+    except Exception as e:
+        print(Fore.RED + f"Ошибка: Не удалось создать подключение к базе данных. {e}")
+        print(Fore.YELLOW + "Пожалуйста, проверьте настройки подключения.")
+        return None, None
+
+
+# Настраиваем подключение к базе данных
+engine, Session = setup_database_connection()
 
 
 # Зависимость для получения сессии базы данных
@@ -110,7 +103,7 @@ def import_countries_from_kis2():
                 insert_data = [{"name": country} for country in new_countries]
 
                 # Добавляем новые страны
-                session.bulk_insert_mappings(Country, insert_data)
+                session.bulk_insert_mappings(Country.__mapper__, insert_data)
                 session.commit()
                 print(Fore.GREEN + f"Добавлено {len(new_countries)} новых стран в базу данных КИС3(Postgres).")
             else:
