@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import {computed, onUnmounted, ref} from 'vue'
 
 const props = defineProps({
   url: {
@@ -35,6 +35,17 @@ const tableHeaders = ref([])
 const connectionError = ref('')
 const importStatus = ref('') // Для отображения статуса импорта
 const isImporting = ref(false) // Флаг, указывающий на процесс импорта
+const importButtonState = ref(props.importButtonText)
+    //const importButtonClass = ref('btn-accent')
+
+// Для очистки таймера при размонтировании компонента
+let buttonResetTimer = null;
+
+onUnmounted(() => {
+  if (buttonResetTimer) {
+    clearTimeout(buttonResetTimer);
+  }
+});
 
 async function fetchData() {
   connectionError.value = '';
@@ -75,14 +86,20 @@ async function fetchData() {
 }
 
 async function importData() {
+
   if (!props.importName) {
-    importStatus.value = 'Ошибка: не указано имя импорта';
+    connectionError.value = 'Ошибка: не указано имя импорта';
     return;
   }
+
+  clearData()
 
   importStatus.value = 'Выполняется импорт...';
   connectionError.value = '';
   isImporting.value = true;
+  importButtonState.value = 'Импортирую...';
+  // Убираем эту строку, класс будет вычисляться автоматически
+  // importButtonClass.value = 'btn-loading';
 
   try {
     const response = await fetch(`${props.url}import/${props.importName}`, {
@@ -95,17 +112,39 @@ async function importData() {
     const data = await response.json();
 
     if (response.ok) {
-      importStatus.value = `Импорт успешен: ${data.message || 'Данные импортированы'}`;
-      // Обновляем данные после импорта
-      await fetchData();
+      // Выведем подробную информацию о полученных данных
+      console.log('Данные успешного ответа:', data);
+      console.log('Тип data.status:', typeof data.status);
+      console.log('Значение data.status:', data.status);
+
+      // Упростим проверку - при любом успешном ответе считаем импорт успешным
+      importStatus.value = 'Импорт успешен!';
+      importButtonState.value = 'Импорт успешен!';
+
     } else {
-      importStatus.value = `Ошибка импорта: ${data.detail || 'Неизвестная ошибка'}`;
+      // Ошибка импорта
+      const errorText = data.detail || 'Неизвестная ошибка';
+      importButtonState.value = `Ошибка!`;
+      // Убираем эту строку, класс будет вычисляться автоматически
+      // importButtonClass.value = 'btn-error';
+      connectionError.value = `Ошибка импорта: ${errorText}`;
     }
   } catch (error) {
     console.error('Ошибка при импорте:', error);
-    importStatus.value = `Ошибка импорта: ${error.message}`;
+    importButtonState.value = 'Ошибка!';
+    // Убираем эту строку, класс будет вычисляться автоматически
+    // importButtonClass.value = 'btn-error';
+    connectionError.value = `Ошибка импорта: ${error.message}`;
   } finally {
     isImporting.value = false;
+
+    // Возвращаем кнопке исходное состояние через 3 секунды
+    if (buttonResetTimer) clearTimeout(buttonResetTimer);
+
+    buttonResetTimer = setTimeout(() => {
+      importButtonState.value = props.importButtonText;
+      importStatus.value = ''; // Сбрасываем статус вместо класса
+    }, 3000);
   }
 }
 
@@ -115,34 +154,48 @@ function clearData() {
   connectionError.value = ""
   importStatus.value = ""
 }
+
+// Вычисляемое свойство для Tailwind классов
+const tailwindButtonClasses = computed(() => {
+  // Добавьте отладочное сообщение
+  console.log('Текущий статус импорта:', importStatus.value);
+  console.log('Условие для зеленой кнопки:', importStatus.value === 'Импорт успешен!');
+
+  if (isImporting.value) {
+    return 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500 focus:ring-yellow-500 cursor-wait';
+  }
+  if (importStatus.value === 'Импорт успешен!') {
+    return 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-700';
+  }
+  if (connectionError.value.includes('Ошибка импорта')) {
+    return 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-700';
+  }
+  return 'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-100';
+});
 </script>
 
 <template>
   <div class="grid grid-cols-4 gap-2">
-    <div class="col-span-2 sm:col-span-1">
+    <div class="col-span-2">
       <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
     </div>
 
-    <!-- Новая кнопка импорта -->
-    <div class="col-span-1" v-if="importName">
+
+
+    <div>
+      <button class="btn btn-s w-full" @click="clearData">Свернуть</button>
+    </div>
+
+    <!-- Кнопка импорта с Tailwind классами -->
+    <div v-if="importName">
       <button
-          class="btn btn-accent w-full"
+          class="w-full py-2 px-4 rounded font-bold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50"
+          :class="tailwindButtonClasses"
           @click="importData"
           :disabled="isImporting"
       >
-        {{ isImporting ? 'Импортирую...' : importButtonText }}
+        {{ importButtonState }}
       </button>
-    </div>
-
-    <div>
-      <button class="btn btn-s" @click="clearData">Свернуть</button>
-    </div>
-
-    <!-- Статус импорта -->
-    <div class="col-span-4" v-if="importStatus">
-      <p :class="{ 'text-green-400': !importStatus.includes('Ошибка'), 'text-yellow-400': importStatus.includes('Выполняется'), 'text-red-400': importStatus.includes('Ошибка') }">
-        {{ importStatus }}
-      </p>
     </div>
 
     <div class="col-span-4" v-if="tableData.length > 0">
@@ -176,20 +229,5 @@ th {
   position: sticky;
   top: 0;
   z-index: 10;
-}
-
-.btn-accent {
-  background-color: #4caf50;
-  color: white;
-}
-
-.btn-accent:hover {
-  background-color: #45a049;
-}
-
-.btn-accent:disabled {
-  background-color: #cccccc;
-  color: #666666;
-  cursor: not-allowed;
 }
 </style>
