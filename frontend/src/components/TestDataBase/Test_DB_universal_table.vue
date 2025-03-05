@@ -33,7 +33,7 @@ const isImporting = ref<boolean>(false) // Флаг, указывающий на
 const importButtonState = ref<string>(props.importButtonText)
 
 // Для очистки таймера при размонтировании компонента
-let buttonResetTimer: number | null = null;
+let buttonResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 onUnmounted(() => {
   if (buttonResetTimer) {
@@ -56,21 +56,25 @@ async function fetchData(): Promise<void> {
   try {
     const response = await Promise.race([fetchPromise, timeoutPromise]);
     console.log('Статус ответа:', response.status);
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Полученные данные:', data);
 
-      const arrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
-
-      if (arrayKey && data[arrayKey].length > 0) {
-        tableData.value = data[arrayKey];
-        tableHeaders.value = Object.keys(data[arrayKey][0]);
-      } else {
-        throw new Error('Некорректный формат данных');
-      }
-    } else {
-      throw new Error('Ошибка при получении данных');
+    if (!response.ok) {
+      connectionError.value = `Ошибка при получении данных: ${response.status} ${response.statusText}`;
+      return; // Early return при ошибке
     }
+
+    const data = await response.json();
+    console.log('Полученные данные:', data);
+
+    const arrayKey = Object.keys(data).find(key => Array.isArray(data[key]));
+
+    if (!arrayKey || data[arrayKey].length === 0) {
+      connectionError.value = 'Некорректный формат данных';
+      return; // Early return при ошибке
+    }
+
+    tableData.value = data[arrayKey];
+    tableHeaders.value = Object.keys(data[arrayKey][0]);
+
   } catch (error) {
     console.error('Ошибка при получении данных:', error);
     if (error instanceof Error) {
