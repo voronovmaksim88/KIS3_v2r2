@@ -35,9 +35,9 @@ function fnBtnTestDataBase() {
       <button class="btn btn-p" @click="fnBtnTestFastAPI">Тест FastAPI</button>
       <button class="btn btn-p" @click="fnBtnTestDataBase">Тест DataBase</button>
       <button class="btn btn-p" @click="fnBtnKis">КИС</button>
-      <button class="btn btn-p" @click="fnBtnCommercialOffer">Составление КП</button>
       <button class="btn btn-p" @click="fnBtnYchetSnSkafov">Учёт с/н шкафов</button>
 
+      <button class="btn btn-s" @click="fnBtnCommercialOffer">Составление КП</button>
       <button class="btn btn-s" >Бланк ТЗ для ШАОВ</button>
       <button class="btn btn-s" >Расчёт стоимости ША</button>
       <button class="btn btn-s" >Подбор ПЛК</button>
