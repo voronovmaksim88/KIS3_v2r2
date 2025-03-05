@@ -1,8 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
-from database import get_db
+from fastapi import APIRouter, HTTPException
 from typing import Dict
-from colorama import Fore
 import logging
 
 # Импортируем функцию для импорта стран
@@ -18,6 +15,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 # синхронный эндпоинт, если вы предпочитаете получать результат сразу
 @router.post("/countries", response_model=Dict[str, str])
 def import_countries_sync():
@@ -27,8 +25,8 @@ def import_countries_sync():
     """
     try:
         # Выполняем импорт напрямую
-        import_countries_from_kis2()
-        return {"status": "success", "message": "Импорт стран успешно выполнен"}
+        added_count = import_countries_from_kis2()
+        return {"status": "success", "message": "Импорт стран успешно выполнен", "added_count": str(added_count)}
     except Exception as e:
         logger.error(f"Ошибка при импорте стран: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при импорте стран: {str(e)}")

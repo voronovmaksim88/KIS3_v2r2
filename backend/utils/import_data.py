@@ -1,14 +1,14 @@
 # import_data.py
 from KIS2.DjangoRestAPI import get_countries_set as get_countries_set_from_kis2
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine
 from database import async_session_maker
 from colorama import init, Fore
 from models.models import Country
 
-
 # Инициализируем colorama
 init(autoreset=True)
+
 
 def get_database_url_from_config():
     """Получить URL базы данных из config.py"""
@@ -79,14 +79,14 @@ def import_countries_from_kis2():
     # Убедимся, что сессия создана
     if Session is None:
         print(Fore.RED + "Ошибка: Не удалось создать сессию для базы данных.")
-        return
+        return 0  # Возвращаем 0, так как страны не были добавлены
 
     # Получаем множество стран из KIS2
     try:
         kis2_countries_set = get_countries_set_from_kis2()
     except Exception as e:
         print(Fore.RED + f"Ошибка при получении стран из KIS2: {e}")
-        return
+        return 0  # Возвращаем 0, так как страны не были добавлены
 
     # Открываем сессию
     with Session() as session:
@@ -98,6 +98,8 @@ def import_countries_from_kis2():
             # Находим новые страны
             new_countries = kis2_countries_set - existing_countries
 
+            added_count = 0  # Счетчик добавленных стран
+
             if new_countries:
                 # Подготавливаем данные для вставки
                 insert_data = [{"name": country} for country in new_countries]
@@ -105,12 +107,16 @@ def import_countries_from_kis2():
                 # Добавляем новые страны
                 session.bulk_insert_mappings(Country.__mapper__, insert_data)
                 session.commit()
-                print(Fore.GREEN + f"Добавлено {len(new_countries)} новых стран в базу данных КИС3(Postgres).")
+                added_count = len(new_countries)
+                print(Fore.GREEN + f"Добавлено {added_count} новых стран в базу данных КИС3(Postgres).")
             else:
                 print(Fore.YELLOW + "Все страны уже существуют в базе данных.")
+
+            return added_count  # Возвращаем количество добавленных стран
         except Exception as e:
             session.rollback()
             print(Fore.RED + f"Ошибка при импорте стран: {e}")
+            return 0  # В случае ошибки возвращаем 0
 
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
