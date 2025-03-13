@@ -58,12 +58,12 @@ def change_user_name(user_id: int, user_update: UserNameUpdate):
 
 @router.get("/load_test_html_page")
 def root():
-    return FileResponse("content/HTML_example.html")
+    return FileResponse("../content/HTML_example.html")
 
 
 @router.get("/load_test_file")
 def root():
-    return FileResponse("content/test_file.txt",
+    return FileResponse("../content/test_file.txt",
                         filename="test_file.txt",
                         media_type="application/octet-stream")
 

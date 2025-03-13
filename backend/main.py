@@ -5,11 +5,11 @@ from starlette.responses import HTMLResponse
 
 import uvicorn
 
-from database import async_session_maker, get_db
+from database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from test_views import router as test_router
+from routers.test_views import router as test_router
 from models.models import *
 from routers import import_router
 
