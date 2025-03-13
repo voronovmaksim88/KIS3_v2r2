@@ -1,7 +1,9 @@
 """
-для запуска в консоли:
-.venv\Scripts\python.exe D:\MyProgGit\KIS3_v2r2\backend\database.py
+Модуль для работы с базой данных через SQLAlchemy.
 """
+# Для запуска в консоли:
+# .venv\Scripts\python.exe D:\MyProgGit\KIS3_v2r2\backend\database.py
+
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 import asyncio
@@ -40,17 +42,25 @@ async def test_connection():
         print("")
 
 
-async def get_table_names():
+async def get_table_names(schema='public', print_results=True):
     try:
         async with async_session_maker() as session:
+            # noinspection SqlResolve
             result = await session.execute(
-                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
-            tables = result.scalars().all()  # Извлекаем имена таблиц
-            print("Имена таблиц в базе данных:")
-            for table in tables:
-                print(table)
+                text(f"SELECT table_name FROM information_schema.tables WHERE table_schema = :schema"),
+                {"schema": schema}
+            )
+            tables = result.scalars().all()
+
+            if print_results:
+                print(f"\n{Fore.CYAN}Имена таблиц в схеме {schema}:{Fore.RESET}")
+                for i, table in enumerate(tables, 1):
+                    print(f"{i}. {table}")
+
+            return tables
     except Exception as e:
-        print(f"Ошибка при получении имен таблиц: {e}")
+        print(f"{Fore.RED}Ошибка при получении имен таблиц: {e}{Fore.RESET}")
+        return []
 
 
 async def main():
