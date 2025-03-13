@@ -2,7 +2,7 @@
 import requests
 
 
-def get_countries_set(debug=True):
+def create_countries_set_from_kis2(debug=True):
     base_url = "https://kis2test.sibplc.ru"
     login_url = f"{base_url}/accounts/login/"
     api_url = f"{base_url}/api/Countries/"
@@ -105,4 +105,3 @@ def get_countries_set(debug=True):
     except Exception as e:
         print(f"Непредвиденная ошибка: {e}")
         return set()
-

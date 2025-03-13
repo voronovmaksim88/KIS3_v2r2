@@ -1,135 +1,110 @@
 # utils/import_data.py
 """
-Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
-Получение данных из КИС2(БД SQlite3) реализовано через Django Rest API
+Модуль импорта данных из КИС2(БД SQlite3) в КИС3(БД PostgreSQL).
+Получение данных из КИС2(БД SQlite3) реализовано через Django Rest API.
 """
-from KIS2.DjangoRestAPI import get_countries_set as get_countries_set_from_kis2
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from database import async_session_maker
+import sys
+import os
 from colorama import init, Fore
-from models.models import Country
+from typing import Set
+
+# Добавляем родительскую директорию в путь поиска модулей
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Импорты, требующие модификации sys.path
+from kis2.DjangoRestAPI import create_countries_set_from_kis2  # noqa: E402
+from database import SyncSession, test_sync_connection  # noqa: E402
+from models.models import Country  # noqa: E402
 
 # Инициализируем colorama
 init(autoreset=True)
 
 
-def get_database_url_from_config():
-    """Получить URL базы данных из config.py"""
+def import_countries_from_kis2() -> int:
+    """
+    Импортировать страны из КИС2 в базу данных.
+    
+    Returns:
+        int: Количество добавленных стран.
+    """
     try:
-        from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
-        database_url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-        print(Fore.YELLOW + "Используем настройки подключения из config.py...")
-        return database_url
-    except ImportError:
-        print(Fore.RED + "Ошибка: Не удалось импортировать настройки из config.py.")
-        return None
+        # Получаем множество стран из KIS2
+        kis2_countries_set = create_countries_set_from_kis2()
+        if not kis2_countries_set:
+            print(Fore.YELLOW + "Не удалось получить страны из KIS2 или список пуст.")
+            return 0
 
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие страны
+                countries_query = session.query(Country.name).all()
+                existing_countries = set(country[0] for country in countries_query)
 
-def get_database_url_from_alembic():
-    """Получить URL базы данных из alembic.ini"""
-    try:
-        from alembic.config import Config
-        from alembic import command
+                # Находим новые страны
+                new_countries = kis2_countries_set - existing_countries
 
-        print(Fore.YELLOW + "Пытаюсь использовать alembic.ini...")
-        alembic_cfg = Config("alembic.ini")
-        command.current(alembic_cfg)
-        database_url = alembic_cfg.get_main_option("sqlalchemy.url")
-        return database_url
+                added_count = 0
+
+                if new_countries:
+                    # Подготавливаем данные для вставки
+                    insert_data = [{"name": country} for country in new_countries]
+
+                    # Добавляем новые страны
+                    session.bulk_insert_mappings(Country.__mapper__, insert_data)
+                    session.commit()
+                    added_count = len(new_countries)
+                    print(Fore.GREEN + f"Добавлено {added_count} новых стран в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все страны уже существуют в базе данных.")
+
+                return added_count
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте стран: {e}")
+                return 0
     except Exception as e:
-        print(Fore.RED + f"Ошибка: Не удалось создать подключение через alembic.ini. {e}")
-        return None
+        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
+        return 0
 
 
-def setup_database_connection():
-    """Настройка подключения к базе данных"""
-    # Пытаемся получить URL базы данных сначала из config.py, затем из alembic.ini
-    database_url = get_database_url_from_config()
-    if database_url is None:
-        database_url = get_database_url_from_alembic()
-
-    if database_url is None:
-        print(Fore.RED + "URL базы данных не определен. Невозможно установить соединение.")
-        return None, None
-
+# Функция для получения множества существующих стран в КИС3
+def get_existing_countries_set() -> Set[str]:
+    """
+    Получить множество названий стран, уже существующих в базе данных КИС3.
+    
+    Returns:
+        Set[str]: Множество названий стран.
+    """
     try:
-        # Создание движка SQLAlchemy
-        engine = create_engine(database_url)
-        # Создаем фабрику сессий
-        session = sessionmaker(bind=engine)
-        # Проверяем подключение
-        with engine.connect() as _:
-            print(Fore.GREEN + "Соединение с базой данных успешно установлено.")
-        return engine, session
-    except Exception as e:
-        print(Fore.RED + f"Ошибка: Не удалось создать подключение к базе данных. {e}")
-        print(Fore.YELLOW + "Пожалуйста, проверьте настройки подключения.")
-        return None, None
-
-
-# Настраиваем подключение к базе данных
-engine, Session = setup_database_connection()
-
-
-# Зависимость для получения сессии базы данных
-async def get_db():
-    async with async_session_maker() as session:
-        yield session
-
-
-# Функция для импорта стран, которая использует собственное соединение
-def import_countries_from_kis2():
-    # Убедимся, что сессия создана
-    if Session is None:
-        print(Fore.RED + "Ошибка: Не удалось создать сессию для базы данных.")
-        return 0  # Возвращаем 0, так как страны не были добавлены
-
-    # Получаем множество стран из KIS2
-    try:
-        kis2_countries_set = get_countries_set_from_kis2()
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при получении стран из KIS2: {e}")
-        return 0  # Возвращаем 0, так как страны не были добавлены
-
-    # Открываем сессию
-    with Session() as session:
-        try:
-            # Получаем существующие страны
+        with SyncSession() as session:
             countries_query = session.query(Country.name).all()
-            existing_countries = set(country[0] for country in countries_query)
-
-            # Находим новые страны
-            new_countries = kis2_countries_set - existing_countries
-
-            added_count = 0  # Счетчик добавленных стран
-
-            if new_countries:
-                # Подготавливаем данные для вставки
-                insert_data = [{"name": country} for country in new_countries]
-
-                # Добавляем новые страны
-                session.bulk_insert_mappings(Country.__mapper__, insert_data)
-                session.commit()
-                added_count = len(new_countries)
-                print(Fore.GREEN + f"Добавлено {added_count} новых стран в базу данных КИС3(Postgres).")
-            else:
-                print(Fore.YELLOW + "Все страны уже существуют в базе данных.")
-
-            return added_count  # Возвращаем количество добавленных стран
-        except Exception as e:
-            session.rollback()
-            print(Fore.RED + f"Ошибка при импорте стран: {e}")
-            return 0  # В случае ошибки возвращаем 0
+            return set(country[0] for country in countries_query)
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при получении списка существующих стран: {e}")
+        return set()
 
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
-    if engine is not None:
+    print(Fore.CYAN + "=== Проверка подключения к базе данных ===")
+    if test_sync_connection():
         try:
-            # Вызываем функцию импорта при запуске скрипта напрямую
-            import_countries_from_kis2()
+            print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
+            imported_count = import_countries_from_kis2()
+            print(Fore.GREEN + f"Импортировано стран: {imported_count}")
+
+            # Демонстрация получения существующих стран
+            print(Fore.CYAN + "\n=== Список существующих стран в КИС3 ===")
+            existing_countries = get_existing_countries_set()
+            print(f"Всего стран в базе: {len(existing_countries)}")
+            if len(existing_countries) > 0:
+                print("Первые 5 стран:")
+                for country in list(existing_countries)[:5]:
+                    print(f"  - {country}")
+                if len(existing_countries) > 5:
+                    print(f"  ...и еще {len(existing_countries) - 5} стран")
         except Exception as e:
-            print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
+            print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
     else:
-        print(Fore.RED + "Импорт стран не выполнен: нет подключения к базе данных.")
+        print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
