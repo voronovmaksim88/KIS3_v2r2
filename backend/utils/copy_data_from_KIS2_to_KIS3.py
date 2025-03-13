@@ -44,7 +44,7 @@ import logging
 init(autoreset=True)
 
 # Загрузка конфигурации Alembic
-alembic_cfg = Config("alembic.ini")
+alembic_cfg = Config("../alembic.ini")
 
 # Объявляем переменные перед блоком try, чтобы к ним был доступ после выполнения try-except
 engine = None
