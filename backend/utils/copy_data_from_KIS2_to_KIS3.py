@@ -23,17 +23,17 @@ from typing import List, Any, Dict
 
 import functools
 
-from KIS2.work_with_DB import get_set_countries as get_all_countries_set_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_manufacturers as get_all_manufacturers_from_sqlite3
-from KIS2.work_with_DB import get_set_equipment_types as get_all_equipment_types_from_sqlite3
-from KIS2.work_with_DB import get_set_cities as get_set_cities_from_sqlite3
-from KIS2.work_with_DB import get_set_companies_form as get_set_companies_form_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_companies as get_list_dict_companies_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_person as get_list_dict_person_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_work as get_list_dict_work_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
-from KIS2.work_with_DB import get_list_dict_order_comment as get_list_dict_order_comment_from_sqlite3
+from kis2.work_with_DB import get_set_countries as get_all_countries_set_from_sqlite3
+from kis2.work_with_DB import get_list_dict_manufacturers as get_all_manufacturers_from_sqlite3
+from kis2.work_with_DB import get_set_equipment_types as get_all_equipment_types_from_sqlite3
+from kis2.work_with_DB import get_set_cities as get_set_cities_from_sqlite3
+from kis2.work_with_DB import get_set_companies_form as get_set_companies_form_from_sqlite3
+from kis2.work_with_DB import get_list_dict_companies as get_list_dict_companies_from_sqlite3
+from kis2.work_with_DB import get_list_dict_person as get_list_dict_person_from_sqlite3
+from kis2.work_with_DB import get_list_dict_work as get_list_dict_work_from_sqlite3
+from kis2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_sqlite3
+from kis2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
+from kis2.work_with_DB import get_list_dict_order_comment as get_list_dict_order_comment_from_sqlite3
 
 from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
                            Person, Work, OrderStatus, Order, BoxAccounting, OrderComment)

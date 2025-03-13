@@ -56,7 +56,7 @@ def import_countries_from_kis2() -> int:
                     added_count = len(new_countries)
                     print(Fore.GREEN + f"Добавлено {added_count} новых стран в базу данных КИС3(Postgres).")
                 else:
-                    print(Fore.YELLOW + "Все страны уже существуют в базе данных.")
+                    print(Fore.YELLOW + "Все страны уже существуют в базе данных КИС2.")
 
                 return added_count
             except Exception as e:
@@ -96,10 +96,10 @@ def import_manufacturers_from_kis2() -> int:
         # Получаем список словарей производителей из KIS2
         kis2_manufacturers_list = create_def_list_dict_manufacturers(debug=False)
         if not kis2_manufacturers_list:
-            print(Fore.YELLOW + "Не удалось получить производителей из KIS2 или список пуст.")
+            print(Fore.YELLOW + "Не удалось получить производителей из КИС2 или список пуст.")
             return 0
 
-        print(Fore.CYAN + f"Получено {len(kis2_manufacturers_list)} производителей из KIS2.")
+        print(Fore.CYAN + f"Получено {len(kis2_manufacturers_list)} производителей из КИС2.")
 
         # Открываем сессию
         with SyncSession() as session:
@@ -159,7 +159,7 @@ def import_manufacturers_from_kis2() -> int:
                     session.commit()
                     print(Fore.GREEN + f"Добавлено {added_count} новых производителей в базу данных КИС3(Postgres).")
                 else:
-                    print(Fore.YELLOW + "Все производители уже существуют в базе данных.")
+                    print(Fore.YELLOW + "Все производители уже существуют в базе данных КИС3.")
 
                 return added_count
 
@@ -174,9 +174,9 @@ def import_manufacturers_from_kis2() -> int:
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
-    print(Fore.CYAN + "=== Проверка подключения к базе данных КИС3(Postgres) ===")
 
     # if test_sync_connection():
+    # print(Fore.CYAN + "=== Проверка подключения к базе данных КИС3(Postgres) ===")
     #     try:
     #         print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
     #         imported_count = import_countries_from_kis2()
@@ -197,12 +197,30 @@ if __name__ == "__main__":
     # else:
     #     print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-    if test_sync_connection():
-        try:
-            print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
-            imported_count = import_manufacturers_from_kis2()
-            print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
-        except Exception as e:
-            print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
-    else:
-        print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+    # if test_sync_connection():
+    #     try:
+    #         print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
+    #         imported_count = import_manufacturers_from_kis2()
+    #         print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
+    #     except Exception as e:
+    #         print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
+    # else:
+    #     print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+    answer = ""
+    while answer != "e":
+        print("")
+        print("Change action:")
+        print("e - exit")
+        print("1 - copy countries from KIS2 ")
+        print("2 - copy manufacturers from KIS2")
+        answer = input()
+
+        if answer == "1":
+            import_countries_from_kis2()
+        elif answer == "2":
+            import_manufacturers_from_kis2()
+        elif answer != "e":
+            break
+
+    print("Goodbye!")
