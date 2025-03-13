@@ -1,3 +1,7 @@
+# kis2/DjangoRestAPI.py
+"""
+Модуль для работы с API КИС2 с использованием Django Rest Framework.
+"""
 import requests
 import re
 import json
@@ -108,7 +112,7 @@ def _make_api_request(session: requests.Session, api_url: str, debug: bool = Fal
                 print(f"Полный ответ: {api_response.text}")
             return None
 
-        # Парсим JSON
+        # Парсин JSON
         data = api_response.json()
 
         if debug:
@@ -237,3 +241,31 @@ def create_def_list_dict_manufacturers(debug: bool = True) -> List[Dict[str, str
         print(f"Получено {len(manufacturers_list)} производителей")
 
     return manufacturers_list
+
+
+def create_equipment_type_set_from_kis2(debug: bool = True) -> Set[str]:
+    """
+    Получает множество названий типов оборудования из КИС2.
+
+    Args:
+        debug: Режим отладки
+
+    Returns:
+        Множество названий типов оборудования
+    """
+    equipment_types_data = get_data_from_kis2("EquipmentType", debug)
+
+    if not equipment_types_data:
+        return set()
+
+    # Создаем множество из названий типов оборудования
+    equipment_types_set = {item["name"] for item in equipment_types_data if "name" in item}
+
+    if debug:
+        print(f"Получено {len(equipment_types_set)} типов оборудования")
+
+    return equipment_types_set
+
+
+if __name__ == "__main__":
+    create_equipment_type_set_from_kis2()

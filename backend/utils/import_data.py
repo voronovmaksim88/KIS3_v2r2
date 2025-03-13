@@ -172,6 +172,60 @@ def import_manufacturers_from_kis2() -> int:
         return 0
 
 
+def import_equipment_type_from_kis2() -> int:
+    """
+    Импортировать типы оборудования из КИС2 в базу данных КИС3.
+
+    Returns:
+        int: Количество добавленных типов оборудования.
+    """
+    try:
+        # Импортируем функцию получения типов оборудования из КИС2
+        from kis2.DjangoRestAPI import create_equipment_type_set_from_kis2
+        from models.models import EquipmentType  # Предполагается, что такая модель существует
+
+        # Получаем множество типов оборудования из KIS2
+        kis2_equipment_types_set = create_equipment_type_set_from_kis2(debug=False)
+        if not kis2_equipment_types_set:
+            print(Fore.YELLOW + "Не удалось получить типы оборудования из КИС2 или список пуст.")
+            return 0
+
+        print(Fore.CYAN + f"Получено {len(kis2_equipment_types_set)} типов оборудования из КИС2.")
+
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие типы оборудования
+                equipment_types_query = session.query(EquipmentType.name).all()
+                existing_equipment_types = set(equipment_type[0] for equipment_type in equipment_types_query)
+
+                # Находим новые типы оборудования
+                new_equipment_types = kis2_equipment_types_set - existing_equipment_types
+
+                added_count = 0
+
+                if new_equipment_types:
+                    # Подготавливаем данные для вставки
+                    insert_data = [{"name": equipment_type} for equipment_type in new_equipment_types]
+
+                    # Добавляем новые типы оборудования
+                    session.bulk_insert_mappings(EquipmentType.__mapper__, insert_data)
+                    session.commit()
+                    added_count = len(new_equipment_types)
+                    print(Fore.GREEN + f"Добавлено {added_count} новых типов оборудования в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все типы оборудования уже существуют в базе данных КИС3.")
+
+                return added_count
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте типов оборудования: {db_error}")
+                return 0
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
+        return 0
+
+
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
     answer = ""
@@ -181,6 +235,7 @@ if __name__ == "__main__":
         print("e - exit")
         print("1 - copy countries from KIS2 ")
         print("2 - copy manufacturers from KIS2")
+        print("3 - copy equipment types from KIS2")  # Добавлена новая опция
         answer = input()
 
         if answer == "1":
@@ -204,6 +259,18 @@ if __name__ == "__main__":
                     print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "3":  # Добавлен новый вариант
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт типов оборудования из КИС2 ===")
+                    imported_count = import_equipment_type_from_kis2()
+                    print(Fore.GREEN + f"Импортировано типов оборудования: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
         elif answer != "e":
             break
 
