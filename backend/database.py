@@ -1,3 +1,7 @@
+"""
+для запуска в консоли:
+.venv\Scripts\python.exe D:\MyProgGit\KIS3_v2r2\backend\database.py
+"""
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 import asyncio
