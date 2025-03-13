@@ -221,8 +221,8 @@ def import_equipment_type_from_kis2() -> int:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте типов оборудования: {db_error}")
                 return 0
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
+    except Exception as e5:
+        print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e5}")
         return 0
 
 
