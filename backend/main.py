@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends
@@ -5,7 +6,7 @@ from starlette.responses import HTMLResponse
 
 import uvicorn
 
-from database import get_db
+from database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -64,7 +65,7 @@ def home():
 # и создать отдельный роутер
 
 @app.get("/all_countries")
-async def get_all_countries(db: AsyncSession = Depends(get_db)):
+async def get_all_countries(db: AsyncSession = Depends(get_async_db)):
     try:
         # Создаем запрос для выборки всех стран
         query = select(Country)
@@ -90,7 +91,7 @@ async def get_all_countries(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_manufacturers")
-async def get_all_manufacturers(db: AsyncSession = Depends(get_db)):
+async def get_all_manufacturers(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех производителей
         query = select(Manufacturer)
@@ -115,7 +116,7 @@ async def get_all_manufacturers(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_equipment_types")
-async def get_all_equipment_types(db: AsyncSession = Depends(get_db)):
+async def get_all_equipment_types(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех производителей
         query = select(EquipmentType)
@@ -139,7 +140,7 @@ async def get_all_equipment_types(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_currencies")
-async def get_all_currencies(db: AsyncSession = Depends(get_db)):
+async def get_all_currencies(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех валют
         query = select(Currency)
@@ -163,7 +164,7 @@ async def get_all_currencies(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_cities")
-async def get_all_cities(db: AsyncSession = Depends(get_db)):
+async def get_all_cities(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех городов
         query = select(City)
@@ -188,7 +189,7 @@ async def get_all_cities(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_counterparty_forms")
-async def get_all_counterparty_forms(db: AsyncSession = Depends(get_db)):
+async def get_all_counterparty_forms(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех форм контрагентов
         query = select(CounterpartyForm)
@@ -212,7 +213,7 @@ async def get_all_counterparty_forms(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_counterparties")
-async def get_all_counterparties(db: AsyncSession = Depends(get_db)):
+async def get_all_counterparties(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех контрагентов
         query = select(Counterparty)
@@ -239,7 +240,7 @@ async def get_all_counterparties(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_people")
-async def get_all_people(db: AsyncSession = Depends(get_db)):
+async def get_all_people(db: AsyncSession = Depends(get_async_db)):
     try:
         # Выполняем запрос для получения всех людей
         query = select(Person)
@@ -271,7 +272,7 @@ async def get_all_people(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_works")
-async def get_all_works(db: AsyncSession = Depends(get_db)):
+async def get_all_works(db: AsyncSession = Depends(get_async_db)):
     try:
         query = select(Work)
         result = await db.execute(query)
@@ -293,7 +294,7 @@ async def get_all_works(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_order_statuses")
-async def get_all_order_statuses(db: AsyncSession = Depends(get_db)):
+async def get_all_order_statuses(db: AsyncSession = Depends(get_async_db)):
     try:
         query = select(OrderStatus)
         result = await db.execute(query)
@@ -314,7 +315,7 @@ async def get_all_order_statuses(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_orders")
-async def get_all_orders(db: AsyncSession = Depends(get_db)):
+async def get_all_orders(db: AsyncSession = Depends(get_async_db)):
     try:
         query = select(Order)
         result = await db.execute(query)
@@ -348,7 +349,7 @@ async def get_all_orders(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_boxes")  # Учёт шкафов автоматики
-async def get_all_boxes(db: AsyncSession = Depends(get_db)):
+async def get_all_boxes(db: AsyncSession = Depends(get_async_db)):
     try:
         query = select(BoxAccounting)
         result = await db.execute(query)
@@ -373,7 +374,7 @@ async def get_all_boxes(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/all_order_comments")
-async def get_all_order_comments(db: AsyncSession = Depends(get_db)):
+async def get_all_order_comments(db: AsyncSession = Depends(get_async_db)):
     try:
         query = select(OrderComment)
         result = await db.execute(query)
