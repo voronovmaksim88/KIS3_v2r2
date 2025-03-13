@@ -219,6 +219,8 @@ def create_def_list_dict_manufacturers(debug=True):
 
         # Парсим JSON производителей
         manufacturers_data = manufacturers_response.json()
+        if debug:
+            print('manufacturers_data', manufacturers_data)
 
         # Проверяем, что данные имеют ожидаемую структуру
         if not isinstance(manufacturers_data, list):
@@ -229,8 +231,8 @@ def create_def_list_dict_manufacturers(debug=True):
         manufacturers_list = []
         for manufacturer in manufacturers_data:
             # Проверяем наличие необходимых ключей
-            if "name" in manufacturer and "country" in manufacturer:
-                country_id = manufacturer["country"]
+            if "name" in manufacturer and "country_id" in manufacturer:
+                country_id = manufacturer["country_id"]
                 country_name = countries_dict.get(country_id, "Неизвестная страна")
 
                 manufacturers_list.append({
