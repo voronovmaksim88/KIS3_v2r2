@@ -12,7 +12,7 @@ from typing import Set
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Импорты, требующие модификации sys.path
-from kis2.DjangoRestAPI import create_countries_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_def_list_dict_manufacturers  # noqa: E402
 from database import SyncSession, test_sync_connection  # noqa: E402
 from models.models import Country  # noqa: E402
 
@@ -85,26 +85,50 @@ def get_existing_countries_set() -> Set[str]:
         return set()
 
 
+def import_manufacturers_from_kis2() -> int:
+    """
+    Для импорта производителей из КИС2 в КИС3.
+
+    Returns:
+        int: Количество добавленных производителей.
+    """
+    print("В разработке")
+    kis2_list_dict_manufacturers = create_def_list_dict_manufacturers()
+    print(kis2_list_dict_manufacturers)
+    return 0
+
+
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
-    print(Fore.CYAN + "=== Проверка подключения к базе данных ===")
+    print(Fore.CYAN + "=== Проверка подключения к базе данных КИС3(Postgres) ===")
+
+    # if test_sync_connection():
+    #     try:
+    #         print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
+    #         imported_count = import_countries_from_kis2()
+    #         print(Fore.GREEN + f"Импортировано стран: {imported_count}")
+    #
+    #         # Демонстрация получения существующих стран
+    #         print(Fore.CYAN + "\n=== Список существующих стран в КИС3 ===")
+    #         existing_countries = get_existing_countries_set()
+    #         print(f"Всего стран в базе: {len(existing_countries)}")
+    #         if len(existing_countries) > 0:
+    #             print("Первые 5 стран:")
+    #             for country in list(existing_countries)[:5]:
+    #                 print(f"  - {country}")
+    #             if len(existing_countries) > 5:
+    #                 print(f"  ...и еще {len(existing_countries) - 5} стран")
+    #     except Exception as e:
+    #         print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
+    # else:
+    #     print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
     if test_sync_connection():
         try:
-            print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
-            imported_count = import_countries_from_kis2()
-            print(Fore.GREEN + f"Импортировано стран: {imported_count}")
-
-            # Демонстрация получения существующих стран
-            print(Fore.CYAN + "\n=== Список существующих стран в КИС3 ===")
-            existing_countries = get_existing_countries_set()
-            print(f"Всего стран в базе: {len(existing_countries)}")
-            if len(existing_countries) > 0:
-                print("Первые 5 стран:")
-                for country in list(existing_countries)[:5]:
-                    print(f"  - {country}")
-                if len(existing_countries) > 5:
-                    print(f"  ...и еще {len(existing_countries) - 5} стран")
+            print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
+            imported_count = import_manufacturers_from_kis2()
+            print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
         except Exception as e:
-            print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
+            print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
     else:
         print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
