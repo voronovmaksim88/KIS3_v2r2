@@ -48,7 +48,7 @@ def get_countries_set(debug=True):
         login_response = session.post(login_url, data=login_data, headers=headers)
 
         if debug:
-            print(f"Статус входа: {login_response.status_code}")
+            print(f"Статус входа (200 - это успешно): {login_response.status_code}")
             print(f"Редирект URL: {login_response.url}")
 
         # Проверяем успешность входа

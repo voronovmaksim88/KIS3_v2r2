@@ -1,6 +1,10 @@
 # copy_data_from_KIS2_to_KIS3.py
-# Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
-# Импорт реализован прям подключением к SQlite3.
+"""
+Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
+Импорт реализован прям подключением к SQlite3.
+В планах заменить этот код на импорт через Django Rest API
+Как только это удастся это файл надо будет перенести в папку old
+"""
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import text as sql_text
 from sqlalchemy import insert
@@ -8,7 +12,6 @@ from sqlalchemy.dialects.postgresql import insert as insert_pg
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy import select
-# from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from alembic.config import Config
