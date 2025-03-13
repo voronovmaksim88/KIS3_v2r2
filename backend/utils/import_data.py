@@ -174,39 +174,6 @@ def import_manufacturers_from_kis2() -> int:
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
-
-    # if test_sync_connection():
-    # print(Fore.CYAN + "=== Проверка подключения к базе данных КИС3(Postgres) ===")
-    #     try:
-    #         print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
-    #         imported_count = import_countries_from_kis2()
-    #         print(Fore.GREEN + f"Импортировано стран: {imported_count}")
-    #
-    #         # Демонстрация получения существующих стран
-    #         print(Fore.CYAN + "\n=== Список существующих стран в КИС3 ===")
-    #         existing_countries = get_existing_countries_set()
-    #         print(f"Всего стран в базе: {len(existing_countries)}")
-    #         if len(existing_countries) > 0:
-    #             print("Первые 5 стран:")
-    #             for country in list(existing_countries)[:5]:
-    #                 print(f"  - {country}")
-    #             if len(existing_countries) > 5:
-    #                 print(f"  ...и еще {len(existing_countries) - 5} стран")
-    #     except Exception as e:
-    #         print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
-    # else:
-    #     print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-    # if test_sync_connection():
-    #     try:
-    #         print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
-    #         imported_count = import_manufacturers_from_kis2()
-    #         print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
-    #     except Exception as e:
-    #         print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
-    # else:
-    #     print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
     answer = ""
     while answer != "e":
         print("")
@@ -217,9 +184,26 @@ if __name__ == "__main__":
         answer = input()
 
         if answer == "1":
-            import_countries_from_kis2()
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
+                    imported_count = import_countries_from_kis2()
+                    print(Fore.GREEN + f"Импортировано стран: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
         elif answer == "2":
-            import_manufacturers_from_kis2()
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
+                    imported_count = import_manufacturers_from_kis2()
+                    print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
         elif answer != "e":
             break
 
