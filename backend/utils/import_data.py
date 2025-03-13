@@ -1,4 +1,8 @@
-# import_data.py
+# utils/import_data.py
+"""
+Тут будем копировать данные из КИС2(БД SQlite3) в КИС3(БД PostgreSQL)
+Импорт реализован через Django Rest API
+"""
 from KIS2.DjangoRestAPI import get_countries_set as get_countries_set_from_kis2
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine

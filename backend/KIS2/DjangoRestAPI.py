@@ -62,7 +62,14 @@ def get_countries_set(debug=True):
         if debug:
             print(f"Статус API запроса: {api_response.status_code}")
             print(f"Content-Type: {api_response.headers.get('Content-Type', '')}")
-            print(f"Первые 200 символов ответа API: {api_response.text[:200]}")
+
+            # Декодируем Unicode-escape последовательности для отображения
+            import json
+            pretty_json = json.dumps(api_response.json(), ensure_ascii=False, indent=2)
+            print(f"Читаемый ответ API: {pretty_json[:200]}...")
+
+            # Исходный вывод для сравнения
+            print(f"Исходный ответ API: {api_response.text[:200]}...")
 
         # Проверяем успешность запроса
         api_response.raise_for_status()
