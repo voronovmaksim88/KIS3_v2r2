@@ -67,7 +67,8 @@ async def get_table_names(schema='public', print_results=True) -> List[str]:
                 text(f"SELECT table_name FROM information_schema.tables WHERE table_schema = :schema"),
                 {"schema": schema}
             )
-            tables = result.scalars().all()
+            # Преобразуем результат к списку строк
+            tables = [str(table) for table in result.scalars().all()]
 
             if print_results:
                 print(f"\n{Fore.CYAN}Имена таблиц в схеме {schema}:{Fore.RESET}")

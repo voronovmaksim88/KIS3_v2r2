@@ -17,6 +17,7 @@ from routers.test_views import router as test_router
 from models.models import *
 from routers import import_router
 
+
 app = FastAPI(root_path="/api")
 
 # Подключаем роутеры
@@ -25,7 +26,7 @@ app.include_router(test_router)  # роутер для тестовых запр
 
 # Настройка CORS
 app.add_middleware(
-    CORSMiddleware,  # type: ignore
+    CORSMiddleware,  # type: ignore[arg-type]
     # allow_origins=["*"], # Разрешить все источники (но это работает только для HTTP запросов)
     allow_origins=["https://sibplc-kis3.ru", "http://localhost:3000", "http://localhost:80", "http://localhost",
                    'http://localhost:8000', 'http://localhost:5173'],

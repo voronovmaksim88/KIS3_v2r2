@@ -1,3 +1,7 @@
+# routers/import_router.py
+"""
+Тут функции - роутеры для импорта данных
+"""
 from fastapi import APIRouter, HTTPException
 from typing import Dict
 import logging

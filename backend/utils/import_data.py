@@ -23,7 +23,7 @@ init(autoreset=True)
 def import_countries_from_kis2() -> int:
     """
     Импортировать страны из КИС2 в базу данных.
-    
+
     Returns:
         int: Количество добавленных стран.
     """
@@ -59,12 +59,12 @@ def import_countries_from_kis2() -> int:
                     print(Fore.YELLOW + "Все страны уже существуют в базе данных КИС2.")
 
                 return added_count
-            except Exception as e:
+            except Exception as db_error:  # Изменено имя переменной
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте стран: {e}")
+                print(Fore.RED + f"Ошибка при импорте стран: {db_error}")
                 return 0
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
+    except Exception as e1:
+        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e1}")
         return 0
 
 
@@ -80,8 +80,8 @@ def get_existing_countries_set() -> Set[str]:
         with SyncSession() as session:
             countries_query = session.query(Country.name).all()
             return set(country[0] for country in countries_query)
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при получении списка существующих стран: {e}")
+    except Exception as e2:
+        print(Fore.RED + f"Ошибка при получении списка существующих стран: {e2}")
         return set()
 
 
@@ -163,12 +163,12 @@ def import_manufacturers_from_kis2() -> int:
 
                 return added_count
 
-            except Exception as e:
+            except Exception as e3:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте производителей: {e}")
+                print(Fore.RED + f"Ошибка при импорте производителей: {e3}")
                 return 0
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
+    except Exception as e4:
+        print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e4}")
         return 0
 
 
