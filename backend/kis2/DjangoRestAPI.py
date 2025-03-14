@@ -339,5 +339,88 @@ def create_companies_form_from_kis2(debug: bool = True) -> Set[str]:
     return companies_form_set
 
 
+def create_companies_list_dict(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей компаний из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей компаний со следующими ключами:
+        - 'name': Название компании
+        - 'form': Название формы компании (ООО, ИП, и т.д.)
+        - 'note': Примечание к компании (может быть None)
+        - 'city': Название города (может быть None)
+    """
+    # Получаем данные о формах компаний
+    company_forms_data = get_data_from_kis2("CompaniesForm", debug)
+    if not company_forms_data:
+        if debug:
+            print("Не удалось получить данные о формах компаний")
+        return []
+
+    # Создаем словарь id:name для форм компаний
+    company_forms_dict = {item["id"]: item["name"]
+                          for item in company_forms_data
+                          if "id" in item and "name" in item}
+
+    if debug:
+        print(f"Получено {len(company_forms_dict)} форм компаний")
+
+    # Получаем данные о городах
+    cities_data = get_data_from_kis2("City", debug)
+    if not cities_data:
+        if debug:
+            print("Не удалось получить данные о городах")
+        return []
+
+    # Создаем словарь id:name для городов
+    cities_dict = {item["id"]: item["name"]
+                   for item in cities_data
+                   if "id" in item and "name" in item}
+
+    if debug:
+        print(f"Получено {len(cities_dict)} городов")
+
+    # Получаем данные о компаниях
+    companies_data = get_data_from_kis2("Company", debug)
+    if not companies_data:
+        if debug:
+            print("Не удалось получить данные о компаниях")
+        return []
+
+    # Создаем список словарей компаний
+    companies_list = []
+    for company in companies_data:
+        # Проверяем наличие необходимых ключей
+        if "name" in company:
+            # Получаем форму компании если указана
+            form_id = company.get("form")
+            form_name = company_forms_dict.get(form_id, None) if form_id else None
+
+            # Получаем город если указан
+            city_id = company.get("city")
+            city_name = cities_dict.get(city_id, None) if city_id else None
+
+            # Собираем словарь компании
+            company_dict = {
+                'name': company["name"],
+                'form': form_name,
+                'note': company.get("note"),  # может быть None
+                'city': city_name  # может быть None
+            }
+
+            companies_list.append(company_dict)
+
+            if debug:
+                print(f"Добавлена компания: {company['name']}")
+
+    if debug:
+        print(f"Получено {len(companies_list)} компаний")
+
+    return companies_list
+
+
 if __name__ == "__main__":
-    create_companies_form_from_kis2()
+    print(create_companies_list_dict(debug=True))
