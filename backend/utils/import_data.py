@@ -274,9 +274,79 @@ def import_currency_from_kis2() -> int:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте валют: {db_error}")
                 return 0
-    except Exception as e:
-        print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
+    except Exception as e6:
+        print(Fore.RED + f"Ошибка при выполнении импорта валют: {e6}")
         return 0
+
+
+def import_cities_from_kis2() -> int:
+    """
+    Импортирует названия городов из КИС2 в базу данных КИС3.
+    В КИС2 у городов нет стран, все города из КИС2 привязываются к стране "Россия".
+
+    Returns:
+        int: Количество добавленных городов.
+    """
+    try:
+        # Импортируем функцию получения городов из КИС2
+        from kis2.DjangoRestAPI import create_cities_set_from_kis2
+        from models.models import City, Country
+
+        # Получаем множество городов из KIS2
+        kis2_cities_set = create_cities_set_from_kis2(debug=False)
+        if not kis2_cities_set:
+            print(Fore.YELLOW + "Не удалось получить города из КИС2 или список пуст.")
+            return 0
+
+        print(Fore.CYAN + f"Получено {len(kis2_cities_set)} городов из КИС2.")
+
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие города
+                cities_query = session.query(City.name).all()
+                existing_cities = set(city[0] for city in cities_query)
+
+                # Находим ID страны "Россия"
+                russia_country = session.query(Country).filter(Country.name == "Россия").first()
+
+                # Если "Россия" не найдена, создаем запись
+                if not russia_country:
+                    print(Fore.YELLOW + "Страна 'Россия' не найдена в базе данных. Создание...")
+                    russia_country = Country(name="Россия")
+                    session.add(russia_country)
+                    session.commit()
+                    print(Fore.GREEN + "Страна 'Россия' успешно добавлена.")
+
+                russia_id = russia_country.id
+
+                # Находим новые города
+                new_cities = kis2_cities_set - existing_cities
+
+                added_count = 0
+
+                if new_cities:
+                    # Подготавливаем данные для вставки
+                    insert_data = [{"name": city, "country_id": russia_id} for city in new_cities]
+
+                    # Добавляем новые города
+                    session.bulk_insert_mappings(City.__mapper__, insert_data)
+                    session.commit()
+                    added_count = len(new_cities)
+                    print(Fore.GREEN + f"Добавлено {added_count} новых городов в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все города уже существуют в базе данных КИС3.")
+
+                return added_count
+
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте городов: {db_error}")
+                return 0
+    except Exception as e7:
+        print(Fore.RED + f"Ошибка при выполнении импорта городов: {e7}")
+        return 0
+
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
@@ -288,7 +358,8 @@ if __name__ == "__main__":
         print("1 - copy countries from KIS2 ")
         print("2 - copy manufacturers from KIS2")
         print("3 - copy equipment types from KIS2")
-        print("4 - copy currencies from KIS2")  # Добавлена новая опция
+        print("4 - copy currencies from KIS2")
+        print("5 - copy cities from KIS2")  # Добавлена новая опция
         answer = input()
 
         if answer == "1":
@@ -324,7 +395,7 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-        elif answer == "4":  # Добавлен новый вариант для валют
+        elif answer == "4":
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Импорт валют из КИС2 ===")
@@ -332,6 +403,17 @@ if __name__ == "__main__":
                     print(Fore.GREEN + f"Импортировано валют: {imported_count}")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "5":  # Добавлен новый вариант для городов
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт городов из КИС2 ===")
+                    imported_count = import_cities_from_kis2()
+                    print(Fore.GREEN + f"Импортировано городов: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта городов: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 

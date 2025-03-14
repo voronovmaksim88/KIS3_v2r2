@@ -289,5 +289,31 @@ def create_money_set_from_kis2(debug: bool = True) -> Set[str]:
         print(f"Получено {len(moneys_set)} валют")
 
     return moneys_set
+
+
+def create_cities_set_from_kis2(debug: bool = True) -> Set[str]:
+    """
+    Получает множество названий городов из КИС2.
+
+    Args:
+        debug: Режим отладки
+
+    Returns:
+        Множество названий городов
+    """
+    cities_data = get_data_from_kis2("City", debug)
+
+    if not cities_data:
+        return set()
+
+    # Создаем множество из названий городов
+    cities_set = {item["name"] for item in cities_data if "name" in item}
+
+    if debug:
+        print(f"Получено {len(cities_set)} городов")
+
+    return cities_set
+
+
 if __name__ == "__main__":
-    create_money_set_from_kis2()
+    create_cities_set_from_kis2()
