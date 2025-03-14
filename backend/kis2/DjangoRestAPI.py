@@ -339,7 +339,7 @@ def create_companies_form_from_kis2(debug: bool = True) -> Set[str]:
     return companies_form_set
 
 
-def create_companies_list_dict(debug: bool = True) -> List[Dict[str, Any]]:
+def create_companies_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
     """
     Создаёт список словарей компаний из КИС2 через REST API.
 
@@ -396,11 +396,11 @@ def create_companies_list_dict(debug: bool = True) -> List[Dict[str, Any]]:
         # Проверяем наличие необходимых ключей
         if "name" in company:
             # Получаем форму компании если указана
-            form_id = company.get("form")
+            form_id = company.get("form_id")
             form_name = company_forms_dict.get(form_id, None) if form_id else None
 
             # Получаем город если указан
-            city_id = company.get("city")
+            city_id = company.get("city_id")
             city_name = cities_dict.get(city_id, None) if city_id else None
 
             # Собираем словарь компании
@@ -423,4 +423,7 @@ def create_companies_list_dict(debug: bool = True) -> List[Dict[str, Any]]:
 
 
 if __name__ == "__main__":
-    print(create_companies_list_dict(debug=True))
+    companies_list_dict_from_kis2 = create_companies_list_dict_from_kis2(debug=True)
+    for company in companies_list_dict_from_kis2:
+        print(company)
+

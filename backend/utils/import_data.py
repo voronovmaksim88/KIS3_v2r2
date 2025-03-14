@@ -12,9 +12,10 @@ from typing import Set
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Импорты, требующие модификации sys.path
-from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_def_list_dict_manufacturers  # noqa: E402
+from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_def_list_dict_manufacturers, \
+    create_companies_list_dict_from_kis2  # noqa: E402
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, Manufacturer  # noqa: E402
+from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City  # noqa: E402
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -212,7 +213,7 @@ def import_equipment_type_from_kis2() -> int:
                     session.bulk_insert_mappings(EquipmentType.__mapper__, insert_data)
                     session.commit()
                     added_count = len(new_equipment_types)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых типов оборудования в базу данных КИС3(Postgres).")
+                    print(Fore.GREEN + f"Добавлено {added_count} новых типов оборудования в БД КИС3(Postgres).")
                 else:
                     print(Fore.YELLOW + "Все типы оборудования уже существуют в базе данных КИС3.")
 
@@ -224,6 +225,7 @@ def import_equipment_type_from_kis2() -> int:
     except Exception as e5:
         print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e5}")
         return 0
+
 
 def import_currency_from_kis2() -> int:
     """
@@ -348,7 +350,6 @@ def import_cities_from_kis2() -> int:
         return 0
 
 
-
 def import_counterparty_from_kis2() -> int:
     """
     Импортирует названия форм контрагентов из КИС2 в базу данных КИС3.
@@ -403,6 +404,87 @@ def import_counterparty_from_kis2() -> int:
         return 0
 
 
+def import_companies_from_kis2() -> int:
+    """
+    Импортирует контрагентов (компании) из КИС2 в базу данных КИС3.
+
+    Returns:
+        int: Количество добавленных компаний.
+    """
+    try:
+        # Получаем список словарей компаний из КИС2
+        kis2_companies_list = create_companies_list_dict_from_kis2(debug=False)
+        if not kis2_companies_list:
+            print(Fore.YELLOW + "Не удалось получить компании из КИС2 или список пуст.")
+            return 0
+
+        print(Fore.CYAN + f"Получено {len(kis2_companies_list)} компаний из КИС2.")
+
+        # Открываем сессию для работы с базой данных КИС3
+        with SyncSession() as session:
+            try:
+                # Получаем существующие компании из базы данных КИС3
+                existing_companies_query = session.query(Counterparty.name).all()
+                existing_companies = set(company[0] for company in existing_companies_query)
+
+                # Получаем словарь форм контрагентов {название: id}
+                counterparty_forms_query = session.query(CounterpartyForm.id, CounterpartyForm.name).all()
+                counterparty_forms_dict = {form_name: form_id for form_id, form_name in counterparty_forms_query}
+
+                # Получаем словарь городов {название: id}
+                cities_query = session.query(City.id, City.name).all()
+                cities_dict = {city_name: city_id for city_id, city_name in cities_query}
+
+                # Подготавливаем данные для вставки
+                added_count = 0
+                for company_data in kis2_companies_list:
+                    company_name = company_data['name']
+                    form_name = company_data['form']
+                    city_name = company_data['city']
+                    note = company_data['note']
+
+                    # Пропускаем, если компания уже существует
+                    if company_name in existing_companies:
+                        continue
+
+                    # Получаем ID формы контрагента
+                    form_id = counterparty_forms_dict.get(form_name)
+                    if not form_id:
+                        print(Fore.RED + f"Не удалось найти ID для формы контрагента '{form_name}'. "
+                                         f"Пропуск компании '{company_name}'.")
+                        continue
+
+                    # Получаем ID города (если указан)
+                    city_id = cities_dict.get(city_name) if city_name else None
+
+                    # Создаем нового контрагента
+                    new_counterparty = Counterparty(
+                        name=company_name,
+                        form_id=form_id,
+                        city_id=city_id,
+                        note=note
+                    )
+                    session.add(new_counterparty)
+                    added_count += 1
+
+                # Сохраняем изменения
+                if added_count > 0:
+                    session.commit()
+                    print(Fore.GREEN + f"Добавлено {added_count} новых компаний в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все компании уже существуют в базе данных КИС3.")
+
+                return added_count
+
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте компаний: {db_error}")
+                return 0
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
+        return 0
+
+
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
     answer = ""
@@ -415,7 +497,8 @@ if __name__ == "__main__":
         print("3 - copy equipment types from KIS2")
         print("4 - copy currencies from KIS2")
         print("5 - copy cities from KIS2")
-        print("6 - copy counterparty forms from KIS2")  # Добавлена новая опция
+        print("6 - copy counterparty forms from KIS2")
+        print("7 - copy companies from KIS2")  # Новая опция для импорта компаний
         answer = input()
 
         if answer == "1":
@@ -481,6 +564,17 @@ if __name__ == "__main__":
                     print(Fore.GREEN + f"Импортировано форм контрагентов: {imported_count}")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "7":  # Новая опция для импорта компаний
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт компаний из КИС2 ===")
+                    imported_count = import_companies_from_kis2()
+                    print(Fore.GREEN + f"Импортировано компаний: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
