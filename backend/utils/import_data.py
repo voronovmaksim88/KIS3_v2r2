@@ -225,6 +225,58 @@ def import_equipment_type_from_kis2() -> int:
         print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e5}")
         return 0
 
+def import_currency_from_kis2() -> int:
+    """
+    Импортировать типы валют из КИС2 в базу данных КИС3.
+
+    Returns:
+        int: Количество добавленных типов валют.
+    """
+    try:
+        # Импортируем функцию получения валют из КИС2
+        from kis2.DjangoRestAPI import create_money_set_from_kis2
+        from models.models import Currency
+
+        # Получаем множество валют из KIS2
+        kis2_currencies_set = create_money_set_from_kis2(debug=False)
+        if not kis2_currencies_set:
+            print(Fore.YELLOW + "Не удалось получить валюты из КИС2 или список пуст.")
+            return 0
+
+        print(Fore.CYAN + f"Получено {len(kis2_currencies_set)} валют из КИС2.")
+
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие валюты
+                currencies_query = session.query(Currency.name).all()
+                existing_currencies = set(currency[0] for currency in currencies_query)
+
+                # Находим новые валюты
+                new_currencies = kis2_currencies_set - existing_currencies
+
+                added_count = 0
+
+                if new_currencies:
+                    # Подготавливаем данные для вставки
+                    insert_data = [{"name": currency} for currency in new_currencies]
+
+                    # Добавляем новые валюты
+                    session.bulk_insert_mappings(Currency.__mapper__, insert_data)
+                    session.commit()
+                    added_count = len(new_currencies)
+                    print(Fore.GREEN + f"Добавлено {added_count} новых валют в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все валюты уже существуют в базе данных КИС3.")
+
+                return added_count
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте валют: {db_error}")
+                return 0
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
+        return 0
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
@@ -235,7 +287,8 @@ if __name__ == "__main__":
         print("e - exit")
         print("1 - copy countries from KIS2 ")
         print("2 - copy manufacturers from KIS2")
-        print("3 - copy equipment types from KIS2")  # Добавлена новая опция
+        print("3 - copy equipment types from KIS2")
+        print("4 - copy currencies from KIS2")  # Добавлена новая опция
         answer = input()
 
         if answer == "1":
@@ -260,7 +313,7 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-        elif answer == "3":  # Добавлен новый вариант
+        elif answer == "3":
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Импорт типов оборудования из КИС2 ===")
@@ -268,6 +321,17 @@ if __name__ == "__main__":
                     print(Fore.GREEN + f"Импортировано типов оборудования: {imported_count}")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "4":  # Добавлен новый вариант для валют
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт валют из КИС2 ===")
+                    imported_count = import_currency_from_kis2()
+                    print(Fore.GREEN + f"Импортировано валют: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 

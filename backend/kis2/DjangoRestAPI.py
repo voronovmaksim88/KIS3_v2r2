@@ -267,5 +267,27 @@ def create_equipment_type_set_from_kis2(debug: bool = True) -> Set[str]:
     return equipment_types_set
 
 
+def create_money_set_from_kis2(debug: bool = True) -> Set[str]:
+    """
+    Получает множество названий валют из КИС2.
+
+    Args:
+        debug: Режим отладки
+
+    Returns:
+        Множество названий валют
+    """
+    moneys_data = get_data_from_kis2("Money", debug)
+
+    if not moneys_data:
+        return set()
+
+    # Создаем множество из названий валют
+    moneys_set = {item["name"] for item in moneys_data if "name" in item}
+
+    if debug:
+        print(f"Получено {len(moneys_set)} валют")
+
+    return moneys_set
 if __name__ == "__main__":
-    create_equipment_type_set_from_kis2()
+    create_money_set_from_kis2()
