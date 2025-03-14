@@ -404,48 +404,76 @@ def import_counterparty_from_kis2() -> int:
         return 0
 
 
-def import_companies_from_kis2() -> int:
+def import_companies_from_kis2() -> dict:
     """
     Импортирует контрагентов (компании) из КИС2 в базу данных КИС3.
+    Добавляет новые компании и обновляет существующие, если их данные изменились.
 
     Returns:
-        int: Количество добавленных компаний.
+        dict: Словарь с результатами операции:
+            - 'status': 'success' или 'error'
+            - 'added': количество добавленных компаний
+            - 'updated': количество обновленных компаний
+            - 'unchanged': количество неизмененных компаний
     """
+    result = {
+        'status': 'error',
+        'added': 0,
+        'updated': 0,
+        'unchanged': 0
+    }
+
     try:
         # Получаем список словарей компаний из КИС2
         kis2_companies_list = create_companies_list_dict_from_kis2(debug=False)
         if not kis2_companies_list:
             print(Fore.YELLOW + "Не удалось получить компании из КИС2 или список пуст.")
-            return 0
+            return result
 
         print(Fore.CYAN + f"Получено {len(kis2_companies_list)} компаний из КИС2.")
 
         # Открываем сессию для работы с базой данных КИС3
         with SyncSession() as session:
             try:
-                # Получаем существующие компании из базы данных КИС3
-                existing_companies_query = session.query(Counterparty.name).all()
-                existing_companies = set(company[0] for company in existing_companies_query)
+                # Получаем существующие компании из базы данных КИС3 со всеми необходимыми данными
+                existing_companies_query = session.query(
+                    Counterparty.id,
+                    Counterparty.name,
+                    Counterparty.form_id,
+                    Counterparty.city_id,
+                    Counterparty.note
+                ).all()
+
+                # Создаем словарь существующих компаний для быстрого доступа
+                existing_companies = {
+                    company[1]: {
+                        'id': company[0],
+                        'form_id': company[2],
+                        'city_id': company[3],
+                        'note': company[4]
+                    } for company in existing_companies_query
+                }
 
                 # Получаем словарь форм контрагентов {название: id}
                 counterparty_forms_query = session.query(CounterpartyForm.id, CounterpartyForm.name).all()
                 counterparty_forms_dict = {form_name: form_id for form_id, form_name in counterparty_forms_query}
 
+                # Словарь для обратного поиска: {id: name}
+                form_id_to_name = {form_id: form_name for form_name, form_id in counterparty_forms_dict.items()}
+
                 # Получаем словарь городов {название: id}
                 cities_query = session.query(City.id, City.name).all()
                 cities_dict = {city_name: city_id for city_id, city_name in cities_query}
 
-                # Подготавливаем данные для вставки
-                added_count = 0
+                # Словарь для обратного поиска: {id: name}
+                city_id_to_name = {city_id: city_name for city_name, city_id in cities_dict.items()}
+
+                # Обрабатываем данные компаний
                 for company_data in kis2_companies_list:
                     company_name = company_data['name']
                     form_name = company_data['form']
                     city_name = company_data['city']
                     note = company_data['note']
-
-                    # Пропускаем, если компания уже существует
-                    if company_name in existing_companies:
-                        continue
 
                     # Получаем ID формы контрагента
                     form_id = counterparty_forms_dict.get(form_name)
@@ -457,32 +485,82 @@ def import_companies_from_kis2() -> int:
                     # Получаем ID города (если указан)
                     city_id = cities_dict.get(city_name) if city_name else None
 
-                    # Создаем нового контрагента
-                    new_counterparty = Counterparty(
-                        name=company_name,
-                        form_id=form_id,
-                        city_id=city_id,
-                        note=note
-                    )
-                    session.add(new_counterparty)
-                    added_count += 1
+                    # Проверяем, существует ли компания
+                    if company_name in existing_companies:
+                        # Компания существует - проверяем, нужно ли обновлять данные
+                        existing_data = existing_companies[company_name]
+                        current_form_id = existing_data['form_id']
+                        current_city_id = existing_data['city_id']
+                        current_note = existing_data['note']
+
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем, изменилась ли форма
+                        if current_form_id != form_id:
+                            needs_update = True
+                            update_details.append(f"форма с '{form_id_to_name.get(current_form_id)}' на '{form_name}'")
+
+                        # Проверяем, изменился ли город
+                        if current_city_id != city_id:
+                            needs_update = True
+                            old_city = city_id_to_name.get(current_city_id, "отсутствует")
+                            new_city = city_name or "отсутствует"
+                            update_details.append(f"город с '{old_city}' на '{new_city}'")
+
+                        # Проверяем, изменилось ли примечание
+                        if current_note != note:
+                            needs_update = True
+                            update_details.append(f"примечание")
+
+                        if needs_update:
+                            # Обновляем данные компании
+                            counterparty = session.get(Counterparty, existing_data['id'])
+                            counterparty.form_id = form_id
+                            counterparty.city_id = city_id
+                            counterparty.note = note
+
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлена компания '{company_name}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Компания не существует - добавляем новую
+                        new_counterparty = Counterparty(
+                            name=company_name,
+                            form_id=form_id,
+                            city_id=city_id,
+                            note=note
+                        )
+                        session.add(new_counterparty)
+                        result['added'] += 1
 
                 # Сохраняем изменения
-                if added_count > 0:
+                if result['added'] > 0 or result['updated'] > 0:
                     session.commit()
-                    print(Fore.GREEN + f"Добавлено {added_count} новых компаний в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все компании уже существуют в базе данных КИС3.")
 
-                return added_count
+                    summary = []
+                    if result['added'] > 0:
+                        summary.append(f"добавлено {result['added']} новых компаний")
+                    if result['updated'] > 0:
+                        summary.append(f"обновлено {result['updated']} существующих компаний")
+                    if result['unchanged'] > 0:
+                        summary.append(f"без изменений {result['unchanged']} компаний")
+
+                    print(Fore.GREEN + f"Результат импорта компаний: {', '.join(summary)}")
+                else:
+                    print(Fore.YELLOW + f"Все компании ({result['unchanged']}) уже существуют и актуальны.")
+
+                result['status'] = 'success'
+                return result
 
             except Exception as db_error:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте компаний: {db_error}")
-                return 0
+                return result
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
-        return 0
+        return result
 
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
@@ -567,12 +645,36 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-        elif answer == "7":  # Новая опция для импорта компаний
+        elif answer == "7":  # Импорт компаний из КИС2
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Импорт компаний из КИС2 ===")
-                    imported_count = import_companies_from_kis2()
-                    print(Fore.GREEN + f"Импортировано компаний: {imported_count}")
+                    import_result = import_companies_from_kis2()
+
+                    if import_result['status'] == 'success':
+                        # Формируем информативное сообщение о результатах
+                        result_messages = []
+
+                        if import_result['added'] > 0:
+                            result_messages.append(f"добавлено: {import_result['added']}")
+
+                        if import_result['updated'] > 0:
+                            result_messages.append(f"обновлено: {import_result['updated']}")
+
+                        if import_result['unchanged'] > 0:
+                            result_messages.append(f"без изменений: {import_result['unchanged']}")
+
+                        # Общее количество обработанных компаний
+                        total = import_result['added'] + import_result['updated'] + import_result['unchanged']
+
+                        # Выводим результат с соответствующим цветом
+                        if import_result['added'] > 0 or import_result['updated'] > 0:
+                            print(Fore.GREEN + f"Результат импорта компаний ({total}): {', '.join(result_messages)}")
+                        else:
+                            print(Fore.YELLOW + f"Компании обработаны ({total}): {', '.join(result_messages)}")
+                    else:
+                        print(Fore.RED + "Ошибка при импорте компаний.")
+
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
             else:
