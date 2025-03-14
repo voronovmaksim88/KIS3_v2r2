@@ -348,6 +348,61 @@ def import_cities_from_kis2() -> int:
         return 0
 
 
+
+def import_counterparty_from_kis2() -> int:
+    """
+    Импортирует названия форм контрагентов из КИС2 в базу данных КИС3.
+
+    Returns:
+        int: Количество добавленных форм контрагентов.
+    """
+    try:
+        # Импортируем функцию получения форм контрагентов из КИС2
+        from kis2.DjangoRestAPI import create_companies_form_from_kis2
+        from models.models import CounterpartyForm  # Предполагаемое имя модели в КИС3
+
+        # Получаем множество форм контрагентов из KIS2
+        kis2_counterparty_forms_set = create_companies_form_from_kis2(debug=False)
+        if not kis2_counterparty_forms_set:
+            print(Fore.YELLOW + "Не удалось получить формы контрагентов из КИС2 или список пуст.")
+            return 0
+
+        print(Fore.CYAN + f"Получено {len(kis2_counterparty_forms_set)} форм контрагентов из КИС2.")
+
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие формы контрагентов
+                counterparty_forms_query = session.query(CounterpartyForm.name).all()
+                existing_forms = set(form[0] for form in counterparty_forms_query)
+
+                # Находим новые формы контрагентов
+                new_forms = kis2_counterparty_forms_set - existing_forms
+
+                added_count = 0
+
+                if new_forms:
+                    # Подготавливаем данные для вставки
+                    insert_data = [{"name": form} for form in new_forms]
+
+                    # Добавляем новые формы контрагентов
+                    session.bulk_insert_mappings(CounterpartyForm.__mapper__, insert_data)
+                    session.commit()
+                    added_count = len(new_forms)
+                    print(Fore.GREEN + f"Добавлено {added_count} новых форм контрагентов в базу данных КИС3(Postgres).")
+                else:
+                    print(Fore.YELLOW + "Все формы контрагентов уже существуют в базе данных КИС3.")
+
+                return added_count
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте форм контрагентов: {db_error}")
+                return 0
+    except Exception as e8:
+        print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e8}")
+        return 0
+
+
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
     answer = ""
@@ -359,7 +414,8 @@ if __name__ == "__main__":
         print("2 - copy manufacturers from KIS2")
         print("3 - copy equipment types from KIS2")
         print("4 - copy currencies from KIS2")
-        print("5 - copy cities from KIS2")  # Добавлена новая опция
+        print("5 - copy cities from KIS2")
+        print("6 - copy counterparty forms from KIS2")  # Добавлена новая опция
         answer = input()
 
         if answer == "1":
@@ -406,7 +462,7 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-        elif answer == "5":  # Добавлен новый вариант для городов
+        elif answer == "5":
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Импорт городов из КИС2 ===")
@@ -414,6 +470,17 @@ if __name__ == "__main__":
                     print(Fore.GREEN + f"Импортировано городов: {imported_count}")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта городов: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "6":  # Добавлен новый вариант для форм контрагентов
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт форм контрагентов из КИС2 ===")
+                    imported_count = import_counterparty_from_kis2()
+                    print(Fore.GREEN + f"Импортировано форм контрагентов: {imported_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 

@@ -315,5 +315,29 @@ def create_cities_set_from_kis2(debug: bool = True) -> Set[str]:
     return cities_set
 
 
+def create_companies_form_from_kis2(debug: bool = True) -> Set[str]:
+    """
+    Получает множество форм компаний из КИС2.
+
+    Args:
+        debug: Режим отладки
+
+    Returns:
+        Множество названий форм компаний
+    """
+    companies_form_data = get_data_from_kis2("CompaniesForm", debug)
+
+    if not companies_form_data:
+        return set()
+
+    # Создаем множество из названий городов
+    companies_form_set = {item["name"] for item in companies_form_data if "name" in item}
+
+    if debug:
+        print(f"Получено {len(companies_form_set)} форм контрагентов")
+
+    return companies_form_set
+
+
 if __name__ == "__main__":
-    create_cities_set_from_kis2()
+    create_companies_form_from_kis2()
