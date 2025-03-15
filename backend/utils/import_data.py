@@ -563,6 +563,177 @@ def import_companies_from_kis2() -> dict:
         return result
 
 
+def import_person_from_kis2() -> dict:
+    """
+    Импортирует людей (персоны) из КИС2 в базу данных КИС3.
+    Добавляет новых людей и обновляет существующих, если их данные изменились.
+
+    Returns:
+        dict: Словарь с результатами операции:
+            - 'status': 'success' или 'error'
+            - 'added': количество добавленных персон
+            - 'updated': количество обновленных персон
+            - 'unchanged': количество неизмененных персон
+    """
+    result = {
+        'status': 'error',
+        'added': 0,
+        'updated': 0,
+        'unchanged': 0
+    }
+
+    try:
+        # Импортируем функцию получения персон из КИС2
+        from kis2.DjangoRestAPI import create_person_list_dict_from_kis2
+        from models.models import Person, Counterparty
+
+        # Получаем список словарей персон из КИС2
+        kis2_persons_list = create_person_list_dict_from_kis2(debug=False)
+        if not kis2_persons_list:
+            print(Fore.YELLOW + "Не удалось получить людей из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_persons_list)} людей из КИС2.")
+
+        # Открываем сессию для работы с базой данных КИС3
+        with SyncSession() as session:
+            try:
+                # Получаем существующих людей из базы данных КИС3
+                existing_persons_query = session.query(
+                    Person.id,
+                    Person.name,
+                    Person.patronymic,
+                    Person.surname,
+                    Person.phone,
+                    Person.email,
+                    Person.counterparty_id
+                ).all()
+
+                # Создаем словарь существующих людей для быстрого доступа.
+                # Используем комбинацию имени, фамилии и отчества как ключ.
+                existing_persons = {}
+                for p_id, name, patronymic, surname, phone, email, counterparty_id in existing_persons_query:
+                    key = f"{surname}|{name}|{patronymic or ''}"
+                    existing_persons[key] = {
+                        'id': p_id,
+                        'name': name,
+                        'patronymic': patronymic,
+                        'surname': surname,
+                        'phone': phone,
+                        'email': email,
+                        'counterparty_id': counterparty_id
+                    }
+
+                # Получаем словарь компаний {название: id}
+                companies_query = session.query(Counterparty.id, Counterparty.name).all()
+                companies_dict = {company_name: company_id for company_id, company_name in companies_query}
+
+                # Обрабатываем данные людей
+                for person_data in kis2_persons_list:
+                    name = person_data['name']
+                    patronymic = person_data['patronymic']
+                    surname = person_data['surname']
+                    phone = person_data['phone']
+                    email = person_data['email']
+                    company_name = person_data['company']
+
+                    # Создаем ключ для поиска человека
+                    person_key = f"{surname}|{name}|{patronymic or ''}"
+
+                    # Получаем ID компании (если указана)
+                    counterparty_id = companies_dict.get(company_name) if company_name else None
+
+                    # Проверяем, существует ли человек
+                    if person_key in existing_persons:
+                        # Человек существует - проверяем, нужно ли обновлять данные
+                        existing_data = existing_persons[person_key]
+                        current_phone = existing_data['phone']
+                        current_email = existing_data['email']
+                        current_counterparty_id = existing_data['counterparty_id']
+
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем, изменился ли телефон
+                        if current_phone != phone:
+                            needs_update = True
+                            update_details.append(
+                                f"телефон с '{current_phone or 'отсутствует'}' на '{phone or 'отсутствует'}'")
+
+                        # Проверяем, изменился ли email
+                        if current_email != email:
+                            needs_update = True
+                            update_details.append(
+                                f"email с '{current_email or 'отсутствует'}' на '{email or 'отсутствует'}'")
+
+                        # Проверяем, изменилась ли компания
+                        if current_counterparty_id != counterparty_id:
+                            needs_update = True
+                            # Получаем названия компаний для вывода в лог
+                            old_company_name = "отсутствует"
+                            if current_counterparty_id:
+                                for c_name, c_id in companies_dict.items():
+                                    if c_id == current_counterparty_id:
+                                        old_company_name = c_name
+                                        break
+
+                            update_details.append(
+                                f"компания с '{old_company_name}' на '{company_name or 'отсутствует'}'")
+
+                        if needs_update:
+                            # Обновляем данные человека
+                            person = session.get(Person, existing_data['id'])
+                            person.phone = phone
+                            person.email = email
+                            person.counterparty_id = counterparty_id
+
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлен человек '{surname} {name}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Человек не существует - добавляем нового
+                        new_person = Person(
+                            name=name,
+                            patronymic=patronymic,
+                            surname=surname,
+                            phone=phone,
+                            email=email,
+                            counterparty_id=counterparty_id,
+                            active=True  # По умолчанию все импортированные люди активны
+                        )
+                        session.add(new_person)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый человек: {surname} {name}")
+
+                # Сохраняем изменения
+                if result['added'] > 0 or result['updated'] > 0:
+                    session.commit()
+
+                    summary = []
+                    if result['added'] > 0:
+                        summary.append(f"добавлено {result['added']} новых людей")
+                    if result['updated'] > 0:
+                        summary.append(f"обновлено {result['updated']} существующих людей")
+                    if result['unchanged'] > 0:
+                        summary.append(f"без изменений {result['unchanged']} людей")
+
+                    print(Fore.GREEN + f"Результат импорта людей: {', '.join(summary)}")
+                else:
+                    print(Fore.YELLOW + f"Все люди ({result['unchanged']}) уже существуют и актуальны.")
+
+                result['status'] = 'success'
+                return result
+
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте людей: {db_error}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
+        return result
+
+
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
     answer = ""
@@ -576,7 +747,8 @@ if __name__ == "__main__":
         print("4 - copy currencies from KIS2")
         print("5 - copy cities from KIS2")
         print("6 - copy counterparty forms from KIS2")
-        print("7 - copy companies from KIS2")  # Новая опция для импорта компаний
+        print("7 - copy companies from KIS2")
+        print("8 - copy people from KIS2")
         answer = input()
 
         if answer == "1":
@@ -680,6 +852,40 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
+        elif answer == "8":  # Импорт людей из КИС2
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт людей из КИС2 ===")
+                    import_result = import_person_from_kis2()
+
+                    if import_result['status'] == 'success':
+                        # Формируем информативное сообщение о результатах
+                        result_messages = []
+
+                        if import_result['added'] > 0:
+                            result_messages.append(f"добавлено: {import_result['added']}")
+
+                        if import_result['updated'] > 0:
+                            result_messages.append(f"обновлено: {import_result['updated']}")
+
+                        if import_result['unchanged'] > 0:
+                            result_messages.append(f"без изменений: {import_result['unchanged']}")
+
+                        # Общее количество обработанных людей
+                        total = import_result['added'] + import_result['updated'] + import_result['unchanged']
+
+                        # Выводим результат с соответствующим цветом
+                        if import_result['added'] > 0 or import_result['updated'] > 0:
+                            print(Fore.GREEN + f"Результат импорта людей ({total}): {', '.join(result_messages)}")
+                        else:
+                            print(Fore.YELLOW + f"Люди обработаны ({total}): {', '.join(result_messages)}")
+                    else:
+                        print(Fore.RED + "Ошибка при импорте людей.")
+
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
         elif answer != "e":
             break
 

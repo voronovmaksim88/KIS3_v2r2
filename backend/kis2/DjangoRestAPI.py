@@ -422,8 +422,75 @@ def create_companies_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, A
     return companies_list
 
 
-if __name__ == "__main__":
-    companies_list_dict_from_kis2 = create_companies_list_dict_from_kis2(debug=True)
-    for company in companies_list_dict_from_kis2:
-        print(company)
+def create_person_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей людей из КИС2 через REST API.
 
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей людей со следующими ключами:
+        - 'name': Имя
+        - 'patronymic': Отчество
+        - 'surname': Фамилия
+        - 'phone': Телефон
+        - 'email': Email
+        - 'company': Название компании (может быть None)
+    """
+    # Получаем данные о компаниях
+    companies_data = get_data_from_kis2("Company", debug)
+    if not companies_data:
+        if debug:
+            print("Не удалось получить данные о компаниях")
+        return []
+
+    # Создаем словарь id:name для компаний
+    companies_dict = {item["id"]: item["name"]
+                      for item in companies_data
+                      if "id" in item and "name" in item}
+
+    if debug:
+        print(f"Получено {len(companies_dict)} компаний")
+
+    # Получаем данные о людях
+    persons_data = get_data_from_kis2("Person", debug)
+    if not persons_data:
+        if debug:
+            print("Не удалось получить данные о людях")
+        return []
+
+    # Создаем список словарей людей
+    persons_list = []
+    for person in persons_data:
+        # Проверяем наличие необходимых ключей
+        if "name" in person and "surname" in person:
+            # Получаем компанию, если указана
+            company_id = person.get("company_id")
+            company_name = companies_dict.get(company_id, None) if company_id else None
+
+            # Собираем словарь человека
+            person_dict = {
+                'name': person.get("name"),
+                'patronymic': person.get("patronymic"),
+                'surname': person.get("surname"),
+                'phone': person.get("phone"),
+                'email': person.get("email"),
+                'company': company_name  # может быть None
+            }
+
+            persons_list.append(person_dict)
+
+            if debug:
+                print(f"Добавлен человек: {person['surname']} {person['name']}")
+
+    if debug:
+        print(f"Получено {len(persons_list)} людей")
+
+    return persons_list
+
+
+if __name__ == "__main__":
+    person_list_dict_from_kis2 = create_person_list_dict_from_kis2()
+    for company in person_list_dict_from_kis2:
+        print(company)
