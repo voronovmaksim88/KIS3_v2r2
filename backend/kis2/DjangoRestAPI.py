@@ -490,7 +490,50 @@ def create_person_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
     return persons_list
 
 
+from typing import List, Dict, Any
+
+def create_works_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей работ из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей работ со следующими ключами:
+        - 'name': Название работы
+        - 'description': Описание работы
+    """
+    # Получаем данные о работах
+    works_data = get_data_from_kis2("Work", debug)
+    if not works_data:
+        if debug:
+            print("Не удалось получить данные о работах")
+        return []
+
+    # Создаем список словарей работ
+    works_list = []
+    for work in works_data:
+        # Проверяем наличие необходимых ключей
+        if "name" in work:
+            # Собираем словарь работы
+            work_dict = {
+                'name': work["name"],
+                'description': work.get("description", "")  # может быть пустой строкой
+            }
+
+            works_list.append(work_dict)
+
+            if debug:
+                print(f"Добавлена работа: {work['name']}")
+
+    if debug:
+        print(f"Получено {len(works_list)} работ")
+
+    return works_list
+
+
 if __name__ == "__main__":
-    person_list_dict_from_kis2 = create_person_list_dict_from_kis2()
-    for company in person_list_dict_from_kis2:
-        print(company)
+    works_list_dict_from_kis2 = create_works_list_dict_from_kis2()
+    for work in works_list_dict_from_kis2:
+        print(work)
