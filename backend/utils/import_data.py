@@ -21,6 +21,63 @@ from models.models import Country, Manufacturer, Counterparty, CounterpartyForm,
 init(autoreset=True)
 
 
+def commit_and_summarize_import(session, result, entity_type='записей'):
+    """
+    Сохраняет изменения в базе данных и формирует сводку по результатам импорта.
+
+    Args:
+        session: Текущая сессия базы данных
+        result: Словарь с результатами импорта (added, updated, unchanged)
+        entity_type: Название типа импортируемых сущностей (компании, люди и т.д.)
+
+    Returns:
+        dict: Обновленный словарь результатов с установленным статусом 'success'
+    """
+    if result['added'] > 0 or result['updated'] > 0:
+        session.commit()
+
+        summary = []
+        if result['added'] > 0:
+            summary.append(f"добавлено {result['added']} новых {entity_type}")
+        if result['updated'] > 0:
+            summary.append(f"обновлено {result['updated']} существующих {entity_type}")
+        if result['unchanged'] > 0:
+            summary.append(f"без изменений {result['unchanged']} {entity_type}")
+
+        print(Fore.GREEN + f"Результат импорта {entity_type}: {', '.join(summary)}")
+    else:
+        print(Fore.YELLOW + f"Все {entity_type} ({result['unchanged']}) уже существуют и актуальны.")
+
+    result['status'] = 'success'
+    return result
+
+
+def format_import_result_message(import_result):
+    """
+    Формирует информативное сообщение о результатах импорта.
+
+    :param import_result: Словарь с результатами импорта, содержащий ключи:
+                         'status', 'added', 'updated', 'unchanged'.
+    :return: Строка с сообщением о результатах импорта.
+    """
+    if import_result['status'] == 'success':
+        result_messages = []
+
+        if import_result['added'] > 0:
+            result_messages.append(f"добавлено: {import_result['added']}")
+
+        if import_result['updated'] > 0:
+            result_messages.append(f"обновлено: {import_result['updated']}")
+
+        if import_result['unchanged'] > 0:
+            result_messages.append(f"без изменений: {import_result['unchanged']}")
+
+        # Собираем все сообщения в одну строку, разделяя их запятыми
+        return ", ".join(result_messages)
+    else:
+        return "Импорт завершился с ошибкой."
+
+
 def import_countries_from_kis2() -> int:
     """
     Импортировать страны из КИС2 в базу данных.
@@ -536,23 +593,7 @@ def import_companies_from_kis2() -> dict:
                         result['added'] += 1
 
                 # Сохраняем изменения
-                if result['added'] > 0 or result['updated'] > 0:
-                    session.commit()
-
-                    summary = []
-                    if result['added'] > 0:
-                        summary.append(f"добавлено {result['added']} новых компаний")
-                    if result['updated'] > 0:
-                        summary.append(f"обновлено {result['updated']} существующих компаний")
-                    if result['unchanged'] > 0:
-                        summary.append(f"без изменений {result['unchanged']} компаний")
-
-                    print(Fore.GREEN + f"Результат импорта компаний: {', '.join(summary)}")
-                else:
-                    print(Fore.YELLOW + f"Все компании ({result['unchanged']}) уже существуют и актуальны.")
-
-                result['status'] = 'success'
-                return result
+                return commit_and_summarize_import(session, result, entity_type='компаний')
 
             except Exception as db_error:
                 session.rollback()
@@ -707,23 +748,7 @@ def import_person_from_kis2() -> dict:
                         print(Fore.GREEN + f"Добавлен новый человек: {surname} {name}")
 
                 # Сохраняем изменения
-                if result['added'] > 0 or result['updated'] > 0:
-                    session.commit()
-
-                    summary = []
-                    if result['added'] > 0:
-                        summary.append(f"добавлено {result['added']} новых людей")
-                    if result['updated'] > 0:
-                        summary.append(f"обновлено {result['updated']} существующих людей")
-                    if result['unchanged'] > 0:
-                        summary.append(f"без изменений {result['unchanged']} людей")
-
-                    print(Fore.GREEN + f"Результат импорта людей: {', '.join(summary)}")
-                else:
-                    print(Fore.YELLOW + f"Все люди ({result['unchanged']}) уже существуют и актуальны.")
-
-                result['status'] = 'success'
-                return result
+                return commit_and_summarize_import(session, result, entity_type='людей')
 
             except Exception as db_error:
                 session.rollback()
@@ -736,6 +761,39 @@ def import_person_from_kis2() -> dict:
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
+    def print_import_results(import_result, entity_name):
+        """
+        Выводит результаты импорта в консоль с форматированием.
+
+        Args:
+            import_result (dict): Словарь с результатами импорта
+            entity_name (str): Название сущности, которая импортируется (компании, люди и т.д.)
+        """
+        if import_result['status'] == 'success':
+            # Формируем информативное сообщение о результатах
+            result_messages = []
+
+            if import_result.get('added', 0) > 0:
+                result_messages.append(f"добавлено: {import_result['added']}")
+
+            if import_result.get('updated', 0) > 0:
+                result_messages.append(f"обновлено: {import_result['updated']}")
+
+            if import_result.get('unchanged', 0) > 0:
+                result_messages.append(f"без изменений: {import_result['unchanged']}")
+
+            # Общее количество обработанных элементов
+            total = import_result.get('added', 0) + import_result.get('updated', 0) + import_result.get('unchanged', 0)
+
+            # Выводим результат с соответствующим цветом
+            if import_result.get('added', 0) > 0 or import_result.get('updated', 0) > 0:
+                print(Fore.GREEN + f"Результат импорта {entity_name} ({total}): {', '.join(result_messages)}")
+            else:
+                print(Fore.YELLOW + f"{entity_name.capitalize()} обработаны ({total}): {', '.join(result_messages)}")
+        else:
+            print(Fore.RED + f"Ошибка при импорте {entity_name}.")
+
+
     answer = ""
     while answer != "e":
         print("")
@@ -822,31 +880,7 @@ if __name__ == "__main__":
                 try:
                     print(Fore.CYAN + "=== Импорт компаний из КИС2 ===")
                     import_result = import_companies_from_kis2()
-
-                    if import_result['status'] == 'success':
-                        # Формируем информативное сообщение о результатах
-                        result_messages = []
-
-                        if import_result['added'] > 0:
-                            result_messages.append(f"добавлено: {import_result['added']}")
-
-                        if import_result['updated'] > 0:
-                            result_messages.append(f"обновлено: {import_result['updated']}")
-
-                        if import_result['unchanged'] > 0:
-                            result_messages.append(f"без изменений: {import_result['unchanged']}")
-
-                        # Общее количество обработанных компаний
-                        total = import_result['added'] + import_result['updated'] + import_result['unchanged']
-
-                        # Выводим результат с соответствующим цветом
-                        if import_result['added'] > 0 or import_result['updated'] > 0:
-                            print(Fore.GREEN + f"Результат импорта компаний ({total}): {', '.join(result_messages)}")
-                        else:
-                            print(Fore.YELLOW + f"Компании обработаны ({total}): {', '.join(result_messages)}")
-                    else:
-                        print(Fore.RED + "Ошибка при импорте компаний.")
-
+                    print_import_results(import_result, "компаний")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
             else:
@@ -857,31 +891,7 @@ if __name__ == "__main__":
                 try:
                     print(Fore.CYAN + "=== Импорт людей из КИС2 ===")
                     import_result = import_person_from_kis2()
-
-                    if import_result['status'] == 'success':
-                        # Формируем информативное сообщение о результатах
-                        result_messages = []
-
-                        if import_result['added'] > 0:
-                            result_messages.append(f"добавлено: {import_result['added']}")
-
-                        if import_result['updated'] > 0:
-                            result_messages.append(f"обновлено: {import_result['updated']}")
-
-                        if import_result['unchanged'] > 0:
-                            result_messages.append(f"без изменений: {import_result['unchanged']}")
-
-                        # Общее количество обработанных людей
-                        total = import_result['added'] + import_result['updated'] + import_result['unchanged']
-
-                        # Выводим результат с соответствующим цветом
-                        if import_result['added'] > 0 or import_result['updated'] > 0:
-                            print(Fore.GREEN + f"Результат импорта людей ({total}): {', '.join(result_messages)}")
-                        else:
-                            print(Fore.YELLOW + f"Люди обработаны ({total}): {', '.join(result_messages)}")
-                    else:
-                        print(Fore.RED + "Ошибка при импорте людей.")
-
+                    print_import_results(import_result, "людей")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
             else:
