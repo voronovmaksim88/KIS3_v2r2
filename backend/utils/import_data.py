@@ -6,16 +6,17 @@
 import sys
 import os
 from colorama import init, Fore
-from typing import Set
+from typing import Set, Dict
 
 # Добавляем родительскую директорию в путь поиска модулей
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Импорты, требующие модификации sys.path
-from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_def_list_dict_manufacturers, \
-    create_companies_list_dict_from_kis2  # noqa: E402
-from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus  # noqa: E402
+from kis2.DjangoRestAPI import create_countries_set_from_kis2
+from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2
+from kis2.DjangoRestAPI import create_list_dict_manufacturers
+from database import SyncSession, test_sync_connection
+from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -78,19 +79,30 @@ def format_import_result_message(import_result):
         return "Импорт завершился с ошибкой."
 
 
-def import_countries_from_kis2() -> int:
+def import_countries_from_kis2() -> Dict[str, any]:
     """
     Импортировать страны из КИС2 в базу данных.
 
     Returns:
-        int: Количество добавленных стран.
+        dict: Словарь с результатами операции:
+            - 'status': 'success' или 'error'
+            - 'added': количество добавленных стран
+            - 'updated': количество обновленных стран
+            - 'unchanged': количество неизмененных стран
     """
+    result = {
+        "status": "error",  # По умолчанию статус "ошибка"
+        "added": 0,
+        "updated": 0,  # В текущей реализации обновления нет
+        "unchanged": 0,
+    }
+
     try:
         # Получаем множество стран из KIS2
         kis2_countries_set = create_countries_set_from_kis2()
         if not kis2_countries_set:
-            print(Fore.YELLOW + "Не удалось получить страны из KIS2 или список пуст.")
-            return 0
+            print(Fore.YELLOW + "Не удалось получить страны из КИС2 или список пуст.")
+            return result
 
         # Открываем сессию
         with SyncSession() as session:
@@ -102,13 +114,13 @@ def import_countries_from_kis2() -> int:
                 # Находим новые страны
                 new_countries = kis2_countries_set - existing_countries
 
+                # Определяем неизмененные страны
+                unchanged_countries = kis2_countries_set & existing_countries
+
+                # Подготавливаем данные для вставки
                 added_count = 0
-
                 if new_countries:
-                    # Подготавливаем данные для вставки
                     insert_data = [{"name": country} for country in new_countries]
-
-                    # Добавляем новые страны
                     session.bulk_insert_mappings(Country.__mapper__, insert_data)
                     session.commit()
                     added_count = len(new_countries)
@@ -116,14 +128,20 @@ def import_countries_from_kis2() -> int:
                 else:
                     print(Fore.YELLOW + "Все страны уже существуют в базе данных КИС2.")
 
-                return added_count
-            except Exception as db_error:  # Изменено имя переменной
+                # Заполняем результат
+                result["status"] = "success"
+                result["added"] = added_count
+                result["unchanged"] = len(unchanged_countries)
+
+                return result
+
+            except Exception as db_error:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте стран: {db_error}")
-                return 0
+                return result
     except Exception as e1:
         print(Fore.RED + f"Ошибка при выполнении импорта стран: {e1}")
-        return 0
+        return result
 
 
 # Функция для получения множества существующих стран в КИС3
@@ -152,7 +170,7 @@ def import_manufacturers_from_kis2() -> int:
     """
     try:
         # Получаем список словарей производителей из KIS2
-        kis2_manufacturers_list = create_def_list_dict_manufacturers(debug=False)
+        kis2_manufacturers_list = create_list_dict_manufacturers(debug=False)
         if not kis2_manufacturers_list:
             print(Fore.YELLOW + "Не удалось получить производителей из КИС2 или список пуст.")
             return 0
@@ -1006,8 +1024,8 @@ if __name__ == "__main__":
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
-                    imported_count = import_countries_from_kis2()
-                    print(Fore.GREEN + f"Импортировано стран: {imported_count}")
+                    import_result = import_countries_from_kis2()
+                    print_import_results(import_result, "стран")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
             else:

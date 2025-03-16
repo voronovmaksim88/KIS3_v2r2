@@ -190,7 +190,7 @@ def create_countries_set_from_kis2(debug: bool = True) -> Set[str]:
     return countries_set
 
 
-def create_def_list_dict_manufacturers(debug: bool = True) -> List[Dict[str, str]]:
+def create_list_dict_manufacturers(debug: bool = True) -> List[Dict[str, str]]:
     """
     Получает список производителей из КИС2 через REST API.
 
@@ -558,6 +558,6 @@ def get_order_status(status_id):
 
 
 if __name__ == "__main__":
-    works_list_dict_from_kis2 = create_works_list_dict_from_kis2()
-    for work in works_list_dict_from_kis2:
+    list_dict_manufacturers = create_list_dict_manufacturers()
+    for work in list_dict_manufacturers:
         print(work)
