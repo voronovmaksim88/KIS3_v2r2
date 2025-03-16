@@ -6,17 +6,19 @@
 import sys
 import os
 from colorama import init, Fore
-from typing import Set, Dict
+from typing import Dict, Set, Any
 
 # Добавляем родительскую директорию в путь поиска модулей
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Импорты, требующие модификации sys.path
-from kis2.DjangoRestAPI import create_countries_set_from_kis2
-from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2
-from kis2.DjangoRestAPI import create_list_dict_manufacturers
+from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_companies_list_dict_from_kis2, \
+    create_list_dict_manufacturers, create_equipment_type_set_from_kis2, create_money_set_from_kis2, \
+    create_cities_set_from_kis2, create_companies_form_from_kis2, create_person_list_dict_from_kis2, \
+    create_works_list_dict_from_kis2
 from database import SyncSession, test_sync_connection
-from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus
+from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus, \
+    EquipmentType, Currency, Person, Work
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -25,18 +27,9 @@ init(autoreset=True)
 def commit_and_summarize_import(session, result, entity_type='записей'):
     """
     Сохраняет изменения в базе данных и формирует сводку по результатам импорта.
-
-    Args:
-        session: Текущая сессия базы данных
-        result: Словарь с результатами импорта (added, updated, unchanged)
-        entity_type: Название типа импортируемых сущностей (компании, люди и т.д.)
-
-    Returns:
-        dict: Обновленный словарь результатов с установленным статусом 'success'
     """
     if result['added'] > 0 or result['updated'] > 0:
         session.commit()
-
         summary = []
         if result['added'] > 0:
             summary.append(f"добавлено {result['added']} новых {entity_type}")
@@ -44,844 +37,448 @@ def commit_and_summarize_import(session, result, entity_type='записей'):
             summary.append(f"обновлено {result['updated']} существующих {entity_type}")
         if result['unchanged'] > 0:
             summary.append(f"без изменений {result['unchanged']} {entity_type}")
-
         print(Fore.GREEN + f"Результат импорта {entity_type}: {', '.join(summary)}")
     else:
         print(Fore.YELLOW + f"Все {entity_type} ({result['unchanged']}) уже существуют и актуальны.")
-
     result['status'] = 'success'
     return result
 
 
-def format_import_result_message(import_result):
+def get_existing_items(session, model) -> Set[str]:
     """
-    Формирует информативное сообщение о результатах импорта.
+    Получает множество существующих элементов из базы данных по модели.
 
-    :param import_result: Словарь с результатами импорта, содержащий ключи:
-                         'status', 'added', 'updated', 'unchanged'.
-    :return: Строка с сообщением о результатах импорта.
+    Args:
+        session: Текущая сессия базы данных
+        model: Класс модели SQLAlchemy
+
+    Returns:
+        Set[str]: Множество имен существующих элементов
     """
-    if import_result['status'] == 'success':
-        result_messages = []
+    query = session.query(model.name).all()
+    return set(item[0] for item in query)
 
-        if import_result['added'] > 0:
-            result_messages.append(f"добавлено: {import_result['added']}")
 
-        if import_result['updated'] > 0:
-            result_messages.append(f"обновлено: {import_result['updated']}")
+def bulk_insert_new_items(session, model, new_items: Set[str], result: Dict[str, Any]) -> None:
+    """
+    Выполняет массовую вставку новых элементов в базу данных.
 
-        if import_result['unchanged'] > 0:
-            result_messages.append(f"без изменений: {import_result['unchanged']}")
-
-        # Собираем все сообщения в одну строку, разделяя их запятыми
-        return ", ".join(result_messages)
-    else:
-        return "Импорт завершился с ошибкой."
+    Args:
+        session: Текущая сессия базы данных
+        model: Класс модели SQLAlchemy
+        new_items: Множество новых элементов для вставки
+        result: Словарь результатов для обновления поля 'added'
+    """
+    if new_items:
+        insert_data = [{"name": item} for item in new_items]
+        session.bulk_insert_mappings(model.__mapper__, insert_data)
+        result['added'] = len(new_items)
 
 
 def import_countries_from_kis2() -> Dict[str, any]:
     """
     Импортировать страны из КИС2 в базу данных.
-
-    Returns:
-        dict: Словарь с результатами операции:
-            - 'status': 'success' или 'error'
-            - 'added': количество добавленных стран
-            - 'updated': количество обновленных стран
-            - 'unchanged': количество неизмененных стран
     """
-    result = {
-        "status": "error",  # По умолчанию статус "ошибка"
-        "added": 0,
-        "updated": 0,  # В текущей реализации обновления нет
-        "unchanged": 0,
-    }
-
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Получаем множество стран из KIS2
         kis2_countries_set = create_countries_set_from_kis2()
         if not kis2_countries_set:
             print(Fore.YELLOW + "Не удалось получить страны из КИС2 или список пуст.")
             return result
 
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие страны
-                countries_query = session.query(Country.name).all()
-                existing_countries = set(country[0] for country in countries_query)
-
-                # Находим новые страны
+                existing_countries = get_existing_items(session, Country)
                 new_countries = kis2_countries_set - existing_countries
+                result['unchanged'] = len(kis2_countries_set & existing_countries)
 
-                # Определяем неизмененные страны
-                unchanged_countries = kis2_countries_set & existing_countries
-
-                # Подготавливаем данные для вставки
-                added_count = 0
-                if new_countries:
-                    insert_data = [{"name": country} for country in new_countries]
-                    session.bulk_insert_mappings(Country.__mapper__, insert_data)
-                    session.commit()
-                    added_count = len(new_countries)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых стран в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все страны уже существуют в базе данных КИС2.")
-
-                # Заполняем результат
-                result["status"] = "success"
-                result["added"] = added_count
-                result["unchanged"] = len(unchanged_countries)
-
-                return result
-
+                bulk_insert_new_items(session, Country, new_countries, result)
+                return commit_and_summarize_import(session, result, "стран")
             except Exception as db_error:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте стран: {db_error}")
                 return result
-    except Exception as e1:
-        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e1}")
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта стран: {e}")
         return result
 
 
-# Функция для получения множества существующих стран в КИС3
-def get_existing_countries_set() -> Set[str]:
-    """
-    Получить множество названий стран, уже существующих в базе данных КИС3.
-    
-    Returns:
-        Set[str]: Множество названий стран.
-    """
-    try:
-        with SyncSession() as session:
-            countries_query = session.query(Country.name).all()
-            return set(country[0] for country in countries_query)
-    except Exception as e2:
-        print(Fore.RED + f"Ошибка при получении списка существующих стран: {e2}")
-        return set()
-
-
-def import_manufacturers_from_kis2() -> int:
+def import_manufacturers_from_kis2() -> Dict[str, any]:
     """
     Импортировать производителей из КИС2 в базу данных КИС3.
-
-    Returns:
-        int: Количество добавленных производителей.
     """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Получаем список словарей производителей из KIS2
         kis2_manufacturers_list = create_list_dict_manufacturers(debug=False)
         if not kis2_manufacturers_list:
             print(Fore.YELLOW + "Не удалось получить производителей из КИС2 или список пуст.")
-            return 0
+            return result
 
         print(Fore.CYAN + f"Получено {len(kis2_manufacturers_list)} производителей из КИС2.")
-
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующих производителей
                 manufacturers_query = session.query(Manufacturer.name).all()
-                existing_manufacturers = set(manufacturer[0] for manufacturer in manufacturers_query)
-
-                # Получаем словарь стран {название: id}
+                existing_manufacturers = set(m[0] for m in manufacturers_query)
                 countries_query = session.query(Country.id, Country.name).all()
-                countries_dict = {country_name: country_id for country_id, country_name in countries_query}
+                countries_dict = {name: id for id, name in countries_query}
 
-                # Проверяем наличие всех стран и создаем отсутствующие
                 unique_countries = set(item['country'] for item in kis2_manufacturers_list)
                 missing_countries = unique_countries - set(countries_dict.keys())
-
                 if missing_countries:
                     print(Fore.YELLOW + f"Обнаружено {len(missing_countries)} отсутствующих стран. Добавление...")
                     for country_name in missing_countries:
-                        new_country = Country(name=country_name)
-                        session.add(new_country)
-
+                        session.add(Country(name=country_name))
                     session.commit()
-
-                    # Обновляем словарь стран после добавления новых
                     countries_query = session.query(Country.id, Country.name).all()
-                    countries_dict = {country_name: country_id for country_id, country_name in countries_query}
-                    print(Fore.GREEN + f"Добавлено {len(missing_countries)} стран.")
+                    countries_dict = {name: id for id, name in countries_query}
 
-                # Подготавливаем данные для вставки производителей
-                added_count = 0
                 for manufacturer_data in kis2_manufacturers_list:
-                    manufacturer_name = manufacturer_data['name']
+                    name = manufacturer_data['name']
                     country_name = manufacturer_data['country']
-
-                    # Пропускаем, если производитель уже существует
-                    if manufacturer_name in existing_manufacturers:
+                    if name in existing_manufacturers:
+                        result['unchanged'] += 1
                         continue
 
-                    # Получаем ID страны
                     country_id = countries_dict.get(country_name)
                     if not country_id:
-                        print(Fore.RED + f"Не удалось найти ID для страны '{country_name}'."
-                                         f" Пропуск производителя '{manufacturer_name}'.")
+                        print(Fore.RED + f"Не удалось найти ID для страны '{country_name}'. Пропуск '{name}'.")
                         continue
 
-                    # Создаем нового производителя
-                    new_manufacturer = Manufacturer(
-                        name=manufacturer_name,
-                        country_id=country_id
-                    )
-                    session.add(new_manufacturer)
-                    added_count += 1
-
-                # Сохраняем изменения
-                if added_count > 0:
-                    session.commit()
-                    print(Fore.GREEN + f"Добавлено {added_count} новых производителей в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все производители уже существуют в базе данных КИС3.")
-
-                return added_count
-
-            except Exception as e3:
+                    session.add(Manufacturer(name=name, country_id=country_id))
+                    result['added'] += 1
+                return commit_and_summarize_import(session, result, "производителей")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте производителей: {e3}")
-                return 0
-    except Exception as e4:
-        print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e4}")
-        return 0
+                print(Fore.RED + f"Ошибка при импорте производителей: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
+        return result
 
 
-def import_equipment_type_from_kis2() -> int:
+def import_equipment_type_from_kis2() -> Dict[str, any]:
     """
     Импортировать типы оборудования из КИС2 в базу данных КИС3.
-
-    Returns:
-        int: Количество добавленных типов оборудования.
     """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения типов оборудования из КИС2
-        from kis2.DjangoRestAPI import create_equipment_type_set_from_kis2
-        from models.models import EquipmentType  # Предполагается, что такая модель существует
-
-        # Получаем множество типов оборудования из KIS2
         kis2_equipment_types_set = create_equipment_type_set_from_kis2(debug=False)
         if not kis2_equipment_types_set:
             print(Fore.YELLOW + "Не удалось получить типы оборудования из КИС2 или список пуст.")
-            return 0
+            return result
 
         print(Fore.CYAN + f"Получено {len(kis2_equipment_types_set)} типов оборудования из КИС2.")
-
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие типы оборудования
-                equipment_types_query = session.query(EquipmentType.name).all()
-                existing_equipment_types = set(equipment_type[0] for equipment_type in equipment_types_query)
+                existing_types = get_existing_items(session, EquipmentType)
+                new_types = kis2_equipment_types_set - existing_types
+                result['unchanged'] = len(kis2_equipment_types_set & existing_types)
 
-                # Находим новые типы оборудования
-                new_equipment_types = kis2_equipment_types_set - existing_equipment_types
-
-                added_count = 0
-
-                if new_equipment_types:
-                    # Подготавливаем данные для вставки
-                    insert_data = [{"name": equipment_type} for equipment_type in new_equipment_types]
-
-                    # Добавляем новые типы оборудования
-                    session.bulk_insert_mappings(EquipmentType.__mapper__, insert_data)
-                    session.commit()
-                    added_count = len(new_equipment_types)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых типов оборудования в БД КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все типы оборудования уже существуют в базе данных КИС3.")
-
-                return added_count
-            except Exception as db_error:
+                bulk_insert_new_items(session, EquipmentType, new_types, result)
+                return commit_and_summarize_import(session, result, "типов оборудования")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте типов оборудования: {db_error}")
-                return 0
-    except Exception as e5:
-        print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e5}")
-        return 0
+                print(Fore.RED + f"Ошибка при импорте типов оборудования: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
+        return result
 
-
-def import_currency_from_kis2() -> int:
+def import_currency_from_kis2() -> Dict[str, any]:
     """
     Импортировать типы валют из КИС2 в базу данных КИС3.
-
-    Returns:
-        int: Количество добавленных типов валют.
     """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения валют из КИС2
-        from kis2.DjangoRestAPI import create_money_set_from_kis2
-        from models.models import Currency
-
-        # Получаем множество валют из KIS2
         kis2_currencies_set = create_money_set_from_kis2(debug=False)
         if not kis2_currencies_set:
             print(Fore.YELLOW + "Не удалось получить валюты из КИС2 или список пуст.")
-            return 0
+            return result
 
         print(Fore.CYAN + f"Получено {len(kis2_currencies_set)} валют из КИС2.")
-
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие валюты
-                currencies_query = session.query(Currency.name).all()
-                existing_currencies = set(currency[0] for currency in currencies_query)
-
-                # Находим новые валюты
+                existing_currencies = get_existing_items(session, Currency)
                 new_currencies = kis2_currencies_set - existing_currencies
+                result['unchanged'] = len(kis2_currencies_set & existing_currencies)
 
-                added_count = 0
-
-                if new_currencies:
-                    # Подготавливаем данные для вставки
-                    insert_data = [{"name": currency} for currency in new_currencies]
-
-                    # Добавляем новые валюты
-                    session.bulk_insert_mappings(Currency.__mapper__, insert_data)
-                    session.commit()
-                    added_count = len(new_currencies)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых валют в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все валюты уже существуют в базе данных КИС3.")
-
-                return added_count
-            except Exception as db_error:
+                bulk_insert_new_items(session, Currency, new_currencies, result)
+                return commit_and_summarize_import(session, result, "валют")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте валют: {db_error}")
-                return 0
-    except Exception as e6:
-        print(Fore.RED + f"Ошибка при выполнении импорта валют: {e6}")
-        return 0
+                print(Fore.RED + f"Ошибка при импорте валют: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
+        return result
 
 
-def import_cities_from_kis2() -> int:
+def import_cities_from_kis2() -> Dict[str, any]:
     """
     Импортирует названия городов из КИС2 в базу данных КИС3.
-    В КИС2 у городов нет стран, все города из КИС2 привязываются к стране "Россия".
-
-    Returns:
-        int: Количество добавленных городов.
     """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения городов из КИС2
-        from kis2.DjangoRestAPI import create_cities_set_from_kis2
-        from models.models import City, Country
-
-        # Получаем множество городов из KIS2
         kis2_cities_set = create_cities_set_from_kis2(debug=False)
         if not kis2_cities_set:
             print(Fore.YELLOW + "Не удалось получить города из КИС2 или список пуст.")
-            return 0
+            return result
 
         print(Fore.CYAN + f"Получено {len(kis2_cities_set)} городов из КИС2.")
-
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие города
                 cities_query = session.query(City.name).all()
-                existing_cities = set(city[0] for city in cities_query)
-
-                # Находим ID страны "Россия"
-                russia_country = session.query(Country).filter(Country.name == "Россия").first()
-
-                # Если "Россия" не найдена, создаем запись
-                if not russia_country:
-                    print(Fore.YELLOW + "Страна 'Россия' не найдена в базе данных. Создание...")
-                    russia_country = Country(name="Россия")
-                    session.add(russia_country)
+                existing_cities = set(c[0] for c in cities_query)
+                russia = session.query(Country).filter(Country.name == "Россия").first()
+                if not russia:
+                    print(Fore.YELLOW + "Страна 'Россия' не найдена. Создание...")
+                    russia = Country(name="Россия")
+                    session.add(russia)
                     session.commit()
-                    print(Fore.GREEN + "Страна 'Россия' успешно добавлена.")
 
-                russia_id = russia_country.id
-
-                # Находим новые города
                 new_cities = kis2_cities_set - existing_cities
-
-                added_count = 0
+                result['unchanged'] = len(kis2_cities_set & existing_cities)
 
                 if new_cities:
-                    # Подготавливаем данные для вставки
-                    insert_data = [{"name": city, "country_id": russia_id} for city in new_cities]
-
-                    # Добавляем новые города
+                    insert_data = [{"name": c, "country_id": russia.id} for c in new_cities]
                     session.bulk_insert_mappings(City.__mapper__, insert_data)
-                    session.commit()
-                    added_count = len(new_cities)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых городов в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все города уже существуют в базе данных КИС3.")
-
-                return added_count
-
-            except Exception as db_error:
+                    result['added'] = len(new_cities)
+                return commit_and_summarize_import(session, result, "городов")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте городов: {db_error}")
-                return 0
-    except Exception as e7:
-        print(Fore.RED + f"Ошибка при выполнении импорта городов: {e7}")
-        return 0
+                print(Fore.RED + f"Ошибка при импорте городов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта городов: {e}")
+        return result
 
-
-def import_counterparty_from_kis2() -> int:
+def import_counterparty_from_kis2() -> Dict[str, any]:
     """
     Импортирует названия форм контрагентов из КИС2 в базу данных КИС3.
-
-    Returns:
-        int: Количество добавленных форм контрагентов.
     """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения форм контрагентов из КИС2
-        from kis2.DjangoRestAPI import create_companies_form_from_kis2
-        from models.models import CounterpartyForm  # Предполагаемое имя модели в КИС3
-
-        # Получаем множество форм контрагентов из KIS2
-        kis2_counterparty_forms_set = create_companies_form_from_kis2(debug=False)
-        if not kis2_counterparty_forms_set:
+        kis2_forms_set = create_companies_form_from_kis2(debug=False)
+        if not kis2_forms_set:
             print(Fore.YELLOW + "Не удалось получить формы контрагентов из КИС2 или список пуст.")
-            return 0
+            return result
 
-        print(Fore.CYAN + f"Получено {len(kis2_counterparty_forms_set)} форм контрагентов из КИС2.")
-
-        # Открываем сессию
+        print(Fore.CYAN + f"Получено {len(kis2_forms_set)} форм контрагентов из КИС2.")
         with SyncSession() as session:
             try:
-                # Получаем существующие формы контрагентов
-                counterparty_forms_query = session.query(CounterpartyForm.name).all()
-                existing_forms = set(form[0] for form in counterparty_forms_query)
-
-                # Находим новые формы контрагентов
-                new_forms = kis2_counterparty_forms_set - existing_forms
-
-                added_count = 0
+                forms_query = session.query(CounterpartyForm.name).all()
+                existing_forms = set(f[0] for f in forms_query)
+                new_forms = kis2_forms_set - existing_forms
+                result['unchanged'] = len(kis2_forms_set & existing_forms)
 
                 if new_forms:
-                    # Подготавливаем данные для вставки
-                    insert_data = [{"name": form} for form in new_forms]
-
-                    # Добавляем новые формы контрагентов
+                    insert_data = [{"name": f} for f in new_forms]
                     session.bulk_insert_mappings(CounterpartyForm.__mapper__, insert_data)
-                    session.commit()
-                    added_count = len(new_forms)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых форм контрагентов в базу данных КИС3(Postgres).")
-                else:
-                    print(Fore.YELLOW + "Все формы контрагентов уже существуют в базе данных КИС3.")
-
-                return added_count
-            except Exception as db_error:
+                    result['added'] = len(new_forms)
+                return commit_and_summarize_import(session, result, "форм контрагентов")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте форм контрагентов: {db_error}")
-                return 0
-    except Exception as e8:
-        print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e8}")
-        return 0
+                print(Fore.RED + f"Ошибка при импорте форм контрагентов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e}")
+        return result
 
 
-def import_companies_from_kis2() -> dict:
+def import_companies_from_kis2() -> Dict[str, any]:
     """
     Импортирует контрагентов (компании) из КИС2 в базу данных КИС3.
-    Добавляет новые компании и обновляет существующие, если их данные изменились.
-
-    Returns:
-        dict: Словарь с результатами операции:
-            - 'status': 'success' или 'error'
-            - 'added': количество добавленных компаний
-            - 'updated': количество обновленных компаний
-            - 'unchanged': количество неизмененных компаний
     """
-    result = {
-        'status': 'error',
-        'added': 0,
-        'updated': 0,
-        'unchanged': 0
-    }
-
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Получаем список словарей компаний из КИС2
         kis2_companies_list = create_companies_list_dict_from_kis2(debug=False)
         if not kis2_companies_list:
             print(Fore.YELLOW + "Не удалось получить компании из КИС2 или список пуст.")
             return result
 
         print(Fore.CYAN + f"Получено {len(kis2_companies_list)} компаний из КИС2.")
-
-        # Открываем сессию для работы с базой данных КИС3
         with SyncSession() as session:
             try:
-                # Получаем существующие компании из базы данных КИС3 со всеми необходимыми данными
-                existing_companies_query = session.query(
-                    Counterparty.id,
-                    Counterparty.name,
-                    Counterparty.form_id,
-                    Counterparty.city_id,
-                    Counterparty.note
-                ).all()
+                existing_companies = {c[1]: {'id': c[0], 'form_id': c[2], 'city_id': c[3], 'note': c[4]}
+                                      for c in session.query(Counterparty.id, Counterparty.name,
+                                                             Counterparty.form_id, Counterparty.city_id,
+                                                             Counterparty.note).all()}
+                forms_dict = {name: id for id, name in session.query(CounterpartyForm.id, CounterpartyForm.name).all()}
+                form_id_to_name = {id: name for name, id in forms_dict.items()}
+                cities_dict = {name: id for id, name in session.query(City.id, City.name).all()}
+                city_id_to_name = {id: name for name, id in cities_dict.items()}
 
-                # Создаем словарь существующих компаний для быстрого доступа
-                existing_companies = {
-                    company[1]: {
-                        'id': company[0],
-                        'form_id': company[2],
-                        'city_id': company[3],
-                        'note': company[4]
-                    } for company in existing_companies_query
-                }
-
-                # Получаем словарь форм контрагентов {название: id}
-                counterparty_forms_query = session.query(CounterpartyForm.id, CounterpartyForm.name).all()
-                counterparty_forms_dict = {form_name: form_id for form_id, form_name in counterparty_forms_query}
-
-                # Словарь для обратного поиска: {id: name}
-                form_id_to_name = {form_id: form_name for form_name, form_id in counterparty_forms_dict.items()}
-
-                # Получаем словарь городов {название: id}
-                cities_query = session.query(City.id, City.name).all()
-                cities_dict = {city_name: city_id for city_id, city_name in cities_query}
-
-                # Словарь для обратного поиска: {id: name}
-                city_id_to_name = {city_id: city_name for city_name, city_id in cities_dict.items()}
-
-                # Обрабатываем данные компаний
                 for company_data in kis2_companies_list:
-                    company_name = company_data['name']
-                    form_name = company_data['form']
-                    city_name = company_data['city']
+                    name = company_data['name']
+                    form_id = forms_dict.get(company_data['form'])
+                    if not form_id:
+                        print(Fore.RED + f"Не найден ID для формы '{company_data['form']}'. Пропуск '{name}'.")
+                        continue
+                    city_id = cities_dict.get(company_data['city']) if company_data['city'] else None
                     note = company_data['note']
 
-                    # Получаем ID формы контрагента
-                    form_id = counterparty_forms_dict.get(form_name)
-                    if not form_id:
-                        print(Fore.RED + f"Не удалось найти ID для формы контрагента '{form_name}'. "
-                                         f"Пропуск компании '{company_name}'.")
-                        continue
-
-                    # Получаем ID города (если указан)
-                    city_id = cities_dict.get(city_name) if city_name else None
-
-                    # Проверяем, существует ли компания
-                    if company_name in existing_companies:
-                        # Компания существует - проверяем, нужно ли обновлять данные
-                        existing_data = existing_companies[company_name]
-                        current_form_id = existing_data['form_id']
-                        current_city_id = existing_data['city_id']
-                        current_note = existing_data['note']
-
+                    if name in existing_companies:
+                        existing = existing_companies[name]
                         needs_update = False
                         update_details = []
-
-                        # Проверяем, изменилась ли форма
-                        if current_form_id != form_id:
+                        if existing['form_id'] != form_id:
                             needs_update = True
-                            update_details.append(f"форма с '{form_id_to_name.get(current_form_id)}' на '{form_name}'")
-
-                        # Проверяем, изменился ли город
-                        if current_city_id != city_id:
+                            update_details.append(
+                                f"форма с '{form_id_to_name.get(existing['form_id'])}' на '{company_data['form']}'")
+                        if existing['city_id'] != city_id:
                             needs_update = True
-                            old_city = city_id_to_name.get(current_city_id, "отсутствует")
-                            new_city = city_name or "отсутствует"
+                            old_city = city_id_to_name.get(existing['city_id'], "отсутствует")
+                            new_city = company_data['city'] or "отсутствует"
                             update_details.append(f"город с '{old_city}' на '{new_city}'")
-
-                        # Проверяем, изменилось ли примечание
-                        if current_note != note:
+                        if existing['note'] != note:
                             needs_update = True
-                            update_details.append(f"примечание")
+                            update_details.append("примечание")
 
                         if needs_update:
-                            # Обновляем данные компании
-                            counterparty = session.get(Counterparty, existing_data['id'])
+                            counterparty = session.get(Counterparty, existing['id'])
                             counterparty.form_id = form_id
                             counterparty.city_id = city_id
                             counterparty.note = note
-
                             result['updated'] += 1
-                            print(Fore.BLUE + f"Обновлена компания '{company_name}': {', '.join(update_details)}")
+                            print(Fore.BLUE + f"Обновлена компания '{name}': {', '.join(update_details)}")
                         else:
                             result['unchanged'] += 1
                     else:
-                        # Компания не существует - добавляем новую
-                        new_counterparty = Counterparty(
-                            name=company_name,
-                            form_id=form_id,
-                            city_id=city_id,
-                            note=note
-                        )
-                        session.add(new_counterparty)
+                        session.add(Counterparty(name=name, form_id=form_id, city_id=city_id, note=note))
                         result['added'] += 1
-
-                # Сохраняем изменения
-                return commit_and_summarize_import(session, result, entity_type='компаний')
-
-            except Exception as db_error:
+                return commit_and_summarize_import(session, result, "компаний")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте компаний: {db_error}")
+                print(Fore.RED + f"Ошибка при импорте компаний: {e}")
                 return result
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
         return result
 
 
-def import_person_from_kis2() -> dict:
+def import_person_from_kis2() -> Dict[str, any]:
     """
     Импортирует людей (персоны) из КИС2 в базу данных КИС3.
-    Добавляет новых людей и обновляет существующих, если их данные изменились.
-
-    Returns:
-        dict: Словарь с результатами операции:
-            - 'status': 'success' или 'error'
-            - 'added': количество добавленных персон
-            - 'updated': количество обновленных персон
-            - 'unchanged': количество неизмененных персон
     """
-    result = {
-        'status': 'error',
-        'added': 0,
-        'updated': 0,
-        'unchanged': 0
-    }
-
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения персон из КИС2
-        from kis2.DjangoRestAPI import create_person_list_dict_from_kis2
-        from models.models import Person, Counterparty
-
-        # Получаем список словарей персон из КИС2
         kis2_persons_list = create_person_list_dict_from_kis2(debug=False)
         if not kis2_persons_list:
             print(Fore.YELLOW + "Не удалось получить людей из КИС2 или список пуст.")
             return result
 
         print(Fore.CYAN + f"Получено {len(kis2_persons_list)} людей из КИС2.")
-
-        # Открываем сессию для работы с базой данных КИС3
         with SyncSession() as session:
             try:
-                # Получаем существующих людей из базы данных КИС3
-                existing_persons_query = session.query(
-                    Person.id,
-                    Person.name,
-                    Person.patronymic,
-                    Person.surname,
-                    Person.phone,
-                    Person.email,
-                    Person.counterparty_id
-                ).all()
+                existing_persons = {
+                    f"{p[3]}|{p[1]}|{p[2] or ''}": {'id': p[0], 'phone': p[4], 'email': p[5], 'counterparty_id': p[6]}
+                    for p in session.query(Person.id, Person.name, Person.patronymic,
+                                           Person.surname, Person.phone, Person.email,
+                                           Person.counterparty_id).all()}
+                companies_dict = {name: id for id, name in session.query(Counterparty.id, Counterparty.name).all()}
 
-                # Создаем словарь существующих людей для быстрого доступа.
-                # Используем комбинацию имени, фамилии и отчества как ключ.
-                existing_persons = {}
-                for p_id, name, patronymic, surname, phone, email, counterparty_id in existing_persons_query:
-                    key = f"{surname}|{name}|{patronymic or ''}"
-                    existing_persons[key] = {
-                        'id': p_id,
-                        'name': name,
-                        'patronymic': patronymic,
-                        'surname': surname,
-                        'phone': phone,
-                        'email': email,
-                        'counterparty_id': counterparty_id
-                    }
-
-                # Получаем словарь компаний {название: id}
-                companies_query = session.query(Counterparty.id, Counterparty.name).all()
-                companies_dict = {company_name: company_id for company_id, company_name in companies_query}
-
-                # Обрабатываем данные людей
                 for person_data in kis2_persons_list:
                     name = person_data['name']
                     patronymic = person_data['patronymic']
                     surname = person_data['surname']
                     phone = person_data['phone']
                     email = person_data['email']
-                    company_name = person_data['company']
-
-                    # Создаем ключ для поиска человека
+                    company_id = companies_dict.get(person_data['company']) if person_data['company'] else None
                     person_key = f"{surname}|{name}|{patronymic or ''}"
 
-                    # Получаем ID компании (если указана)
-                    counterparty_id = companies_dict.get(company_name) if company_name else None
-
-                    # Проверяем, существует ли человек
                     if person_key in existing_persons:
-                        # Человек существует - проверяем, нужно ли обновлять данные
-                        existing_data = existing_persons[person_key]
-                        current_phone = existing_data['phone']
-                        current_email = existing_data['email']
-                        current_counterparty_id = existing_data['counterparty_id']
-
+                        existing = existing_persons[person_key]
                         needs_update = False
                         update_details = []
-
-                        # Проверяем, изменился ли телефон
-                        if current_phone != phone:
+                        if existing['phone'] != phone:
                             needs_update = True
                             update_details.append(
-                                f"телефон с '{current_phone or 'отсутствует'}' на '{phone or 'отсутствует'}'")
-
-                        # Проверяем, изменился ли email
-                        if current_email != email:
+                                f"телефон с '{existing['phone'] or 'отсутствует'}' на '{phone or 'отсутствует'}'")
+                        if existing['email'] != email:
                             needs_update = True
                             update_details.append(
-                                f"email с '{current_email or 'отсутствует'}' на '{email or 'отсутствует'}'")
-
-                        # Проверяем, изменилась ли компания
-                        if current_counterparty_id != counterparty_id:
+                                f"email с '{existing['email'] or 'отсутствует'}' на '{email or 'отсутствует'}'")
+                        if existing['counterparty_id'] != company_id:
                             needs_update = True
-                            # Получаем названия компаний для вывода в лог
-                            old_company_name = "отсутствует"
-                            if current_counterparty_id:
-                                for c_name, c_id in companies_dict.items():
-                                    if c_id == current_counterparty_id:
-                                        old_company_name = c_name
-                                        break
-
-                            update_details.append(
-                                f"компания с '{old_company_name}' на '{company_name or 'отсутствует'}'")
+                            old_company = next(
+                                (n for n, i in companies_dict.items() if i == existing['counterparty_id']),
+                                "отсутствует")
+                            new_company = person_data['company'] or "отсутствует"
+                            update_details.append(f"компания с '{old_company}' на '{new_company}'")
 
                         if needs_update:
-                            # Обновляем данные человека
-                            person = session.get(Person, existing_data['id'])
+                            person = session.get(Person, existing['id'])
                             person.phone = phone
                             person.email = email
-                            person.counterparty_id = counterparty_id
-
+                            person.counterparty_id = company_id
                             result['updated'] += 1
                             print(Fore.BLUE + f"Обновлен человек '{surname} {name}': {', '.join(update_details)}")
                         else:
                             result['unchanged'] += 1
                     else:
-                        # Человек не существует - добавляем нового
-                        new_person = Person(
-                            name=name,
-                            patronymic=patronymic,
-                            surname=surname,
-                            phone=phone,
-                            email=email,
-                            counterparty_id=counterparty_id,
-                            active=True  # По умолчанию все импортированные люди активны
-                        )
-                        session.add(new_person)
+                        session.add(Person(name=name, patronymic=patronymic, surname=surname,
+                                           phone=phone, email=email, counterparty_id=company_id, active=True))
                         result['added'] += 1
                         print(Fore.GREEN + f"Добавлен новый человек: {surname} {name}")
-
-                # Сохраняем изменения
-                return commit_and_summarize_import(session, result, entity_type='людей')
-
-            except Exception as db_error:
+                return commit_and_summarize_import(session, result, "людей")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте людей: {db_error}")
+                print(Fore.RED + f"Ошибка при импорте людей: {e}")
                 return result
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
         return result
 
-def import_works_from_kis2() -> dict:
+
+def import_works_from_kis2() -> Dict[str, any]:
     """
     Импортирует работы из КИС2 в базу данных КИС3.
-    Добавляет новые работы и обновляет существующие, если описание изменилось.
-
-    Returns:
-        dict: Словарь с результатами операции:
-            - 'status': 'success' или 'error'
-            - 'added': количество добавленных работ
-            - 'updated': количество обновленных работ
-            - 'unchanged': количество неизмененных работ
     """
-    result = {
-        'status': 'error',
-        'added': 0,
-        'updated': 0,
-        'unchanged': 0
-    }
-
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Импортируем функцию получения работ из КИС2
-        from kis2.DjangoRestAPI import create_works_list_dict_from_kis2
-        from models.models import Work
-
-        # Получаем список словарей работ из КИС2
         kis2_works_list = create_works_list_dict_from_kis2(debug=False)
         if not kis2_works_list:
             print(Fore.YELLOW + "Не удалось получить работы из КИС2 или список пуст.")
             return result
 
         print(Fore.CYAN + f"Получено {len(kis2_works_list)} работ из КИС2.")
-
-        # Открываем сессию для работы с базой данных КИС3
         with SyncSession() as session:
             try:
-                # Получаем существующие работы из базы данных КИС3
-                existing_works_query = session.query(
-                    Work.id,
-                    Work.name,
-                    Work.description
-                ).all()
+                existing_works = {w[1]: {'id': w[0], 'description': w[2]}
+                                  for w in session.query(Work.id, Work.name, Work.description).all()}
 
-                # Создаем словарь существующих работ для быстрого доступа
-                existing_works = {
-                    work[1]: {
-                        'id': work[0],
-                        'description': work[2]
-                    } for work in existing_works_query
-                }
-
-                # Обрабатываем данные работ
                 for work_data in kis2_works_list:
-                    work_name = work_data['name']
-                    work_description = work_data.get('description', "")
-
-                    # Проверяем, существует ли работа
-                    if work_name in existing_works:
-                        # Работа существует - проверяем, нужно ли обновлять описание
-                        existing_data = existing_works[work_name]
-                        current_description = existing_data['description'] or ""
-
-                        if current_description != work_description:
-                            # Обновляем описание работы
-                            work = session.get(Work, existing_data['id'])
-                            work.description = work_description
-
+                    name = work_data['name']
+                    description = work_data.get('description', "")
+                    if name in existing_works:
+                        existing = existing_works[name]
+                        if existing['description'] != description:
+                            work = session.get(Work, existing['id'])
+                            work.description = description
                             result['updated'] += 1
-                            print(Fore.BLUE + f"Обновлена работа '{work_name}': изменено описание")
+                            print(Fore.BLUE + f"Обновлена работа '{name}': изменено описание")
                         else:
                             result['unchanged'] += 1
                     else:
-                        # Работа не существует - добавляем новую
-                        new_work = Work(
-                            name=work_name,
-                            description=work_description,
-                            active=True  # По умолчанию все импортированные работы активны
-                        )
-                        session.add(new_work)
+                        session.add(Work(name=name, description=description, active=True))
                         result['added'] += 1
-                        print(Fore.GREEN + f"Добавлена новая работа: {work_name}")
-
-                # Сохраняем изменения
-                return commit_and_summarize_import(session, result, entity_type='работ')
-
-            except Exception as db_error:
+                        print(Fore.GREEN + f"Добавлена новая работа: {name}")
+                return commit_and_summarize_import(session, result, "работ")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при импорте работ: {db_error}")
+                print(Fore.RED + f"Ошибка при импорте работ: {e}")
                 return result
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
         return result
 
-def ensure_order_statuses_exist() -> dict:
-    """
-    Проверяет наличие стандартных статусов заказов в базе данных, создает отсутствующие и обновляет описания,
-    если они отличаются от стандартных.
 
-    Returns:
-        dict: Словарь с результатами операции:
-            - 'status': 'success' или 'error'
-            - 'added': количество добавленных статусов
-            - 'updated': количество обновленных статусов
-            - 'unchanged': количество неизмененных статусов
+def ensure_order_statuses_exist() -> Dict[str, any]:
     """
+    Проверяет наличие стандартных статусов заказов в базе данных, создает отсутствующие и обновляет описания.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        # Определяем стандартные статусы заказов
         standard_statuses = [
             {"id": 1, "name": "Не определён", "description": "Статус заказа не определен"},
             {"id": 2, "name": "На согласовании", "description": "Заказ находится на этапе согласования"},
@@ -892,109 +489,50 @@ def ensure_order_statuses_exist() -> dict:
             {"id": 7, "name": "Не согласовано", "description": "Заказ не согласован"},
             {"id": 8, "name": "На паузе", "description": "Выполнение заказа приостановлено"}
         ]
-
-        # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие статусы заказов с их описаниями
-                existing_statuses = session.query(OrderStatus).all()
-                existing_status_dict = {status.id: status for status in existing_statuses}
-                existing_status_ids = set(existing_status_dict.keys())
-
-                added_count = 0
-                updated_count = 0
-                unchanged_count = 0
+                existing_statuses = {s.id: s for s in session.query(OrderStatus).all()}
                 new_statuses = []
                 updates = []
 
-                # Сравниваем стандартные статусы с существующими
-                for standard_status in standard_statuses:
-                    std_id = standard_status["id"]
-                    if std_id not in existing_status_ids:
-                        # Статус отсутствует - добавляем
-                        new_statuses.append(standard_status)
-                        added_count += 1
+                for status in standard_statuses:
+                    if status["id"] not in existing_statuses:
+                        new_statuses.append(status)
+                        result['added'] += 1
+                    elif existing_statuses[status["id"]].description != status["description"]:
+                        updates.append(status)
+                        result['updated'] += 1
                     else:
-                        # Статус существует - проверяем описание
-                        current_status = existing_status_dict[std_id]
-                        if current_status.description != standard_status["description"]:
-                            # Описание отличается - обновляем
-                            updates.append({
-                                "id": std_id,
-                                "name": standard_status["name"],
-                                "description": standard_status["description"]
-                            })
-                            updated_count += 1
-                        else:
-                            # Ничего не изменилось
-                            unchanged_count += 1
+                        result['unchanged'] += 1
 
-                # Выполняем операции с базой данных
                 if new_statuses:
                     session.bulk_insert_mappings(OrderStatus.__mapper__, new_statuses)
-                    print(Fore.GREEN + f"Добавлено {added_count} новых статусов заказов.")
-
                 if updates:
                     session.bulk_update_mappings(OrderStatus.__mapper__, updates)
-                    print(Fore.GREEN + f"Обновлено описаний статусов: {updated_count}")
-
-                if not new_statuses and not updates:
-                    print(Fore.YELLOW + "Все стандартные статусы заказов уже существуют и актуальны.")
-
-                session.commit()
-
-                return {
-                    "status": "success",
-                    "added": added_count,
-                    "updated": updated_count,
-                    "unchanged": unchanged_count
-                }
-
-            except Exception as db_error:
+                return commit_and_summarize_import(session, result, "статусов заказов")
+            except Exception as e:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при работе со статусами заказов: {db_error}")
-                return {
-                    "status": "error",
-                    "added": 0,
-                    "updated": 0,
-                    "unchanged": 0
-                }
+                print(Fore.RED + f"Ошибка при работе со статусами заказов: {e}")
+                return result
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении проверки статусов заказов: {e}")
-        return {
-            "status": "error",
-            "added": 0,
-            "updated": 0,
-            "unchanged": 0
-        }
+        return result
 
-# Этот код выполняется только при прямом запуске файла, а не при импорте
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
         Выводит результаты импорта в консоль с форматированием.
-
-        Args:
-            import_result (dict): Словарь с результатами импорта
-            entity_name (str): Название сущности, которая импортируется (компании, люди и т.д.)
         """
         if import_result['status'] == 'success':
-            # Формируем информативное сообщение о результатах
             result_messages = []
-
             if import_result.get('added', 0) > 0:
                 result_messages.append(f"добавлено: {import_result['added']}")
-
             if import_result.get('updated', 0) > 0:
                 result_messages.append(f"обновлено: {import_result['updated']}")
-
             if import_result.get('unchanged', 0) > 0:
                 result_messages.append(f"без изменений: {import_result['unchanged']}")
-
-            # Общее количество обработанных элементов
             total = import_result.get('added', 0) + import_result.get('updated', 0) + import_result.get('unchanged', 0)
-
-            # Выводим результат с соответствующим цветом
             if import_result.get('added', 0) > 0 or import_result.get('updated', 0) > 0:
                 print(Fore.GREEN + f"Результат импорта {entity_name} ({total}): {', '.join(result_messages)}")
             else:
@@ -1005,10 +543,9 @@ if __name__ == "__main__":
 
     answer = ""
     while answer != "e":
-        print("")
-        print("Change action:")
+        print("\nChange action:")
         print("e - exit")
-        print("1 - copy countries from KIS2 ")
+        print("1 - copy countries from KIS2")
         print("2 - copy manufacturers from KIS2")
         print("3 - copy equipment types from KIS2")
         print("4 - copy currencies from KIS2")
@@ -1020,119 +557,31 @@ if __name__ == "__main__":
         print("10 - ensure order statuses exist")
         answer = input()
 
-        if answer == "1":
+        operations = {
+            "1": ("Импорт стран из КИС2", import_countries_from_kis2, "стран"),
+            "2": ("Импорт производителей из КИС2", import_manufacturers_from_kis2, "производителей"),
+            "3": ("Импорт типов оборудования из КИС2", import_equipment_type_from_kis2, "типов оборудования"),
+            "4": ("Импорт валют из КИС2", import_currency_from_kis2, "валют"),
+            "5": ("Импорт городов из КИС2", import_cities_from_kis2, "городов"),
+            "6": ("Импорт форм контрагентов из КИС2", import_counterparty_from_kis2, "форм контрагентов"),
+            "7": ("Импорт компаний из КИС2", import_companies_from_kis2, "компаний"),
+            "8": ("Импорт людей из КИС2", import_person_from_kis2, "людей"),
+            "9": ("Импорт работ из КИС2", import_works_from_kis2, "работ"),
+            "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов")
+        }
+
+        if answer in operations:
             if test_sync_connection():
                 try:
-                    print(Fore.CYAN + "=== Импорт стран из КИС2 ===")
-                    import_result = import_countries_from_kis2()
-                    print_import_results(import_result, "стран")
+                    title, func, entity_name = operations[answer]
+                    print(Fore.CYAN + f"=== {title} ===")
+                    import_result = func()
+                    print_import_results(import_result, entity_name)
                 except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении операций с данными: {e}")
+                    print(Fore.RED + f"Ошибка при выполнении операции: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "2":
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт производителей из КИС2 ===")
-                    imported_count = import_manufacturers_from_kis2()
-                    print(Fore.GREEN + f"Импортировано производителей: {imported_count}")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта производителей: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "3":
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт типов оборудования из КИС2 ===")
-                    imported_count = import_equipment_type_from_kis2()
-                    print(Fore.GREEN + f"Импортировано типов оборудования: {imported_count}")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "4":
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт валют из КИС2 ===")
-                    imported_count = import_currency_from_kis2()
-                    print(Fore.GREEN + f"Импортировано валют: {imported_count}")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта валют: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "5":
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт городов из КИС2 ===")
-                    imported_count = import_cities_from_kis2()
-                    print(Fore.GREEN + f"Импортировано городов: {imported_count}")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта городов: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "6":  # Добавлен новый вариант для форм контрагентов
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт форм контрагентов из КИС2 ===")
-                    imported_count = import_counterparty_from_kis2()
-                    print(Fore.GREEN + f"Импортировано форм контрагентов: {imported_count}")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта форм контрагентов: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "7":  # Импорт компаний из КИС2
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт компаний из КИС2 ===")
-                    import_result = import_companies_from_kis2()
-                    print_import_results(import_result, "компаний")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта компаний: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "8":  # Импорт людей из КИС2
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт людей из КИС2 ===")
-                    import_result = import_person_from_kis2()
-                    print_import_results(import_result, "людей")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-        elif answer == "9":  # Импорт работ из КИС2
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Импорт работ из КИС2 ===")
-                    import_result = import_works_from_kis2()
-                    print_import_results(import_result, "работ")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
-
-        elif answer == "10":  # Проверка и создание стандартных статусов заказов
-            if test_sync_connection():
-                try:
-                    print(Fore.CYAN + "=== Проверка и создание стандартных статусов заказов ===")
-                    import_result = ensure_order_statuses_exist()
-                    print_import_results(import_result, "статусов заказов")
-                except Exception as e:
-                    print(Fore.RED + f"Ошибка при проверке статусов заказов: {e}")
-            else:
-                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
-
         elif answer != "e":
             print(Fore.RED + "Неверный ввод. Повторите попытку.")
-            continue
 
     print("Goodbye!")
