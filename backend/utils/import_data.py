@@ -5,6 +5,8 @@
 """
 import sys
 import os
+from datetime import datetime
+
 from colorama import init, Fore
 from typing import Dict, Set, Any
 
@@ -16,9 +18,10 @@ from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_companies_
     create_list_dict_manufacturers, create_equipment_type_set_from_kis2, create_money_set_from_kis2, \
     create_cities_set_from_kis2, create_companies_form_from_kis2, create_person_list_dict_from_kis2, \
     create_works_list_dict_from_kis2
+from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2
 from database import SyncSession, test_sync_connection
 from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus, \
-    EquipmentType, Currency, Person, Work
+    EquipmentType, Currency, Person, Work, Order
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -81,7 +84,7 @@ def import_countries_from_kis2() -> Dict[str, any]:
     """
     result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
-        kis2_countries_set = create_countries_set_from_kis2()
+        kis2_countries_set = create_countries_set_from_kis2(debug=False)
         if not kis2_countries_set:
             print(Fore.YELLOW + "Не удалось получить страны из КИС2 или список пуст.")
             return result
@@ -184,6 +187,7 @@ def import_equipment_type_from_kis2() -> Dict[str, any]:
         print(Fore.RED + f"Ошибка при выполнении импорта типов оборудования: {e}")
         return result
 
+
 def import_currency_from_kis2() -> Dict[str, any]:
     """
     Импортировать типы валют из КИС2 в базу данных КИС3.
@@ -251,6 +255,7 @@ def import_cities_from_kis2() -> Dict[str, any]:
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта городов: {e}")
         return result
+
 
 def import_counterparty_from_kis2() -> Dict[str, any]:
     """
@@ -519,6 +524,224 @@ def ensure_order_statuses_exist() -> Dict[str, any]:
         return result
 
 
+def import_orders_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует заказы из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_orders_list = create_orders_list_dict_from_kis2(debug=False)
+        if not kis2_orders_list:
+            print(Fore.YELLOW + "Не удалось получить заказы из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_orders_list)} заказов из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Получаем существующие заказы
+                existing_orders = {o.serial: o for o in session.query(Order).all()}
+                # Получаем словари для связей
+                customers_dict = {name: id for id, name in session.query(Counterparty.id, Counterparty.name).all()}
+                works_dict = {name: id for id, name in session.query(Work.id, Work.name).all()}
+                status_dict = {name: id for id, name in session.query(OrderStatus.id, OrderStatus.name).all()}
+
+                # Проверяем наличие всех статусов заказов
+                ensure_order_statuses_exist()
+
+                for order_data in kis2_orders_list:
+                    serial = order_data['serial']
+                    name = order_data['name']
+                    customer_name = order_data['customer']
+                    priority = order_data['priority'] if order_data['priority'] > 0 and order_data[
+                        'priority'] < 11 else None
+                    # Получаем id статуса из словаря по текстовому статусу
+                    status_text = order_data['status']
+                    status_id = status_dict.get(status_text, 1)  # По умолчанию 1 (Не определён)
+
+                    # Конвертация строк дат и времени в объекты datetime
+                    start_moment = datetime.strptime(order_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
+                        'start_moment'] else None
+                    deadline_moment = datetime.strptime(order_data['dedline_moment'], "%Y-%m-%dT%H:%M:%SZ") if \
+                        order_data['dedline_moment'] else None
+                    end_moment = datetime.strptime(order_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
+                        'end_moment'] else None
+
+                    # Получаем customer_id
+                    if customer_name and customer_name in customers_dict:
+                        customer_id = customers_dict[customer_name]
+                    else:
+                        print(Fore.YELLOW + f"Не найден заказчик '{customer_name}' для заказа {serial}. Пропуск.")
+                        continue
+
+                    # Финансовые данные
+                    materials_cost = order_data.get('materialsCost', 0)
+                    materials_paid = order_data.get('materialsPaid', False)
+                    products_cost = order_data.get('productsCost', 0)
+                    products_paid = order_data.get('productsPaid', False)
+                    work_cost = order_data.get('workCost', 0)
+                    work_paid = order_data.get('workPaid', False)
+                    debt = order_data.get('debt', 0)
+                    debt_paid = order_data.get('debtPaid', False)
+
+                    # Получаем список работ
+                    order_works = order_data.get('works', [])
+
+                    # Если заказ уже существует, обновляем его
+                    if serial in existing_orders:
+                        order = existing_orders[serial]
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем изменения в основных полях
+                        if order.name != name:
+                            order.name = name
+                            needs_update = True
+                            update_details.append("название")
+
+                        if order.customer_id != customer_id:
+                            order.customer_id = customer_id
+                            needs_update = True
+                            update_details.append("заказчик")
+
+                        if order.priority != priority:
+                            order.priority = priority
+                            needs_update = True
+                            update_details.append("приоритет")
+
+                        if order.status_id != status_id:
+                            order.status_id = status_id
+                            needs_update = True
+                            update_details.append("статус")
+
+                        if order.start_moment != start_moment:
+                            order.start_moment = start_moment
+                            needs_update = True
+                            update_details.append("дата начала")
+
+                        if order.deadline_moment != deadline_moment:
+                            order.deadline_moment = deadline_moment
+                            needs_update = True
+                            update_details.append("дедлайн")
+
+                        if order.end_moment != end_moment:
+                            order.end_moment = end_moment
+                            needs_update = True
+                            update_details.append("дата окончания")
+
+                        # Проверяем изменения в финансовых данных
+                        if order.materials_cost != materials_cost:
+                            order.materials_cost = materials_cost
+                            needs_update = True
+                            update_details.append("стоимость материалов")
+
+                        if order.materials_paid != materials_paid:
+                            order.materials_paid = materials_paid
+                            needs_update = True
+                            update_details.append("оплата материалов")
+
+                        if order.products_cost != products_cost:
+                            order.products_cost = products_cost
+                            needs_update = True
+                            update_details.append("стоимость товаров")
+
+                        if order.products_paid != products_paid:
+                            order.products_paid = products_paid
+                            needs_update = True
+                            update_details.append("оплата товаров")
+
+                        if order.work_cost != work_cost:
+                            order.work_cost = work_cost
+                            needs_update = True
+                            update_details.append("стоимость работ")
+
+                        if order.work_paid != work_paid:
+                            order.work_paid = work_paid
+                            needs_update = True
+                            update_details.append("оплата работ")
+
+                        if order.debt != debt:
+                            order.debt = debt
+                            needs_update = True
+                            update_details.append("задолженность")
+
+                        if order.debt_paid != debt_paid:
+                            order.debt_paid = debt_paid
+                            needs_update = True
+                            update_details.append("оплата задолженности")
+
+                        # Обновляем связи с работами
+                        existing_works = {work.name for work in order.works}
+                        new_works = set(order_works) - existing_works
+                        removed_works = existing_works - set(order_works)
+
+                        if new_works or removed_works:
+                            needs_update = True
+                            # Удаляем работы, которых больше нет в заказе
+                            if removed_works:
+                                for work_name in removed_works:
+                                    work_to_remove = next((w for w in order.works if w.name == work_name), None)
+                                    if work_to_remove:
+                                        order.works.remove(work_to_remove)
+                                        update_details.append(f"удалена работа '{work_name}'")
+
+                            # Добавляем новые работы
+                            if new_works:
+                                for work_name in new_works:
+                                    work_id = works_dict.get(work_name)
+                                    if work_id:
+                                        work = session.query(Work).get(work_id)
+                                        if work:
+                                            order.works.append(work)
+                                            update_details.append(f"добавлена работа '{work_name}'")
+
+                        if needs_update:
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлен заказ '{serial}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Создаем новый заказ
+                        new_order = Order(
+                            serial=serial,
+                            name=name,
+                            customer_id=customer_id,
+                            priority=priority,
+                            status_id=status_id,
+                            start_moment=start_moment,
+                            deadline_moment=deadline_moment,
+                            end_moment=end_moment,
+                            materials_cost=materials_cost,
+                            materials_paid=materials_paid,
+                            products_cost=products_cost,
+                            products_paid=products_paid,
+                            work_cost=work_cost,
+                            work_paid=work_paid,
+                            debt=debt,
+                            debt_paid=debt_paid
+                        )
+
+                        # Добавляем связи с работами
+                        for work_name in order_works:
+                            work_id = works_dict.get(work_name)
+                            if work_id:
+                                work = session.query(Work).get(work_id)
+                                if work:
+                                    new_order.works.append(work)
+
+                        session.add(new_order)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый заказ: {serial} - {name}")
+
+                return commit_and_summarize_import(session, result, "заказов")
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте заказов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта заказов: {e}")
+        return result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -555,6 +778,7 @@ if __name__ == "__main__":
         print("8 - copy people from KIS2")
         print("9 - copy works from KIS2")
         print("10 - ensure order statuses exist")
+        print("11 - import orders from KIS2")
         answer = input()
 
         operations = {
@@ -567,7 +791,8 @@ if __name__ == "__main__":
             "7": ("Импорт компаний из КИС2", import_companies_from_kis2, "компаний"),
             "8": ("Импорт людей из КИС2", import_person_from_kis2, "людей"),
             "9": ("Импорт работ из КИС2", import_works_from_kis2, "работ"),
-            "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов")
+            "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов"),
+            "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов")
         }
 
         if answer in operations:

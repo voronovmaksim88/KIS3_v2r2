@@ -570,7 +570,7 @@ def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
         - 'name': Название заказа
         - 'customer': Название компании-заказчика
         - 'priority': Приоритет заказа (1-10)
-        - 'status': Статус заказа (0-7)
+        - 'status': Статус заказа текстом
         - 'start_moment': Дата и время создания заказа
         - 'dedline_moment': Крайний срок завершения
         - 'end_moment': Фактический срок завершения
@@ -642,7 +642,7 @@ def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
             'name': order.get("name", ""),
             'customer': customer_name,
             'priority': order.get("priority"),
-            'status': order.get("status"),
+            'status': get_order_status(order.get("status")),
             'start_moment': order.get("start_moment"),
             'dedline_moment': order.get("dedline_moment"),
             'end_moment': order.get("end_moment"),
