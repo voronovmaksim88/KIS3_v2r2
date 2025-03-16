@@ -758,6 +758,98 @@ def import_person_from_kis2() -> dict:
         print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
         return result
 
+def import_works_from_kis2() -> dict:
+    """
+    Импортирует работы из КИС2 в базу данных КИС3.
+    Добавляет новые работы и обновляет существующие, если описание изменилось.
+
+    Returns:
+        dict: Словарь с результатами операции:
+            - 'status': 'success' или 'error'
+            - 'added': количество добавленных работ
+            - 'updated': количество обновленных работ
+            - 'unchanged': количество неизмененных работ
+    """
+    result = {
+        'status': 'error',
+        'added': 0,
+        'updated': 0,
+        'unchanged': 0
+    }
+
+    try:
+        # Импортируем функцию получения работ из КИС2
+        from kis2.DjangoRestAPI import create_works_list_dict_from_kis2
+        from models.models import Work
+
+        # Получаем список словарей работ из КИС2
+        kis2_works_list = create_works_list_dict_from_kis2(debug=False)
+        if not kis2_works_list:
+            print(Fore.YELLOW + "Не удалось получить работы из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_works_list)} работ из КИС2.")
+
+        # Открываем сессию для работы с базой данных КИС3
+        with SyncSession() as session:
+            try:
+                # Получаем существующие работы из базы данных КИС3
+                existing_works_query = session.query(
+                    Work.id,
+                    Work.name,
+                    Work.description
+                ).all()
+
+                # Создаем словарь существующих работ для быстрого доступа
+                existing_works = {
+                    work[1]: {
+                        'id': work[0],
+                        'description': work[2]
+                    } for work in existing_works_query
+                }
+
+                # Обрабатываем данные работ
+                for work_data in kis2_works_list:
+                    work_name = work_data['name']
+                    work_description = work_data.get('description', "")
+
+                    # Проверяем, существует ли работа
+                    if work_name in existing_works:
+                        # Работа существует - проверяем, нужно ли обновлять описание
+                        existing_data = existing_works[work_name]
+                        current_description = existing_data['description'] or ""
+
+                        if current_description != work_description:
+                            # Обновляем описание работы
+                            work = session.get(Work, existing_data['id'])
+                            work.description = work_description
+
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлена работа '{work_name}': изменено описание")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Работа не существует - добавляем новую
+                        new_work = Work(
+                            name=work_name,
+                            description=work_description,
+                            active=True  # По умолчанию все импортированные работы активны
+                        )
+                        session.add(new_work)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлена новая работа: {work_name}")
+
+                # Сохраняем изменения
+                return commit_and_summarize_import(session, result, entity_type='работ')
+
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте работ: {db_error}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
+        return result
+
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
@@ -807,6 +899,7 @@ if __name__ == "__main__":
         print("6 - copy counterparty forms from KIS2")
         print("7 - copy companies from KIS2")
         print("8 - copy people from KIS2")
+        print("9 - copy works from KIS2")
         answer = input()
 
         if answer == "1":
@@ -896,7 +989,20 @@ if __name__ == "__main__":
                     print(Fore.RED + f"Ошибка при выполнении импорта людей: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "9":  # Импорт работ из КИС2
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Импорт работ из КИС2 ===")
+                    import_result = import_works_from_kis2()
+                    print_import_results(import_result, "работ")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
         elif answer != "e":
-            break
+            print(Fore.RED + "Неверный ввод. Повторите попытку.")
+            continue
 
     print("Goodbye!")
