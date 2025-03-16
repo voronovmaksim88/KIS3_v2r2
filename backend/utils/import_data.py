@@ -850,12 +850,17 @@ def import_works_from_kis2() -> dict:
         print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
         return result
 
-def ensure_order_statuses_exist() -> int:
+def ensure_order_statuses_exist() -> dict:
     """
-    Проверяет наличие стандартных статусов заказов в базе данных и создает их, если они отсутствуют.
+    Проверяет наличие стандартных статусов заказов в базе данных, создает отсутствующие и обновляет описания,
+    если они отличаются от стандартных.
 
     Returns:
-        int: Количество добавленных статусов заказов.
+        dict: Словарь с результатами операции:
+            - 'status': 'success' или 'error'
+            - 'added': количество добавленных статусов
+            - 'updated': количество обновленных статусов
+            - 'unchanged': количество неизмененных статусов
     """
     try:
         # Определяем стандартные статусы заказов
@@ -873,36 +878,77 @@ def ensure_order_statuses_exist() -> int:
         # Открываем сессию
         with SyncSession() as session:
             try:
-                # Получаем существующие статусы заказов
-                statuses_query = session.query(OrderStatus.id).all()
-                existing_status_ids = set(status[0] for status in statuses_query)
-
-                # Находим статусы, которых нет в базе
-                new_statuses = [
-                    status for status in standard_statuses
-                    if status["id"] not in existing_status_ids
-                ]
+                # Получаем существующие статусы заказов с их описаниями
+                existing_statuses = session.query(OrderStatus).all()
+                existing_status_dict = {status.id: status for status in existing_statuses}
+                existing_status_ids = set(existing_status_dict.keys())
 
                 added_count = 0
+                updated_count = 0
+                unchanged_count = 0
+                new_statuses = []
+                updates = []
 
+                # Сравниваем стандартные статусы с существующими
+                for standard_status in standard_statuses:
+                    std_id = standard_status["id"]
+                    if std_id not in existing_status_ids:
+                        # Статус отсутствует - добавляем
+                        new_statuses.append(standard_status)
+                        added_count += 1
+                    else:
+                        # Статус существует - проверяем описание
+                        current_status = existing_status_dict[std_id]
+                        if current_status.description != standard_status["description"]:
+                            # Описание отличается - обновляем
+                            updates.append({
+                                "id": std_id,
+                                "name": standard_status["name"],
+                                "description": standard_status["description"]
+                            })
+                            updated_count += 1
+                        else:
+                            # Ничего не изменилось
+                            unchanged_count += 1
+
+                # Выполняем операции с базой данных
                 if new_statuses:
-                    # Добавляем новые статусы
                     session.bulk_insert_mappings(OrderStatus.__mapper__, new_statuses)
-                    session.commit()
-                    added_count = len(new_statuses)
-                    print(Fore.GREEN + f"Добавлено {added_count} стандартных статусов заказов в базу данных.")
-                else:
-                    print(Fore.YELLOW + "Все стандартные статусы заказов уже существуют в базе данных.")
+                    print(Fore.GREEN + f"Добавлено {added_count} новых статусов заказов.")
 
-                return added_count
+                if updates:
+                    session.bulk_update_mappings(OrderStatus.__mapper__, updates)
+                    print(Fore.GREEN + f"Обновлено описаний статусов: {updated_count}")
+
+                if not new_statuses and not updates:
+                    print(Fore.YELLOW + "Все стандартные статусы заказов уже существуют и актуальны.")
+
+                session.commit()
+
+                return {
+                    "status": "success",
+                    "added": added_count,
+                    "updated": updated_count,
+                    "unchanged": unchanged_count
+                }
+
             except Exception as db_error:
                 session.rollback()
-                print(Fore.RED + f"Ошибка при создании статусов заказов: {db_error}")
-                return 0
+                print(Fore.RED + f"Ошибка при работе со статусами заказов: {db_error}")
+                return {
+                    "status": "error",
+                    "added": 0,
+                    "updated": 0,
+                    "unchanged": 0
+                }
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении проверки статусов заказов: {e}")
-        return 0
-
+        return {
+            "status": "error",
+            "added": 0,
+            "updated": 0,
+            "unchanged": 0
+        }
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
@@ -1055,12 +1101,13 @@ if __name__ == "__main__":
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 
-        elif answer == "10":  # Новый пункт меню
+
+        elif answer == "10":  # Проверка и создание стандартных статусов заказов
             if test_sync_connection():
                 try:
                     print(Fore.CYAN + "=== Проверка и создание стандартных статусов заказов ===")
-                    added_count = ensure_order_statuses_exist()
-                    print(Fore.GREEN + f"Добавлено статусов заказов: {added_count}")
+                    import_result = ensure_order_statuses_exist()
+                    print_import_results(import_result, "статусов заказов")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при проверке статусов заказов: {e}")
             else:
