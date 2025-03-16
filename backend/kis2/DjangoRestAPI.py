@@ -117,7 +117,7 @@ def _make_api_request(session: requests.Session, api_url: str, debug: bool = Fal
 
         if debug:
             pretty_json = json.dumps(data, ensure_ascii=False, indent=2)
-            print(f"Читаемый ответ API: {pretty_json[:200]}...")
+            print(f"Читаемый ответ API: {pretty_json[:500]}...")
 
         return data
 
@@ -533,7 +533,7 @@ def create_works_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
     return works_list
 
 
-def get_order_status(status_id):
+def get_order_status(status_id: Optional[int]) -> str:
     """
     Возвращает статус заказа текстом по его id.
     """
@@ -557,7 +557,119 @@ def get_order_status(status_id):
         return 'Неизвестный статус'
 
 
+def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Получает список заказов из КИС2 через REST API и преобразует их в список словарей.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей заказов со следующими ключами:
+        - 'serial': Серийный номер заказа (формат NNN-MM-YYYY)
+        - 'name': Название заказа
+        - 'customer': Название компании-заказчика
+        - 'priority': Приоритет заказа (1-10)
+        - 'status': Статус заказа (0-7)
+        - 'start_moment': Дата и время создания заказа
+        - 'dedline_moment': Крайний срок завершения
+        - 'end_moment': Фактический срок завершения
+        - 'works': Список названий работ по заказу
+        - 'materialsCost': Стоимость материалов
+        - 'materialsPaid': Материалы оплачены (True/False)
+        - 'productsCost': Стоимость товаров
+        - 'productsPaid': Товары оплачены (True/False)
+        - 'workCost': Стоимость работ
+        - 'workPaid': Работы оплачены (True/False)
+        - 'debt': Задолженность
+        - 'debtPaid': Задолженность оплачена (True/False)
+    """
+    # Получаем данные о компаниях
+    companies_data = get_data_from_kis2("Company", debug)
+    if not companies_data:
+        if debug:
+            print("Не удалось получить данные о компаниях")
+        companies_dict = {}
+    else:
+        # Создаем словарь id:name для компаний
+        companies_dict = {item["id"]: item["name"] for item in companies_data if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(companies_dict)} компаний")
+
+    # Получаем данные о работах
+    works_data = get_data_from_kis2("Work", debug)
+    if not works_data:
+        if debug:
+            print("Не удалось получить данные о работах")
+        works_dict = {}
+    else:
+        # Создаем словарь id:name для работ
+        works_dict = {item["id"]: item["name"] for item in works_data if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(works_dict)} работ")
+
+    # Получаем данные о заказах
+    orders_data = get_data_from_kis2("Order", debug)
+    if not orders_data:
+        if debug:
+            print("Не удалось получить данные о заказах")
+        return []
+
+    # Создаем список словарей заказов
+    orders_list = []
+    for order in orders_data:
+        # Проверяем наличие обязательного ключа
+        if "serial" not in order:
+            if debug:
+                print(f"Пропущен заказ без серийного номера: {order}")
+            continue
+
+        # Получаем название компании-заказчика
+        customer_name = None
+        if "customer_id" in order and order["customer_id"] in companies_dict:
+            customer_name = companies_dict[order["customer_id"]]
+
+        # Получаем список названий работ
+        works_list = []
+        if "works" in order and isinstance(order["works"], list):
+            for work_id in order["works"]:
+                if work_id in works_dict:
+                    works_list.append(works_dict[work_id])
+
+        # Формируем словарь заказа
+        order_dict = {
+            'serial': order["serial"],
+            'name': order.get("name", ""),
+            'customer': customer_name,
+            'priority': order.get("priority"),
+            'status': order.get("status"),
+            'start_moment': order.get("start_moment"),
+            'dedline_moment': order.get("dedline_moment"),
+            'end_moment': order.get("end_moment"),
+            'works': works_list,
+            'materialsCost': order.get("materialsCost", 0),
+            'materialsPaid': order.get("materialsPaid", False),
+            'productsCost': order.get("productsCost", 0),
+            'productsPaid': order.get("productsPaid", False),
+            'workCost': order.get("workCost", 0),
+            'workPaid': order.get("workPaid", False),
+            'debt': order.get("debt", 0),
+            'debtPaid': order.get("debtPaid", False)
+        }
+
+        orders_list.append(order_dict)
+
+        if debug:
+            print(f"Добавлен заказ: {order['serial']} - {order.get('name', 'Без названия')}")
+
+    if debug:
+        print(f"Всего получено {len(orders_list)} заказов")
+
+    return orders_list
+
+
+
 if __name__ == "__main__":
-    list_dict_manufacturers = create_list_dict_manufacturers()
-    for work in list_dict_manufacturers:
+    orders_list_dict_from_kis2 = create_orders_list_dict_from_kis2()
+    for work in orders_list_dict_from_kis2:
         print(work)
