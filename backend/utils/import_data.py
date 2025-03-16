@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_def_list_dict_manufacturers, \
     create_companies_list_dict_from_kis2  # noqa: E402
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City  # noqa: E402
+from models.models import Country, Manufacturer, Counterparty, CounterpartyForm, City, OrderStatus  # noqa: E402
 
 # Инициализируем colorama
 init(autoreset=True)
@@ -850,6 +850,59 @@ def import_works_from_kis2() -> dict:
         print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
         return result
 
+def ensure_order_statuses_exist() -> int:
+    """
+    Проверяет наличие стандартных статусов заказов в базе данных и создает их, если они отсутствуют.
+
+    Returns:
+        int: Количество добавленных статусов заказов.
+    """
+    try:
+        # Определяем стандартные статусы заказов
+        standard_statuses = [
+            {"id": 1, "name": "Не определён", "description": "Статус заказа не определен"},
+            {"id": 2, "name": "На согласовании", "description": "Заказ находится на этапе согласования"},
+            {"id": 3, "name": "В работе", "description": "Заказ находится в процессе выполнения"},
+            {"id": 4, "name": "Просрочено", "description": "Срок выполнения заказа просрочен"},
+            {"id": 5, "name": "Выполнено в срок", "description": "Заказ выполнен в установленный срок"},
+            {"id": 6, "name": "Выполнено НЕ в срок", "description": "Заказ выполнен с нарушением установленного срока"},
+            {"id": 7, "name": "Не согласовано", "description": "Заказ не согласован"},
+            {"id": 8, "name": "На паузе", "description": "Выполнение заказа приостановлено"}
+        ]
+
+        # Открываем сессию
+        with SyncSession() as session:
+            try:
+                # Получаем существующие статусы заказов
+                statuses_query = session.query(OrderStatus.id).all()
+                existing_status_ids = set(status[0] for status in statuses_query)
+
+                # Находим статусы, которых нет в базе
+                new_statuses = [
+                    status for status in standard_statuses
+                    if status["id"] not in existing_status_ids
+                ]
+
+                added_count = 0
+
+                if new_statuses:
+                    # Добавляем новые статусы
+                    session.bulk_insert_mappings(OrderStatus.__mapper__, new_statuses)
+                    session.commit()
+                    added_count = len(new_statuses)
+                    print(Fore.GREEN + f"Добавлено {added_count} стандартных статусов заказов в базу данных.")
+                else:
+                    print(Fore.YELLOW + "Все стандартные статусы заказов уже существуют в базе данных.")
+
+                return added_count
+            except Exception as db_error:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при создании статусов заказов: {db_error}")
+                return 0
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении проверки статусов заказов: {e}")
+        return 0
+
 
 # Этот код выполняется только при прямом запуске файла, а не при импорте
 if __name__ == "__main__":
@@ -900,6 +953,7 @@ if __name__ == "__main__":
         print("7 - copy companies from KIS2")
         print("8 - copy people from KIS2")
         print("9 - copy works from KIS2")
+        print("10 - ensure order statuses exist")
         answer = input()
 
         if answer == "1":
@@ -998,6 +1052,17 @@ if __name__ == "__main__":
                     print_import_results(import_result, "работ")
                 except Exception as e:
                     print(Fore.RED + f"Ошибка при выполнении импорта работ: {e}")
+            else:
+                print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+
+        elif answer == "10":  # Новый пункт меню
+            if test_sync_connection():
+                try:
+                    print(Fore.CYAN + "=== Проверка и создание стандартных статусов заказов ===")
+                    added_count = ensure_order_statuses_exist()
+                    print(Fore.GREEN + f"Добавлено статусов заказов: {added_count}")
+                except Exception as e:
+                    print(Fore.RED + f"Ошибка при проверке статусов заказов: {e}")
             else:
                 print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
 

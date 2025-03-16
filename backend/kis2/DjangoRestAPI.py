@@ -533,6 +533,30 @@ def create_works_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
     return works_list
 
 
+def get_order_status(status_id):
+    """
+    Возвращает статус заказа текстом по его id.
+    """
+    if status_id == 0:
+        return 'Не определён'
+    elif status_id == 1:
+        return 'На согласовании'
+    elif status_id == 2:
+        return 'На согласовании'
+    elif status_id == 3:
+        return 'В работе'
+    elif status_id == 4:
+        return 'Выполнено в срок'
+    elif status_id == 5:
+        return 'Выполнено НЕ в срок'
+    elif status_id == 6:
+        return 'Не согласовано'
+    elif status_id == 7:
+        return 'На паузе'
+    else:
+        return 'Неизвестный статус'
+
+
 if __name__ == "__main__":
     works_list_dict_from_kis2 = create_works_list_dict_from_kis2()
     for work in works_list_dict_from_kis2:
