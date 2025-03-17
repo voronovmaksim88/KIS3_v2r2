@@ -322,6 +322,16 @@ class Task(Base):
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Исправляем объявления внешних ключей
+    status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
+    payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
+
+    # Добавляем связи с другими таблицами
+    status: Mapped["TaskStatus"] = relationship(back_populates="tasks")
+    payment_status: Mapped["TaskPaymentStatus"] = relationship(back_populates="tasks")
+
+    def __repr__(self) -> str:
+        return f"Task(id={self.id!r}, name={self.name!r})"
 
 # @add_str_method
 # class Task(models.Model):  # Задачи

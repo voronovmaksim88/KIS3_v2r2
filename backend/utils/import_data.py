@@ -14,6 +14,7 @@ from typing import Dict, Set, Any
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kis2.DjangoRestAPI import create_countries_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_box_accounting_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
 from kis2.DjangoRestAPI import create_equipment_type_set_from_kis2  # noqa: E402
@@ -26,6 +27,7 @@ from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
 from models.models import Country  # noqa: E402
+from models.models import BoxAccounting  # noqa: E402
 from models.models import Manufacturer  # noqa: E402
 from models.models import Counterparty  # noqa: E402
 from models.models import CounterpartyForm  # noqa: E402
@@ -756,6 +758,143 @@ def import_orders_from_kis2() -> Dict[str, any]:
         return result
 
 
+def import_box_accounting_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует данные об изготовленных шкафах из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_boxes_list = create_box_accounting_list_dict_from_kis2(debug=False)
+        if not kis2_boxes_list:
+            print(Fore.YELLOW + "Не удалось получить данные о шкафах из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_boxes_list)} шкафов из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Получаем существующие шкафы
+                existing_boxes = {b.serial_num: b for b in session.query(BoxAccounting).all()}
+
+                # Создаем множество существующих заказов из КИС3
+                orders_set = set(serial[0] for serial in session.query(Order.serial).all())
+
+                # Создаем вспомогательный словарь для поиска людей
+                persons_by_name = {}
+                for person in session.query(Person).all():
+                    full_name = f"{person.surname} {person.name}"
+                    if person.patronymic:
+                        full_name += f" {person.patronymic}"
+                    persons_by_name[full_name] = person.id
+
+                # Проходим по списку шкафов из КИС2
+                for box_data in kis2_boxes_list:
+                    serial_num = box_data['serial_num']
+                    name = box_data['name']
+                    order_serial = box_data['order_serial']
+                    scheme_developer_name = box_data['scheme_developer']
+                    assembler_name = box_data['assembler']
+                    programmer_name = box_data['programmer']
+                    tester_name = box_data['tester']
+
+                    # Проверяем, существует ли заказ
+                    if order_serial not in orders_set:
+                        print(Fore.YELLOW + f"Не найден заказ '{order_serial}' для шкафа {serial_num}. Пропуск.")
+                        continue
+
+                    # Ищем ID разработчика схемы
+                    scheme_developer_id = persons_by_name.get(scheme_developer_name)
+                    if not scheme_developer_id and scheme_developer_name:
+                        print(Fore.YELLOW + f"Не найден разработчик схемы '{scheme_developer_name}'"
+                                            f" для шкафа {serial_num}. Пропуск.")
+                        continue
+
+                    # Ищем ID сборщика
+                    assembler_id = persons_by_name.get(assembler_name)
+                    if not assembler_id and assembler_name:
+                        print(Fore.YELLOW + f"Не найден сборщик '{assembler_name}' для шкафа {serial_num}. Пропуск.")
+                        continue
+
+                    # Ищем ID программиста
+                    programmer_id = None
+                    if programmer_name:
+                        programmer_id = persons_by_name.get(programmer_name)
+                        if not programmer_id:
+                            print(Fore.YELLOW + f"Не найден программист '{programmer_name}' для шкафа {serial_num}."
+                                                f"Программист будет пропущен.")
+
+                    # Ищем ID тестировщика
+                    tester_id = persons_by_name.get(tester_name)
+                    if not tester_id and tester_name:
+                        print(Fore.YELLOW + f"Не найден тестировщик '{tester_name}' для шкафа {serial_num}. Пропуск.")
+                        continue
+
+                    # Если шкаф уже существует, проверяем необходимость обновления
+                    if serial_num in existing_boxes:
+                        box = existing_boxes[serial_num]
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем изменения в полях
+                        if box.name != name:
+                            box.name = name
+                            needs_update = True
+                            update_details.append("название")
+
+                        if box.order_id != order_serial:
+                            box.order_id = order_serial
+                            needs_update = True
+                            update_details.append("заказ")
+
+                        if box.scheme_developer_id != scheme_developer_id:
+                            box.scheme_developer_id = scheme_developer_id
+                            needs_update = True
+                            update_details.append("разработчик схемы")
+
+                        if box.assembler_id != assembler_id:
+                            box.assembler_id = assembler_id
+                            needs_update = True
+                            update_details.append("сборщик")
+
+                        if box.programmer_id != programmer_id:
+                            box.programmer_id = programmer_id
+                            needs_update = True
+                            update_details.append("программист")
+
+                        if box.tester_id != tester_id:
+                            box.tester_id = tester_id
+                            needs_update = True
+                            update_details.append("тестировщик")
+
+                        if needs_update:
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлен шкаф '{serial_num}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Создаем новый шкаф
+                        new_box = BoxAccounting(
+                            serial_num=serial_num,
+                            name=name,
+                            order_id=order_serial,
+                            scheme_developer_id=scheme_developer_id,
+                            assembler_id=assembler_id,
+                            programmer_id=programmer_id,
+                            tester_id=tester_id
+                        )
+                        session.add(new_box)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый шкаф: {serial_num} - {name}")
+
+                return commit_and_summarize_import(session, result, "шкафов")
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте шкафов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта шкафов: {e}")
+        return result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -793,6 +932,7 @@ if __name__ == "__main__":
         print("9 - copy works from KIS2")
         print("10 - ensure order statuses exist")
         print("11 - import orders from KIS2")
+        print("12 - import box accounting from KIS2")
         answer = input()
 
         operations = {
@@ -806,7 +946,8 @@ if __name__ == "__main__":
             "8": ("Импорт людей из КИС2", import_person_from_kis2, "людей"),
             "9": ("Импорт работ из КИС2", import_works_from_kis2, "работ"),
             "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов"),
-            "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов")
+            "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов"),
+            "12": ("Импорт учёта шкафов из КИС2", import_box_accounting_from_kis2, "учёта шкафов "),
         }
 
         if answer in operations:
