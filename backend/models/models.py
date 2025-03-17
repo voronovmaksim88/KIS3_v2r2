@@ -1,4 +1,7 @@
 # models.py
+"""
+Модуль для работы с базой данных через SQLAlchemy
+"""
 
 from sqlalchemy import MetaData, Integer, String, ForeignKey, Date, Boolean, Text, DateTime, Table, Column
 from sqlalchemy.orm import validates
@@ -6,9 +9,14 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped  # используется для аннотации типов столбцов.
 from sqlalchemy.orm import mapped_column  # функция для определения столбцов с дополнительными
 from sqlalchemy.orm import relationship  # используется для связи таблиц
-from typing import Optional, List
+from sqlalchemy import Interval  # Импортируем Interval для работы с временными интервалами
+
+from typing import Optional
+from typing import List
+
 from datetime import date
 from datetime import datetime
+from datetime import timedelta
 
 # Переменная, которая хранит информацию о таблицах
 metadata = MetaData()
@@ -321,14 +329,51 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    # Исправляем объявления внешних ключей
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
     payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
+    executor_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=True)
+
 
     # Добавляем связи с другими таблицами
     status: Mapped["TaskStatus"] = relationship(back_populates="tasks")
     payment_status: Mapped["TaskPaymentStatus"] = relationship(back_populates="tasks")
+
+    # Запланированное время на выполнение задачи
+    planned_duration: Mapped[Optional[timedelta]] = mapped_column(Interval, nullable=True)
+
+    # Фактическое время на выполнение задачи
+    actual_duration: Mapped[Optional[timedelta]] = mapped_column(Interval, nullable=True)
+
+    # Дата и время создания задачи
+    creation_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Дата и время начала выполнения задачи
+    start_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Планируемая дата и время завершения выполнения задачи
+    deadline_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Фактическая дата и время завершения выполнения задачи
+    end_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Стоимость выполнения задачи, т.е. сколько денег надо заплатить исполнителю, руб
+    price: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Связь с заказами
+    order_serial: Mapped[Optional[int]] = mapped_column(ForeignKey('orders.serial'), nullable=True)
+    order: Mapped[Optional["Order"]] = relationship(back_populates="tasks")
+
+    # Ссылка на родительскую задачу
+    parent_task_id: Mapped[Optional[int]] = mapped_column(ForeignKey('tasks.id'), nullable=True)
+
+    # Ссылка на корневую задачу
+    root_task_id: Mapped[Optional[int]] = mapped_column(ForeignKey('tasks.id'), nullable=True)
+
+    # Связи
+    parent_task: Mapped["Task"] = relationship(remote_side=[id], back_populates="subtasks")
+    subtasks: Mapped[List["Task"]] = relationship(back_populates="parent_task")
+    root_task: Mapped["Task"] = relationship(remote_side=[id], back_populates="all_tasks_in_hierarchy")
+    all_tasks_in_hierarchy: Mapped[List["Task"]] = relationship(back_populates="root_task")
 
     def __repr__(self) -> str:
         return f"Task(id={self.id!r}, name={self.name!r})"
