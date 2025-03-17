@@ -292,7 +292,7 @@ class TaskStatus(Base):
         return f"TaskStatus(id={self.id!r}, name={self.name!r})"
 
 
-class PaymentStatus(Base):
+class TaskPaymentStatus(Base):
     """
     Статусы оплаты за задачу
     1 = "Нет оплаты", задача не предполагает оплату
