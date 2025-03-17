@@ -911,7 +911,6 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'parent_task_name': parent_task_name,
                 'description': task.get("description")
             }
-
             tasks_list.append(task_dict)
 
             if debug:
