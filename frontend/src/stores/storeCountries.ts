@@ -7,6 +7,7 @@ export const useStoreCountries = defineStore('storeCountries', {
     state: () => ({
         allCountries: [] as typeCountries[], // Типизация массива allCountries
     }),
+
     // Дополнительно можно добавить actions и getters
     actions: {
         // Пример действия для добавления страны
@@ -14,6 +15,7 @@ export const useStoreCountries = defineStore('storeCountries', {
             this.allCountries.push(country);
         },
     },
+
     getters: {
         // Пример геттера для получения количества стран
         countriesCount(): number {
