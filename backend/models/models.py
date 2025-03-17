@@ -269,31 +269,60 @@ class OrderComment(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)  # Текст комментария
     person_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Автор комментария
 
-# @add_str_method
-# class TaskStatus(models.Model):  # Статусы задач
-#     name = models.CharField(null=False, max_length=16, verbose_name="Статус")  # Название статуса задачи
-#     """
-#     1 = "Не начата"
-#     2 = "В работе"
-#     3 = "На паузе"
-#     4 = "Завершена"
-#     5 = "Отменена"
-#     else = "?"
-#     """
-#
-#
-# @add_str_method
-# class PaymentStatus(models.Model):  # Статусы оплаты за задачу
-#     name = models.CharField(null=False, max_length=16, verbose_name="Статус")  # Название статуса задачи
-#     """
-#     1 = "Нет оплаты", задача не предполагает оплату
-#     2 = "Возможна", задача в работе если исполнитель сделает её вовремя и качественно, то получит оплату
-#     3 = "Начислена", задача выполнена оплата начислена
-#     4 = "Оплачена", задача выполнена и оплачена исполнителю
-#     else = "?"
-#     """
-#
-#
+
+class TaskStatus(Base):
+    """
+    Статусы задач
+    1 = "Не начата"
+    2 = "В работе"
+    3 = "На паузе"
+    4 = "Завершена"
+    5 = "Отменена"
+    else = "?"
+    """
+    __tablename__ = 'task_statuses'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)  # Название статуса задачи
+
+    # Связь с задачами (если будет создана модель Task)
+    tasks: Mapped[List["Task"]] = relationship(back_populates="status")
+
+    def __repr__(self) -> str:
+        return f"TaskStatus(id={self.id!r}, name={self.name!r})"
+
+
+class PaymentStatus(Base):
+    """
+    Статусы оплаты за задачу
+    1 = "Нет оплаты", задача не предполагает оплату
+    2 = "Возможна", задача в работе если исполнитель сделает её вовремя и качественно, то получит оплату
+    3 = "Начислена", задача выполнена оплата начислена
+    4 = "Оплачена", задача выполнена и оплачена исполнителю
+    else = "?"
+    """
+    __tablename__ = 'payment_statuses'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)  # Название статуса оплаты
+
+    # Связь с задачами (если будет создана модель Task)
+    tasks: Mapped[List["Task"]] = relationship(back_populates="payment_status")
+
+    def __repr__(self) -> str:
+        return f"PaymentStatus(id={self.id!r}, name={self.name!r})"
+
+
+class Task(Base):
+    """
+    Задачи
+    """
+    __tablename__ = 'tasks'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
 # @add_str_method
 # class Task(models.Model):  # Задачи
 #     name = models.CharField(null=False, max_length=64, verbose_name="Название")  # Название задачи
