@@ -10,6 +10,7 @@ from colorama import init
 import sqlite3
 from typing import Set, Dict
 from config import DB_PATH
+from DjangoRestAPI import get_order_status
 
 # Инициализация colorama
 init(autoreset=True)
@@ -362,26 +363,6 @@ def get_set_orders():
     print(f"{len(order_set)} orders in database sqlite3")
     return order_set
 
-
-def get_order_status(status_id):
-    if status_id == 0:
-        return 'Не определён'
-    elif status_id == 1:
-        return 'На согласовании'
-    elif status_id == 2:
-        return 'На согласовании'
-    elif status_id == 3:
-        return 'В работе'
-    elif status_id == 4:
-        return 'Выполнено в срок'
-    elif status_id == 5:
-        return 'Выполнено НЕ в срок'
-    elif status_id == 6:
-        return 'Не согласовано'
-    elif status_id == 7:
-        return 'На паузе'
-    else:
-        return 'Неизвестный статус'
 
 
 def get_list_works(order_id: str):

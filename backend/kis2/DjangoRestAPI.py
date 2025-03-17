@@ -490,8 +490,6 @@ def create_person_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
     return persons_list
 
 
-from typing import List, Dict, Any
-
 def create_works_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
     """
     Создаёт список словарей работ из КИС2 через REST API.
@@ -668,8 +666,117 @@ def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
     return orders_list
 
 
+def create_box_accounting_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей шкафов (Box_Accounting) из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей шкафов со следующими ключами:
+        - 'serial_num': Серийный номер шкафа
+        - 'name': Название шкафа
+        - 'order': Заказ (серийный номер заказа)
+        - 'scheme_developer': Разработчик схемы (ФИО одной строкой)
+        - 'assembler': Сборщик (ФИО одной строкой)
+        - 'programmer': Программист (ФИО одной строкой, может быть None)
+        - 'tester': Тестировщик (ФИО одной строкой)
+    """
+    # Получаем данные о заказах
+    orders_data = get_data_from_kis2("Order", debug)
+    if not orders_data:
+        if debug:
+            print("Не удалось получить данные о заказах")
+        return []
+
+    # Создаем словарь id:серийный_номер для заказов
+    orders_dict = {item["id"]: item.get("serial", "Неизвестный заказ")
+                   for item in orders_data
+                   if "id" in item}
+
+    if debug:
+        print(f"Получено {len(orders_dict)} заказов")
+
+    # Получаем данные о персонах (сотрудниках)
+    persons_data = get_data_from_kis2("Person", debug)
+    if not persons_data:
+        if debug:
+            print("Не удалось получить данные о сотрудниках")
+        return []
+
+    # Создаем словарь id:полное_имя для сотрудников
+    persons_dict = {}
+    for person in persons_data:
+        if "id" in person:
+            # Формируем полное ФИО из фамилии, имени и отчества
+            surname = person.get("surname", "")
+            name = person.get("name", "")
+            patronymic = person.get("patronymic", "")
+
+            # Собираем ФИО в одну строку, пропуская пустые значения
+            full_name_parts = [part for part in [surname, name, patronymic] if part]
+            full_name = " ".join(full_name_parts) if full_name_parts else "Неизвестный сотрудник"
+
+            persons_dict[person["id"]] = full_name
+
+    if debug:
+        print(f"Получено {len(persons_dict)} сотрудников")
+
+    # Получаем данные о шкафах
+    boxes_data = get_data_from_kis2("Box_Accounting", debug)
+    if not boxes_data:
+        if debug:
+            print("Не удалось получить данные о шкафах")
+        return []
+
+    # Создаем список словарей шкафов
+    boxes_list = []
+    for box in boxes_data:
+        # Проверяем наличие необходимых ключей
+        if "serial_num" in box and "name" in box:
+            # Получаем информацию о заказе
+            order_serial = box.get("order_id")
+
+            # Получаем информацию о разработчике схемы
+            scheme_developer_id = box.get("scheme_developer_id")
+            scheme_developer_name = persons_dict.get(scheme_developer_id, None) if scheme_developer_id else None
+
+            # Получаем информацию о сборщике
+            assembler_id = box.get("assembler_id")
+            assembler_name = persons_dict.get(assembler_id, None) if assembler_id else None
+
+            # Получаем информацию о программисте (может быть None)
+            programmer_id = box.get("programmer_id")
+            programmer_name = persons_dict.get(programmer_id, None) if programmer_id else None
+
+            # Получаем информацию о тестировщике
+            tester_id = box.get("tester_id")
+            tester_name = persons_dict.get(tester_id, None) if tester_id else None
+
+            # Собираем словарь шкафа
+            box_dict = {
+                'serial_num': box["serial_num"],
+                'name': box["name"],
+                'order_serial': order_serial,
+                'scheme_developer': scheme_developer_name,
+                'assembler': assembler_name,
+                'programmer': programmer_name,
+                'tester': tester_name
+            }
+
+            boxes_list.append(box_dict)
+
+            if debug:
+                print(f"Добавлен шкаф: {box['name']} (S/N: {box['serial_num']})")
+
+    if debug:
+        print(f"Получено {len(boxes_list)} шкафов")
+
+    return boxes_list
+
 
 if __name__ == "__main__":
-    orders_list_dict_from_kis2 = create_orders_list_dict_from_kis2()
-    for work in orders_list_dict_from_kis2:
-        print(work)
+    box_accounting_list_dict_from_kis2 = create_box_accounting_list_dict_from_kis2()
+    for box_accounting in box_accounting_list_dict_from_kis2:
+        print(box_accounting)
