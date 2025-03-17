@@ -776,7 +776,157 @@ def create_box_accounting_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
     return boxes_list
 
 
+def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей задач (Task) из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей задач со следующими ключами:
+        - 'name': Название задачи
+        - 'executor': Исполнитель задачи (ФИО одной строкой)
+        - 'planned_duration': Планируемая продолжительность выполнения задачи
+        - 'actual_duration': Фактическая продолжительность выполнения задачи
+        - 'creation_moment': Дата и время создания задачи
+        - 'start_moment': Дата и время начала выполнения задачи
+        - 'end_moment': Дата и время завершения выполнения задачи
+        - 'status': Статус выполнения задачи
+        - 'cost': Стоимость выполнения задачи
+        - 'payment_status': Статус оплаты за задачу
+        - 'root_task': ID корневой задачи
+        - 'parent_task': ID родительской задачи
+        - 'description': Описание задачи
+    """
+    # Получаем данные о персонах (сотрудниках)
+    persons_data = get_data_from_kis2("Person", debug)
+    if not persons_data:
+        if debug:
+            print("Не удалось получить данные о сотрудниках")
+        return []
+
+    # Создаем словарь id:полное_имя для сотрудников
+    persons_dict = {}
+    for person in persons_data:
+        if "id" in person:
+            # Формируем полное ФИО из фамилии, имени и отчества
+            surname = person.get("surname", "")
+            name = person.get("name", "")
+            patronymic = person.get("patronymic", "")
+
+            # Собираем ФИО в одну строку, пропуская пустые значения
+            full_name_parts = [part for part in [surname, name, patronymic] if part]
+            full_name = " ".join(full_name_parts) if full_name_parts else "Неизвестный сотрудник"
+
+            persons_dict[person["id"]] = full_name
+
+    if debug:
+        print(f"Получено {len(persons_dict)} сотрудников")
+
+    # Получаем данные о статусах задач
+    task_statuses_data = get_data_from_kis2("TaskStatus", debug)
+    if not task_statuses_data:
+        if debug:
+            print("Не удалось получить данные о статусах задач")
+        return []
+
+    # Создаем словарь id:name для статусов задач
+    task_statuses_dict = {status["id"]: status.get("name", "Неизвестный статус")
+                         for status in task_statuses_data
+                         if "id" in status}
+
+    if debug:
+        print(f"Получено {len(task_statuses_dict)} статусов задач")
+
+    # Получаем данные о статусах оплаты
+    payment_statuses_data = get_data_from_kis2("PaymentStatus", debug)
+    if not payment_statuses_data:
+        if debug:
+            print("Не удалось получить данные о статусах оплаты")
+        return []
+
+    # Создаем словарь id:name для статусов оплаты
+    payment_statuses_dict = {status["id"]: status.get("name", "Неизвестный статус оплаты")
+                            for status in payment_statuses_data
+                            if "id" in status}
+
+    if debug:
+        print(f"Получено {len(payment_statuses_dict)} статусов оплаты")
+
+    # Получаем данные о задачах
+    tasks_data = get_data_from_kis2("Task", debug)
+    if not tasks_data:
+        if debug:
+            print("Не удалось получить данные о задачах")
+        return []
+
+    # Создаем словарь id:name для задач (для определения родительских задач)
+    tasks_name_dict = {task["id"]: task.get("name", "Задача без названия")
+                       for task in tasks_data
+                       if "id" in task}
+
+    # Создаем список словарей задач
+    tasks_list = []
+    for task in tasks_data:
+        # Проверяем наличие необходимого ключа name
+        if "name" in task:
+            # Получаем информацию об исполнителе
+            executor_id = task.get("executor_id")
+            executor_name = persons_dict.get(executor_id, None) if executor_id else None
+
+            # Получаем информацию о статусе задачи
+            status_id = task.get("status_id")
+            status_name = task_statuses_dict.get(status_id, None) if status_id else None
+
+            # Получаем информацию о статусе оплаты
+            payment_status_id = task.get("payment_status_id")
+            payment_status_name = payment_statuses_dict.get(payment_status_id, None) if payment_status_id else None
+
+            # Получаем информацию о корневой задаче
+            root_task_id = task.get("root_task_id")
+            root_task_name = tasks_name_dict.get(root_task_id, None) if root_task_id else None
+
+            # Получаем информацию о родительской задаче
+            parent_task_id = task.get("parent_task_id")
+            parent_task_name = tasks_name_dict.get(parent_task_id, None) if parent_task_id else None
+
+            # Собираем словарь задачи
+            task_dict = {
+                'id': task.get("id"),
+                'name': task["name"],
+                'executor': executor_name,  # Используем ФИО вместо ID исполнителя
+                'order_id': task.get("order_id"),  # Добавлено поле order_id
+                'planned_duration': task.get("planned_duration"),
+                'actual_duration': task.get("actual_duration"),
+                'creation_moment': task.get("creation_moment"),
+                'start_moment': task.get("start_moment"),
+                'end_moment': task.get("end_moment"),
+                'status': status_name,
+                'cost': task.get("cost"),
+                'payment_status': payment_status_name,
+                'root_task_id': root_task_id,
+                'root_task_name': root_task_name,
+                'parent_task_id': parent_task_id,
+                'parent_task_name': parent_task_name,
+                'description': task.get("description")
+            }
+
+            tasks_list.append(task_dict)
+
+            if debug:
+                print(f"Добавлена задача: {task['name']} (ID: {task.get('id')}, Исполнитель: {executor_name})")
+
+    if debug:
+        print(f"Получено {len(tasks_list)} задач")
+
+    return tasks_list
+
+
 if __name__ == "__main__":
-    box_accounting_list_dict_from_kis2 = create_box_accounting_list_dict_from_kis2()
-    for box_accounting in box_accounting_list_dict_from_kis2:
-        print(box_accounting)
+    tasks_list_dict_from_kis2 = create_tasks_list_dict_from_kis2()
+    for task in tasks_list_dict_from_kis2:
+        for rom in task:
+            print(f"{rom}: {task[rom]}")
+        print("\n")
+
