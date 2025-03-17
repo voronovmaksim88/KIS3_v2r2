@@ -13,32 +13,29 @@ from typing import Dict, Set, Any
 # Добавляем родительскую директорию в путь поиска модулей
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Игнорирование ошибки PEP 8: E402 для импортов, требующих модификации sys.path
-# pylint: disable=E402
-from kis2.DjangoRestAPI import create_countries_set_from_kis2
-from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2
-from kis2.DjangoRestAPI import create_list_dict_manufacturers
-from kis2.DjangoRestAPI import create_equipment_type_set_from_kis2
-from kis2.DjangoRestAPI import create_money_set_from_kis2
-from kis2.DjangoRestAPI import create_cities_set_from_kis2
-from kis2.DjangoRestAPI import create_companies_form_from_kis2
-from kis2.DjangoRestAPI import create_person_list_dict_from_kis2
-from kis2.DjangoRestAPI import create_works_list_dict_from_kis2
-from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2
+from kis2.DjangoRestAPI import create_countries_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
+from kis2.DjangoRestAPI import create_equipment_type_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_money_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_cities_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_companies_form_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_person_list_dict_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_works_list_dict_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
-from database import SyncSession, test_sync_connection
-from models.models import Country
-from models.models import Manufacturer
-from models.models import Counterparty
-from models.models import CounterpartyForm
-from models.models import City
-from models.models import OrderStatus
-from models.models import EquipmentType
-from models.models import Currency
-from models.models import Person
-from models.models import Work
-from models.models import Order
-# pylint: enable=E402
+from database import SyncSession, test_sync_connection  # noqa: E402
+from models.models import Country  # noqa: E402
+from models.models import Manufacturer  # noqa: E402
+from models.models import Counterparty  # noqa: E402
+from models.models import CounterpartyForm  # noqa: E402
+from models.models import City  # noqa: E402
+from models.models import OrderStatus  # noqa: E402
+from models.models import EquipmentType  # noqa: E402
+from models.models import Currency  # noqa: E402
+from models.models import Person  # noqa: E402
+from models.models import Work  # noqa: E402
+from models.models import Order  # noqa: E402
 
 # Инициализируем colorama
 init(autoreset=True)
