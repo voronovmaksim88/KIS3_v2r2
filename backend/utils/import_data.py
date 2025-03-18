@@ -938,7 +938,7 @@ def parse_iso_duration(duration_str: str) -> timedelta | None:
 
 def import_tasks_from_kis2() -> Dict[str, any]:
     """
-    Импортирует задачи из КИС2 в базу данных КИС3.
+    Импортирует задачи из КИС2 в базу данных КИС3, используя id из КИС2 как первичный ключ.
     """
     result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
     try:
@@ -956,13 +956,12 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                 # Проверим и создадим стандартные статусы оплаты
                 ensure_payment_statuses_exist(session)
 
-                # Получаем существующие задачи по имени
-                existing_tasks = {t.name: t for t in session.query(Task).all()}
+                # Получаем существующие задачи по id
+                existing_tasks = {t.id: t for t in session.query(Task).all()}
 
                 # Создаем словари для связей
                 task_statuses_dict = {name: id for id, name in session.query(TaskStatus.id, TaskStatus.name).all()}
-                payment_statuses_dict = {name: id for id, name in session.query(TaskPaymentStatus.id,
-                                                                                TaskPaymentStatus.name).all()}
+                payment_statuses_dict = {name: id for id, name in session.query(TaskPaymentStatus.id, TaskPaymentStatus.name).all()}
 
                 # Получаем словарь персон для связи с исполнителями задач
                 persons_by_name = {}
@@ -972,146 +971,101 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                         full_name += f" {person.patronymic}"
                     persons_by_name[full_name] = person.id
 
-                # Создаем словарь существующих задач по их ID из КИС2
-                tasks_by_kis2_id = {}
-                for task in session.query(Task).all():
-                    # Предполагается, что description может хранить ID из КИС2
-                    # Этот подход требует доработки в реальном приложении
-                    if task.description and task.description.startswith("KIS2_ID:"):
-                        kis2_id = int(task.description.split("KIS2_ID:")[1].strip())
-                        tasks_by_kis2_id[kis2_id] = task
-
                 # Обрабатываем каждую задачу из КИС2
                 for task_data in kis2_tasks_list:
                     kis2_id = task_data.get('id')
+                    if kis2_id is None:
+                        print(Fore.YELLOW + f"Пропущена задача '{task_data['name']}' без ID из КИС2.")
+                        continue  # Пропускаем задачи без ID
+
                     name = task_data['name']
                     description = task_data.get('description') or ""
-
-                    # Если есть описание, добавляем к нему ID из КИС2 для связи
-                    if kis2_id:
-                        if description:
-                            description = f"{description}\nKIS2_ID:{kis2_id}"
-                        else:
-                            description = f"KIS2_ID:{kis2_id}"
 
                     # Получаем ID исполнителя
                     executor_id = None
                     if task_data['executor']:
                         executor_id = persons_by_name.get(task_data['executor'])
                         if not executor_id:
-                            print(Fore.YELLOW + f"Не найден исполнитель '{task_data['executor']}' для задачи '{name}'."
-                                                f" Продолжаем без исполнителя.")
+                            print(Fore.YELLOW + f"Не найден исполнитель '{task_data['executor']}' для задачи '{name}'.")
 
                     # Получаем ID статуса задачи
-                    if task_data['status']:
-                        status_id = task_statuses_dict.get(task_data['status'])
-                        if not status_id:
-                            print(Fore.YELLOW + f"Не найден статус '{task_data['status']}' для задачи '{name}'."
-                                                f" Используем статус по умолчанию.")
-                            status_id = 1  # "Не начата" по умолчанию
-                    else:
-                        status_id = 1  # "Не начата" по умолчанию
+                    status_id = task_statuses_dict.get(task_data['status'], 1)  # "Не начата" по умолчанию
 
                     # Получаем ID статуса оплаты
-                    if task_data['payment_status']:
-                        payment_status_id = payment_statuses_dict.get(task_data['payment_status'])
-                        if not payment_status_id:
-                            print(Fore.YELLOW + f"Не найден статус оплаты '{task_data['payment_status']}'"
-                                                f" для задачи '{name}'. Используем статус по умолчанию.")
-                            payment_status_id = 1  # "Нет оплаты" по умолчанию
-                    else:
-                        payment_status_id = 1  # "Нет оплаты" по умолчанию
+                    payment_status_id = payment_statuses_dict.get(task_data['payment_status'], 1)  # "Нет оплаты" по умолчанию
 
                     # Преобразование строк дат в объекты datetime
-                    creation_moment = datetime.strptime(task_data['creation_moment'],
-                                                        "%Y-%m-%dT%H:%M:%SZ") if task_data['creation_moment'] else None
-                    start_moment = datetime.strptime(task_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data[
-                        'start_moment'] else None
-                    end_moment = datetime.strptime(task_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data[
-                        'end_moment'] else None
+                    creation_moment = datetime.strptime(task_data['creation_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('creation_moment') else None
+                    start_moment = datetime.strptime(task_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('start_moment') else None
+                    end_moment = datetime.strptime(task_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('end_moment') else None
 
-                    # Преобразование длительностей из строки в timedelta.
-                    # Используем функцию для парсинга ISO 8601
+                    # Преобразование длительностей из строки в timedelta
                     planned_duration = parse_iso_duration(task_data.get('planned_duration'))
                     actual_duration = parse_iso_duration(task_data.get('actual_duration'))
 
                     # Получаем ссылки на родительскую и корневую задачи
-                    parent_task_id = None
-                    if task_data['parent_task_id'] and task_data['parent_task_id'] in tasks_by_kis2_id:
-                        parent_task_id = tasks_by_kis2_id[task_data['parent_task_id']].id
+                    parent_task_id = task_data.get('parent_task_id')
+                    root_task_id = task_data.get('root_task_id')
 
-                    root_task_id = None
-                    if task_data['root_task_id'] and task_data['root_task_id'] in tasks_by_kis2_id:
-                        root_task_id = tasks_by_kis2_id[task_data['root_task_id']].id
-
-                    # Проверяем существование задачи в КИС3
-                    if name in existing_tasks:
+                    # Проверяем существование задачи в КИС3 по ID из КИС2
+                    if kis2_id in existing_tasks:
                         # Обновляем существующую задачу
-                        task = existing_tasks[name]
+                        task = existing_tasks[kis2_id]
                         needs_update = False
                         update_details = []
 
-                        # Проверяем изменения в полях
+                        if task.name != name:
+                            task.name = name
+                            needs_update = True
+                            update_details.append("название")
                         if task.description != description:
                             task.description = description
                             needs_update = True
                             update_details.append("описание")
-
                         if task.executor_id != executor_id:
                             task.executor_id = executor_id
                             needs_update = True
                             update_details.append("исполнитель")
-
                         if task.status_id != status_id:
                             task.status_id = status_id
                             needs_update = True
                             update_details.append("статус")
-
                         if task.payment_status_id != payment_status_id:
                             task.payment_status_id = payment_status_id
                             needs_update = True
                             update_details.append("статус оплаты")
-
                         if task.planned_duration != planned_duration:
                             task.planned_duration = planned_duration
                             needs_update = True
                             update_details.append("планируемая длительность")
-
                         if task.actual_duration != actual_duration:
                             task.actual_duration = actual_duration
                             needs_update = True
                             update_details.append("фактическая длительность")
-
                         if task.creation_moment != creation_moment:
                             task.creation_moment = creation_moment
                             needs_update = True
                             update_details.append("дата создания")
-
                         if task.start_moment != start_moment:
                             task.start_moment = start_moment
                             needs_update = True
                             update_details.append("дата начала")
-
                         if task.end_moment != end_moment:
                             task.end_moment = end_moment
                             needs_update = True
                             update_details.append("дата завершения")
-
                         if task.price != task_data.get('cost'):
                             task.price = task_data.get('cost')
                             needs_update = True
                             update_details.append("стоимость")
-
                         if task.order_serial != task_data.get('order_id'):
                             task.order_serial = task_data.get('order_id')
                             needs_update = True
                             update_details.append("заказ")
-
                         if task.parent_task_id != parent_task_id:
                             task.parent_task_id = parent_task_id
                             needs_update = True
                             update_details.append("родительская задача")
-
                         if task.root_task_id != root_task_id:
                             task.root_task_id = root_task_id
                             needs_update = True
@@ -1119,12 +1073,13 @@ def import_tasks_from_kis2() -> Dict[str, any]:
 
                         if needs_update:
                             result['updated'] += 1
-                            print(Fore.BLUE + f"Обновлена задача '{name}': {', '.join(update_details)}")
+                            print(Fore.BLUE + f"Обновлена задача ID={kis2_id} ('{name}'): {', '.join(update_details)}")
                         else:
                             result['unchanged'] += 1
                     else:
-                        # Создаем новую задачу
+                        # Создаем новую задачу с ID из КИС2
                         new_task = Task(
+                            id=kis2_id,  # Используем ID из КИС2
                             name=name,
                             description=description,
                             executor_id=executor_id,
@@ -1142,14 +1097,7 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                         )
                         session.add(new_task)
                         result['added'] += 1
-                        print(Fore.GREEN + f"Добавлена новая задача: {name}")
-
-                        # Если это задача из КИС2, сохраняем её ID в словаре для связывания родительских задач
-                        if kis2_id:
-                            # Обновляем словарь с новой задачей (для будущих итераций)
-                            # Нужно сделать commit, чтобы получить ID новой задачи
-                            session.flush()
-                            tasks_by_kis2_id[kis2_id] = new_task
+                        print(Fore.GREEN + f"Добавлена новая задача ID={kis2_id} ('{name}')")
 
                 return commit_and_summarize_import(session, result, "задач")
             except Exception as e:
