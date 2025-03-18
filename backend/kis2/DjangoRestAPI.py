@@ -166,6 +166,74 @@ def get_data_from_kis2(endpoint: str, debug: bool = False) -> Optional[List[Dict
     return data
 
 
+def get_entity_dict(entity_name: str, name_field: str = "name",
+                    default_value: str = "Неизвестно", debug: bool = True) -> Dict[Any, str]:
+    """
+    Получает данные о сущностях и создает словарь id:name
+
+    Args:
+        entity_name: Имя сущности для запроса
+        name_field: Поле, содержащее название (по умолчанию "name")
+        default_value: Значение по умолчанию если name_field отсутствует
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Словарь, где ключ - id сущности, значение - название
+    """
+    data = get_data_from_kis2(entity_name, debug)
+    if not data:
+        if debug:
+            print(f"Не удалось получить данные о {entity_name}")
+        return {}
+
+    # Создаем словарь id:name для сущностей
+    entity_dict = {item["id"]: item.get(name_field, default_value)
+                   for item in data
+                   if "id" in item}
+
+    if debug:
+        print(f"Получено {len(entity_dict)} записей {entity_name}")
+
+    return entity_dict
+
+
+def get_persons_dict(debug: bool = True) -> Dict[Any, str]:
+    """
+    Получает данные о сотрудниках и создает словарь id:полное_имя
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Словарь, где ключ - id сотрудника, значение - полное ФИО
+    """
+    persons_data = get_data_from_kis2("Person", debug)
+    if not persons_data:
+        if debug:
+            print("Не удалось получить данные о сотрудниках")
+        return {}
+
+    # Создаем словарь id:полное_имя для сотрудников
+    persons_dict = {}
+    for person in persons_data:
+        if "id" in person:
+            # Формируем полное ФИО из фамилии, имени и отчества
+            surname = person.get("surname", "")
+            name = person.get("name", "")
+            patronymic = person.get("patronymic", "")
+
+            # Собираем ФИО в одну строку, пропуская пустые значения
+            full_name_parts = [part for part in [surname, name, patronymic] if part]
+            full_name = " ".join(full_name_parts) if full_name_parts else "Неизвестный сотрудник"
+
+            persons_dict[person["id"]] = full_name
+
+    if debug:
+        print(f"Получено {len(persons_dict)} сотрудников")
+
+    return persons_dict
+
+
 def create_countries_set_from_kis2(debug: bool = True) -> Set[str]:
     """
     Получает множество названий стран из КИС2.
@@ -683,45 +751,9 @@ def create_box_accounting_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
         - 'programmer': Программист (ФИО одной строкой, может быть None)
         - 'tester': Тестировщик (ФИО одной строкой)
     """
-    # Получаем данные о заказах
-    orders_data = get_data_from_kis2("Order", debug)
-    if not orders_data:
-        if debug:
-            print("Не удалось получить данные о заказах")
-        return []
-
-    # Создаем словарь id:серийный_номер для заказов
-    orders_dict = {item["id"]: item.get("serial", "Неизвестный заказ")
-                   for item in orders_data
-                   if "id" in item}
-
-    if debug:
-        print(f"Получено {len(orders_dict)} заказов")
-
-    # Получаем данные о персонах (сотрудниках)
-    persons_data = get_data_from_kis2("Person", debug)
-    if not persons_data:
-        if debug:
-            print("Не удалось получить данные о сотрудниках")
-        return []
-
-    # Создаем словарь id:полное_имя для сотрудников
-    persons_dict = {}
-    for person in persons_data:
-        if "id" in person:
-            # Формируем полное ФИО из фамилии, имени и отчества
-            surname = person.get("surname", "")
-            name = person.get("name", "")
-            patronymic = person.get("patronymic", "")
-
-            # Собираем ФИО в одну строку, пропуская пустые значения
-            full_name_parts = [part for part in [surname, name, patronymic] if part]
-            full_name = " ".join(full_name_parts) if full_name_parts else "Неизвестный сотрудник"
-
-            persons_dict[person["id"]] = full_name
-
-    if debug:
-        print(f"Получено {len(persons_dict)} сотрудников")
+    # Получаем словари для поиска
+    # orders_dict = get_entity_dict("Order", "serial", "Неизвестный заказ", debug)
+    persons_dict = get_persons_dict(debug)
 
     # Получаем данные о шкафах
     boxes_data = get_data_from_kis2("Box_Accounting", debug)
@@ -799,30 +831,8 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
         - 'parent_task': ID родительской задачи
         - 'description': Описание задачи
     """
-    # Получаем данные о персонах (сотрудниках)
-    persons_data = get_data_from_kis2("Person", debug)
-    if not persons_data:
-        if debug:
-            print("Не удалось получить данные о сотрудниках")
-        return []
-
-    # Создаем словарь id:полное_имя для сотрудников
-    persons_dict = {}
-    for person in persons_data:
-        if "id" in person:
-            # Формируем полное ФИО из фамилии, имени и отчества
-            surname = person.get("surname", "")
-            name = person.get("name", "")
-            patronymic = person.get("patronymic", "")
-
-            # Собираем ФИО в одну строку, пропуская пустые значения
-            full_name_parts = [part for part in [surname, name, patronymic] if part]
-            full_name = " ".join(full_name_parts) if full_name_parts else "Неизвестный сотрудник"
-
-            persons_dict[person["id"]] = full_name
-
-    if debug:
-        print(f"Получено {len(persons_dict)} сотрудников")
+    # Получаем словари для поиска
+    persons_dict = get_persons_dict(debug)
 
     # Получаем данные о статусах задач
     task_statuses_data = get_data_from_kis2("TaskStatus", debug)
@@ -833,8 +843,8 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
     # Создаем словарь id:name для статусов задач
     task_statuses_dict = {status["id"]: status.get("name", "Неизвестный статус")
-                         for status in task_statuses_data
-                         if "id" in status}
+                          for status in task_statuses_data
+                          if "id" in status}
 
     if debug:
         print(f"Получено {len(task_statuses_dict)} статусов задач")
@@ -848,8 +858,8 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
     # Создаем словарь id:name для статусов оплаты
     payment_statuses_dict = {status["id"]: status.get("name", "Неизвестный статус оплаты")
-                            for status in payment_statuses_data
-                            if "id" in status}
+                             for status in payment_statuses_data
+                             if "id" in status}
 
     if debug:
         print(f"Получено {len(payment_statuses_dict)} статусов оплаты")
@@ -860,11 +870,6 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
         if debug:
             print("Не удалось получить данные о задачах")
         return []
-
-    # Создаем словарь id:name для задач (для определения родительских задач)
-    tasks_name_dict = {task["id"]: task.get("name", "Задача без названия")
-                       for task in tasks_data
-                       if "id" in task}
 
     # Создаем список словарей задач
     tasks_list = []
@@ -885,11 +890,9 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
             # Получаем информацию о корневой задаче
             root_task_id = task.get("root_task_id")
-            root_task_name = tasks_name_dict.get(root_task_id, None) if root_task_id else None
 
             # Получаем информацию о родительской задаче
             parent_task_id = task.get("parent_task_id")
-            parent_task_name = tasks_name_dict.get(parent_task_id, None) if parent_task_id else None
 
             # Собираем словарь задачи
             task_dict = {
@@ -906,9 +909,7 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'cost': task.get("cost"),
                 'payment_status': payment_status_name,
                 'root_task_id': root_task_id,
-                'root_task_name': root_task_name,
                 'parent_task_id': parent_task_id,
-                'parent_task_name': parent_task_name,
                 'description': task.get("description")
             }
             tasks_list.append(task_dict)
@@ -928,4 +929,3 @@ if __name__ == "__main__":
         for rom in task:
             print(f"{rom}: {task[rom]}")
         print("\n")
-
