@@ -5,7 +5,7 @@
 """
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from colorama import init, Fore
 from typing import Dict, Set, Any
@@ -13,7 +13,7 @@ from typing import Dict, Set, Any
 # Добавляем родительскую директорию в путь поиска модулей
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from kis2.DjangoRestAPI import create_countries_set_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_tasks_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_box_accounting_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
@@ -26,7 +26,7 @@ from kis2.DjangoRestAPI import create_works_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country  # noqa: E402
+from models.models import Country, TaskStatus, TaskPaymentStatus, Task  # noqa: E402
 from models.models import BoxAccounting  # noqa: E402
 from models.models import Manufacturer  # noqa: E402
 from models.models import Counterparty  # noqa: E402
@@ -885,7 +885,7 @@ def import_box_accounting_from_kis2() -> Dict[str, any]:
                         result['added'] += 1
                         print(Fore.GREEN + f"Добавлен новый шкаф: {serial_num} - {name}")
 
-                return commit_and_summarize_import(session, result, "шкафов")
+                return commit_and_summarize_import(session, result, "записи о серийных номерах шкафов")
             except Exception as e:
                 session.rollback()
                 print(Fore.RED + f"Ошибка при импорте шкафов: {e}")
@@ -893,6 +893,321 @@ def import_box_accounting_from_kis2() -> Dict[str, any]:
     except Exception as e:
         print(Fore.RED + f"Ошибка при выполнении импорта шкафов: {e}")
         return result
+
+
+def parse_iso_duration(duration_str: str) -> timedelta | None:
+    """
+    Преобразует строку длительности в формате ISO 8601 (например, 'P0DT01H00M00S') в timedelta.
+    """
+    if not duration_str or not duration_str.startswith('P'):
+        return None
+
+    days = 0
+    hours = 0
+    minutes = 0
+    seconds = 0
+
+    # Убираем 'P' и разделяем на части до и после 'T'
+    duration_str = duration_str[1:]  # Убираем 'P'
+    if 'T' in duration_str:
+        days_part, time_part = duration_str.split('T')
+    else:
+        days_part = duration_str
+        time_part = ''
+
+    # Парсим дни
+    if 'D' in days_part:
+        days = int(days_part.split('D')[0])
+
+    # Парсим время
+    if 'H' in time_part:
+        hours_part = time_part.split('H')[0]
+        hours = int(hours_part[-2:]) if hours_part else 0
+        time_part = time_part.split('H')[1]
+
+    if 'M' in time_part:
+        minutes_part = time_part.split('M')[0]
+        minutes = int(minutes_part[-2:]) if minutes_part else 0
+        time_part = time_part.split('M')[1]
+
+    if 'S' in time_part:
+        seconds = int(time_part.split('S')[0])
+
+    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+
+def import_tasks_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует задачи из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_tasks_list = create_tasks_list_dict_from_kis2(debug=False)
+        if not kis2_tasks_list:
+            print(Fore.YELLOW + "Не удалось получить задачи из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_tasks_list)} задач из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Проверим и создадим стандартные статусы задач
+                ensure_task_statuses_exist(session)
+
+                # Проверим и создадим стандартные статусы оплаты
+                ensure_payment_statuses_exist(session)
+
+                # Получаем существующие задачи по имени
+                existing_tasks = {t.name: t for t in session.query(Task).all()}
+
+                # Создаем словари для связей
+                task_statuses_dict = {name: id for id, name in session.query(TaskStatus.id, TaskStatus.name).all()}
+                payment_statuses_dict = {name: id for id, name in session.query(TaskPaymentStatus.id,
+                                                                                TaskPaymentStatus.name).all()}
+
+                # Получаем словарь персон для связи с исполнителями задач
+                persons_by_name = {}
+                for person in session.query(Person).all():
+                    full_name = f"{person.surname} {person.name}"
+                    if person.patronymic:
+                        full_name += f" {person.patronymic}"
+                    persons_by_name[full_name] = person.id
+
+                # Создаем словарь существующих задач по их ID из КИС2
+                tasks_by_kis2_id = {}
+                for task in session.query(Task).all():
+                    # Предполагается, что description может хранить ID из КИС2
+                    # Этот подход требует доработки в реальном приложении
+                    if task.description and task.description.startswith("KIS2_ID:"):
+                        kis2_id = int(task.description.split("KIS2_ID:")[1].strip())
+                        tasks_by_kis2_id[kis2_id] = task
+
+                # Обрабатываем каждую задачу из КИС2
+                for task_data in kis2_tasks_list:
+                    kis2_id = task_data.get('id')
+                    name = task_data['name']
+                    description = task_data.get('description') or ""
+
+                    # Если есть описание, добавляем к нему ID из КИС2 для связи
+                    if kis2_id:
+                        if description:
+                            description = f"{description}\nKIS2_ID:{kis2_id}"
+                        else:
+                            description = f"KIS2_ID:{kis2_id}"
+
+                    # Получаем ID исполнителя
+                    executor_id = None
+                    if task_data['executor']:
+                        executor_id = persons_by_name.get(task_data['executor'])
+                        if not executor_id:
+                            print(Fore.YELLOW + f"Не найден исполнитель '{task_data['executor']}' для задачи '{name}'."
+                                                f" Продолжаем без исполнителя.")
+
+                    # Получаем ID статуса задачи
+                    if task_data['status']:
+                        status_id = task_statuses_dict.get(task_data['status'])
+                        if not status_id:
+                            print(Fore.YELLOW + f"Не найден статус '{task_data['status']}' для задачи '{name}'."
+                                                f" Используем статус по умолчанию.")
+                            status_id = 1  # "Не начата" по умолчанию
+                    else:
+                        status_id = 1  # "Не начата" по умолчанию
+
+                    # Получаем ID статуса оплаты
+                    if task_data['payment_status']:
+                        payment_status_id = payment_statuses_dict.get(task_data['payment_status'])
+                        if not payment_status_id:
+                            print(Fore.YELLOW + f"Не найден статус оплаты '{task_data['payment_status']}'"
+                                                f" для задачи '{name}'. Используем статус по умолчанию.")
+                            payment_status_id = 1  # "Нет оплаты" по умолчанию
+                    else:
+                        payment_status_id = 1  # "Нет оплаты" по умолчанию
+
+                    # Преобразование строк дат в объекты datetime
+                    creation_moment = datetime.strptime(task_data['creation_moment'],
+                                                        "%Y-%m-%dT%H:%M:%SZ") if task_data['creation_moment'] else None
+                    start_moment = datetime.strptime(task_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data[
+                        'start_moment'] else None
+                    end_moment = datetime.strptime(task_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data[
+                        'end_moment'] else None
+
+                    # Преобразование длительностей из строки в timedelta.
+                    # Используем функцию для парсинга ISO 8601
+                    planned_duration = parse_iso_duration(task_data.get('planned_duration'))
+                    actual_duration = parse_iso_duration(task_data.get('actual_duration'))
+
+                    # Получаем ссылки на родительскую и корневую задачи
+                    parent_task_id = None
+                    if task_data['parent_task_id'] and task_data['parent_task_id'] in tasks_by_kis2_id:
+                        parent_task_id = tasks_by_kis2_id[task_data['parent_task_id']].id
+
+                    root_task_id = None
+                    if task_data['root_task_id'] and task_data['root_task_id'] in tasks_by_kis2_id:
+                        root_task_id = tasks_by_kis2_id[task_data['root_task_id']].id
+
+                    # Проверяем существование задачи в КИС3
+                    if name in existing_tasks:
+                        # Обновляем существующую задачу
+                        task = existing_tasks[name]
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем изменения в полях
+                        if task.description != description:
+                            task.description = description
+                            needs_update = True
+                            update_details.append("описание")
+
+                        if task.executor_id != executor_id:
+                            task.executor_id = executor_id
+                            needs_update = True
+                            update_details.append("исполнитель")
+
+                        if task.status_id != status_id:
+                            task.status_id = status_id
+                            needs_update = True
+                            update_details.append("статус")
+
+                        if task.payment_status_id != payment_status_id:
+                            task.payment_status_id = payment_status_id
+                            needs_update = True
+                            update_details.append("статус оплаты")
+
+                        if task.planned_duration != planned_duration:
+                            task.planned_duration = planned_duration
+                            needs_update = True
+                            update_details.append("планируемая длительность")
+
+                        if task.actual_duration != actual_duration:
+                            task.actual_duration = actual_duration
+                            needs_update = True
+                            update_details.append("фактическая длительность")
+
+                        if task.creation_moment != creation_moment:
+                            task.creation_moment = creation_moment
+                            needs_update = True
+                            update_details.append("дата создания")
+
+                        if task.start_moment != start_moment:
+                            task.start_moment = start_moment
+                            needs_update = True
+                            update_details.append("дата начала")
+
+                        if task.end_moment != end_moment:
+                            task.end_moment = end_moment
+                            needs_update = True
+                            update_details.append("дата завершения")
+
+                        if task.price != task_data.get('cost'):
+                            task.price = task_data.get('cost')
+                            needs_update = True
+                            update_details.append("стоимость")
+
+                        if task.order_serial != task_data.get('order_id'):
+                            task.order_serial = task_data.get('order_id')
+                            needs_update = True
+                            update_details.append("заказ")
+
+                        if task.parent_task_id != parent_task_id:
+                            task.parent_task_id = parent_task_id
+                            needs_update = True
+                            update_details.append("родительская задача")
+
+                        if task.root_task_id != root_task_id:
+                            task.root_task_id = root_task_id
+                            needs_update = True
+                            update_details.append("корневая задача")
+
+                        if needs_update:
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлена задача '{name}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Создаем новую задачу
+                        new_task = Task(
+                            name=name,
+                            description=description,
+                            executor_id=executor_id,
+                            status_id=status_id,
+                            payment_status_id=payment_status_id,
+                            planned_duration=planned_duration,
+                            actual_duration=actual_duration,
+                            creation_moment=creation_moment,
+                            start_moment=start_moment,
+                            end_moment=end_moment,
+                            price=task_data.get('cost'),
+                            order_serial=task_data.get('order_id'),
+                            parent_task_id=parent_task_id,
+                            root_task_id=root_task_id
+                        )
+                        session.add(new_task)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлена новая задача: {name}")
+
+                        # Если это задача из КИС2, сохраняем её ID в словаре для связывания родительских задач
+                        if kis2_id:
+                            # Обновляем словарь с новой задачей (для будущих итераций)
+                            # Нужно сделать commit, чтобы получить ID новой задачи
+                            session.flush()
+                            tasks_by_kis2_id[kis2_id] = new_task
+
+                return commit_and_summarize_import(session, result, "задач")
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте задач: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта задач: {e}")
+        return result
+
+
+def ensure_task_statuses_exist(session) -> None:
+    """
+    Проверяет наличие стандартных статусов задач в базе данных, создает отсутствующие и обновляет описания.
+    """
+    standard_statuses = [
+        {"id": 1, "name": "Не начата", "description": "Задача еще не начата"},
+        {"id": 2, "name": "В работе", "description": "Задача находится в процессе выполнения"},
+        {"id": 3, "name": "На паузе", "description": "Выполнение задачи приостановлено"},
+        {"id": 4, "name": "Завершена", "description": "Задача успешно завершена"},
+        {"id": 5, "name": "Отменена", "description": "Задача отменена"}
+    ]
+
+    existing_statuses = {s.id: s for s in session.query(TaskStatus).all()}
+
+    for status in standard_statuses:
+        if status["id"] not in existing_statuses:
+            print(Fore.YELLOW + f"Добавление статуса задачи: {status['name']}")
+            session.add(TaskStatus(id=status["id"], name=status["name"]))
+        elif existing_statuses[status["id"]].name != status["name"]:
+            existing_statuses[status["id"]].name = status["name"]
+            print(Fore.YELLOW + f"Обновление статуса задачи: {status['name']}")
+
+    session.commit()
+
+
+def ensure_payment_statuses_exist(session) -> None:
+    """
+    Проверяет наличие стандартных статусов оплаты в базе данных, создает отсутствующие и обновляет описания.
+    """
+    standard_statuses = [
+        {"id": 1, "name": "Нет оплаты", "description": "Задача не предполагает оплату"},
+        {"id": 2, "name": "Возможна", "description": "Оплата возможна при качественном и своевременном выполнении"},
+        {"id": 3, "name": "Начислена", "description": "Оплата начислена, но еще не выплачена"},
+        {"id": 4, "name": "Оплачена", "description": "Задача оплачена полностью"}
+    ]
+
+    existing_statuses = {s.id: s for s in session.query(TaskPaymentStatus).all()}
+
+    for status in standard_statuses:
+        if status["id"] not in existing_statuses:
+            print(Fore.YELLOW + f"Добавление статуса оплаты: {status['name']}")
+            session.add(TaskPaymentStatus(id=status["id"], name=status["name"]))
+        elif existing_statuses[status["id"]].name != status["name"]:
+            existing_statuses[status["id"]].name = status["name"]
+            print(Fore.YELLOW + f"Обновление статуса оплаты: {status['name']}")
+
+    session.commit()
 
 
 if __name__ == "__main__":
@@ -933,6 +1248,7 @@ if __name__ == "__main__":
         print("10 - ensure order statuses exist")
         print("11 - import orders from KIS2")
         print("12 - import box accounting from KIS2")
+        print("13 - import tasks from KIS2")
         answer = input()
 
         operations = {
@@ -947,7 +1263,8 @@ if __name__ == "__main__":
             "9": ("Импорт работ из КИС2", import_works_from_kis2, "работ"),
             "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов"),
             "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов"),
-            "12": ("Импорт учёта шкафов из КИС2", import_box_accounting_from_kis2, "учёта шкафов "),
+            "12": ("Импорт учёта шкафов из КИС2", import_box_accounting_from_kis2, "учёта шкафов"),
+            "13": ("Импорт задач из КИС2", import_tasks_from_kis2, "задач"),
         }
 
         if answer in operations:

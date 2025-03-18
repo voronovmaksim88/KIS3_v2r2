@@ -207,7 +207,12 @@ class Order(Base):
     start_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Дата и время создания
     deadline_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Дата и время дедлайна
     end_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Дата и время окончания
+
+    # relations
+    boxes: Mapped[List["BoxAccounting"]] = relationship(back_populates="order")
     works: Mapped[List["Work"]] = relationship(secondary="orders_works", back_populates="orders")
+    tasks: Mapped[List["Task"]] = relationship(back_populates="order")  # Отношение с Task
+    comments: Mapped[List["OrderComment"]] = relationship(back_populates="order")
 
     """
     Строки ниже нужны для грубой финансовой аналитики
@@ -243,9 +248,6 @@ class Order(Base):
     def __repr__(self) -> str:
         return f"Order(serial={self.serial!r}, name={self.name!r})"
 
-    # relations
-    boxes: Mapped[List["BoxAccounting"]] = relationship(back_populates="order")
-
 
 class BoxAccounting(Base):
     """Таблица учёта шкафов """
@@ -271,11 +273,14 @@ class OrderComment(Base):
     """Таблица комментариев к заказам """
     __tablename__ = 'comments_on_orders'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    order_id: Mapped[int] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
+    order_id: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
     moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,
                                                                    nullable=True)  # Дата и время публикации комментария
     text: Mapped[str] = mapped_column(Text, nullable=False)  # Текст комментария
     person_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Автор комментария
+
+    # relations
+    order: Mapped["Order"] = relationship(back_populates="comments")
 
 
 class TaskStatus(Base):
@@ -327,12 +332,12 @@ class Task(Base):
     """
     __tablename__ = 'tasks'
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=False)
+    #  Имя не уникально, т.к. в разных заказах может быть задача с одним именем например "протестировать"
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
     payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
     executor_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=True)
-
 
     # Добавляем связи с другими таблицами
     status: Mapped["TaskStatus"] = relationship(back_populates="tasks")
@@ -360,7 +365,7 @@ class Task(Base):
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Связь с заказами
-    order_serial: Mapped[Optional[int]] = mapped_column(ForeignKey('orders.serial'), nullable=True)
+    order_serial: Mapped[Optional[str]] = mapped_column(ForeignKey('orders.serial'), nullable=True)
     order: Mapped[Optional["Order"]] = relationship(back_populates="tasks")
 
     # Ссылка на родительскую задачу
@@ -369,11 +374,25 @@ class Task(Base):
     # Ссылка на корневую задачу
     root_task_id: Mapped[Optional[int]] = mapped_column(ForeignKey('tasks.id'), nullable=True)
 
-    # Связи
-    parent_task: Mapped["Task"] = relationship(remote_side=[id], back_populates="subtasks")
-    subtasks: Mapped[List["Task"]] = relationship(back_populates="parent_task")
-    root_task: Mapped["Task"] = relationship(remote_side=[id], back_populates="all_tasks_in_hierarchy")
-    all_tasks_in_hierarchy: Mapped[List["Task"]] = relationship(back_populates="root_task")
+    # Связи с явным указанием foreign_keys
+    parent_task: Mapped["Task"] = relationship(
+        remote_side=[id],
+        back_populates="subtasks",
+        foreign_keys=[parent_task_id]  # Указываем, что parent_task использует parent_task_id
+    )
+    subtasks: Mapped[List["Task"]] = relationship(
+        back_populates="parent_task",
+        foreign_keys=[parent_task_id]  # Указываем, что subtasks также использует parent_task_id
+    )
+    root_task: Mapped["Task"] = relationship(
+        remote_side=[id],
+        back_populates="all_tasks_in_hierarchy",
+        foreign_keys=[root_task_id]  # Указываем, что root_task использует root_task_id
+    )
+    all_tasks_in_hierarchy: Mapped[List["Task"]] = relationship(
+        back_populates="root_task",
+        foreign_keys=[root_task_id]  # Указываем, что all_tasks_in_hierarchy использует root_task_id
+    )
 
     def __repr__(self) -> str:
         return f"Task(id={self.id!r}, name={self.name!r})"
