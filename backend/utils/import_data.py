@@ -960,8 +960,13 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                 existing_tasks = {t.id: t for t in session.query(Task).all()}
 
                 # Создаем словари для связей
-                task_statuses_dict = {name: id for id, name in session.query(TaskStatus.id, TaskStatus.name).all()}
-                payment_statuses_dict = {name: id for id, name in session.query(TaskPaymentStatus.id, TaskPaymentStatus.name).all()}
+                task_statuses_dict = {}
+                for id, name in session.query(TaskStatus.id, TaskStatus.name).all():
+                    task_statuses_dict[name] = id
+
+                payment_statuses_dict = {}
+                for id, name in session.query(TaskPaymentStatus.id, TaskPaymentStatus.name).all():
+                    payment_statuses_dict[name] = id
 
                 # Получаем словарь персон для связи с исполнителями задач
                 persons_by_name = {}
@@ -991,13 +996,24 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                     # Получаем ID статуса задачи
                     status_id = task_statuses_dict.get(task_data['status'], 1)  # "Не начата" по умолчанию
 
-                    # Получаем ID статуса оплаты
-                    payment_status_id = payment_statuses_dict.get(task_data['payment_status'], 1)  # "Нет оплаты" по умолчанию
+                    # Получаем ID статуса оплаты, "Нет оплаты" по умолчанию
+                    payment_status_id = payment_statuses_dict.get(task_data['payment_status'], 1)
 
                     # Преобразование строк дат в объекты datetime
-                    creation_moment = datetime.strptime(task_data['creation_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('creation_moment') else None
-                    start_moment = datetime.strptime(task_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('start_moment') else None
-                    end_moment = datetime.strptime(task_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if task_data.get('end_moment') else None
+                    if 'creation_moment' in task_data:
+                        creation_moment = datetime.strptime(task_data['creation_moment'], "%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        creation_moment = None
+
+                    if 'start_moment' in task_data:
+                        start_moment = datetime.strptime(task_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        start_moment = None
+
+                    if 'end_moment' in task_data:
+                        end_moment = datetime.strptime(task_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        end_moment = None
 
                     # Преобразование длительностей из строки в timedelta
                     planned_duration = parse_iso_duration(task_data.get('planned_duration'))
