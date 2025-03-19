@@ -940,20 +940,6 @@ def create_order_comments_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
     # Получаем словари для поиска
     persons_dict = get_persons_dict(debug)
 
-    # Получаем данные об заказах для отображения серийных номеров
-    orders_data = get_data_from_kis2("Order", debug)
-    if not orders_data:
-        if debug:
-            print("Не удалось получить данные о заказах")
-        orders_dict = {}
-    else:
-        # Создаем словарь id:serial для заказов
-        orders_dict = {item["id"]: item["serial"]
-                       for item in orders_data
-                       if "id" in item and "serial" in item}
-        if debug:
-            print(f"Получено {len(orders_dict)} заказов")
-
     # Получаем данные о комментариях
     comments_data = get_data_from_kis2("OrderComent", debug)
     if not comments_data:
@@ -971,8 +957,7 @@ def create_order_comments_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
             person_name = persons_dict.get(person_id, None) if person_id else None
 
             # Получаем информацию о заказе
-            order_id = comment.get("order_id")
-            order_serial = orders_dict.get(order_id, None) if order_id else None
+            order_serial = comment.get("order_id")
 
             # Собираем словарь комментария
             comment_dict = {

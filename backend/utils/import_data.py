@@ -13,7 +13,8 @@ from typing import Dict, Set, Any
 # Добавляем родительскую директорию в путь поиска модулей
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_tasks_list_dict_from_kis2  # noqa: E402
+from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_tasks_list_dict_from_kis2, \
+    create_order_comments_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_box_accounting_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
@@ -26,7 +27,7 @@ from kis2.DjangoRestAPI import create_works_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, TaskStatus, TaskPaymentStatus, Task  # noqa: E402
+from models.models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment  # noqa: E402
 from models.models import BoxAccounting  # noqa: E402
 from models.models import Manufacturer  # noqa: E402
 from models.models import Counterparty  # noqa: E402
@@ -1174,6 +1175,104 @@ def ensure_payment_statuses_exist(session) -> None:
     session.commit()
 
 
+def import_order_comments_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует комментарии к заказам из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_comments_list = create_order_comments_list_dict_from_kis2(debug=False)
+        if not kis2_comments_list:
+            print(Fore.YELLOW + "Не удалось получить комментарии к заказам из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_comments_list)} комментариев к заказам из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Создаем словарь для поиска людей по полному имени
+                persons_by_name = {}
+                for person in session.query(Person).all():
+                    full_name = f"{person.surname} {person.name}"
+                    if person.patronymic:
+                        full_name += f" {person.patronymic}"
+                    persons_by_name[full_name] = person.id
+
+                # Получаем все записи из таблицы OrderComment
+                comments = session.query(OrderComment).all()
+
+                # Формируем множество уникальных значений момента создания заказа
+                existing_comments_moment_of_creation_set = {
+                    comment.moment_of_creation for comment in comments
+                }
+                for existing_comments_moment_of_creation in existing_comments_moment_of_creation_set:
+                    print('existing_comments_moment_of_creation', existing_comments_moment_of_creation)
+
+                existing_orders_set = {order.serial for order in session.query(Order).all()}
+                print('existing_orders_set', existing_orders_set)
+
+                # Обрабатываем каждый комментарий из КИС2
+                for comment_data in kis2_comments_list:
+                    order_serial = comment_data.get('order_serial')
+                    person_name = comment_data.get('person')
+                    text = comment_data.get('text', "")
+                    moment_str = comment_data.get('moment_of_creation')
+
+                    # Проверяем обязательные поля
+                    if not order_serial or not person_name or not text:
+                        print(Fore.YELLOW + f"Пропущен комментарий с неполными данными: {comment_data}")
+                        continue
+
+                    # Проверяем существование заказа
+                    if order_serial not in existing_orders_set:
+                        print(Fore.YELLOW + f"Не найден заказ '{order_serial}' для комментария. Пропуск.")
+                        continue
+
+                    # Ищем автора комментария
+                    person_id = persons_by_name.get(person_name)
+                    if not person_id:
+                        print(Fore.YELLOW + f"Не найден человек '{person_name}' в базе данных. Пропуск комментария.")
+                        continue
+
+                    # Преобразуем строку даты в объект datetime
+                    if moment_str:
+                        try:
+                            moment_of_creation = datetime.strptime(moment_str, "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError:
+                            print(Fore.YELLOW + f"Неверный формат даты '{moment_str}'. Используется текущее время.")
+                            moment_of_creation = datetime.now()
+                    else:
+                        moment_of_creation = None
+
+                    # Создаем ключ для проверки наличия комментария
+                    comment_key = moment_of_creation
+                    print('comment_key', comment_key)
+
+                    # Проверяем существование комментария
+                    if comment_key not in existing_comments_moment_of_creation_set:
+                        # Создаем новый комментарий
+                        new_comment = OrderComment(
+                            order_id=order_serial,
+                            person_id=person_id,
+                            text=text,
+                            moment_of_creation=moment_of_creation
+                        )
+                        session.add(new_comment)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый комментарий от {person_name} к заказу {order_serial}")
+                    else:
+                        result['unchanged'] += 1
+
+                return commit_and_summarize_import(session, result, "комментариев к заказам")
+
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте комментариев к заказам: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта комментариев к заказам: {e}")
+        return result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -1213,6 +1312,7 @@ if __name__ == "__main__":
         print("11 - import orders from KIS2")
         print("12 - import box accounting from KIS2")
         print("13 - import tasks from KIS2")
+        print("14 - import order comments from KIS2")
         answer = input()
 
         operations = {
@@ -1229,6 +1329,7 @@ if __name__ == "__main__":
             "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов"),
             "12": ("Импорт учёта шкафов из КИС2", import_box_accounting_from_kis2, "учёта шкафов"),
             "13": ("Импорт задач из КИС2", import_tasks_from_kis2, "задач"),
+            "14": ("Импорт комментариев заказов из КИС2", import_order_comments_from_kis2, "комментариев к заказам"),
         }
 
         if answer in operations:
