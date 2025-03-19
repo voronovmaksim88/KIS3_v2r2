@@ -923,9 +923,78 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
     return tasks_list
 
 
+def create_order_comments_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей комментариев к заказам (OrderComent) из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей комментариев со следующими ключами:
+        - 'moment_of_creation': Дата и время публикации комментария
+        - 'text': Текст комментария
+        - 'person': ФИО автора комментария (одной строкой)
+        - 'order_serial': Серийный номер заказа, к которому относится комментарий
+    """
+    # Получаем словари для поиска
+    persons_dict = get_persons_dict(debug)
+
+    # Получаем данные об заказах для отображения серийных номеров
+    orders_data = get_data_from_kis2("Order", debug)
+    if not orders_data:
+        if debug:
+            print("Не удалось получить данные о заказах")
+        orders_dict = {}
+    else:
+        # Создаем словарь id:serial для заказов
+        orders_dict = {item["id"]: item["serial"]
+                       for item in orders_data
+                       if "id" in item and "serial" in item}
+        if debug:
+            print(f"Получено {len(orders_dict)} заказов")
+
+    # Получаем данные о комментариях
+    comments_data = get_data_from_kis2("OrderComent", debug)
+    if not comments_data:
+        if debug:
+            print("Не удалось получить данные о комментариях к заказам")
+        return []
+
+    # Создаем список словарей комментариев
+    comments_list = []
+    for comment in comments_data:
+        # Проверяем наличие необходимых ключей
+        if "text" in comment:
+            # Получаем информацию об авторе комментария
+            person_id = comment.get("person_id")
+            person_name = persons_dict.get(person_id, None) if person_id else None
+
+            # Получаем информацию о заказе
+            order_id = comment.get("order_id")
+            order_serial = orders_dict.get(order_id, None) if order_id else None
+
+            # Собираем словарь комментария
+            comment_dict = {
+                'moment_of_creation': comment.get("moment_of_creation"),
+                'text': comment["text"],
+                'person': person_name,
+                'order_serial': order_serial
+            }
+
+            comments_list.append(comment_dict)
+
+            if debug:
+                text_preview = comment["text"][:50] + "..." if len(comment["text"]) > 50 else comment["text"]
+                print(f"Добавлен комментарий: '{text_preview}' (Автор: {person_name}, Заказ: {order_serial})")
+
+    if debug:
+        print(f"Получено {len(comments_list)} комментариев к заказам")
+
+    return comments_list
+
+
 if __name__ == "__main__":
-    tasks_list_dict_from_kis2 = create_tasks_list_dict_from_kis2()
-    for task in tasks_list_dict_from_kis2:
-        for rom in task:
-            print(f"{rom}: {task[rom]}")
-        print("\n")
+    order_comments_list_dict_from_kis2 = create_order_comments_list_dict_from_kis2()
+    for comment in order_comments_list_dict_from_kis2:
+        print(comment)
