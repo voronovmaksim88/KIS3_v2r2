@@ -376,22 +376,24 @@ class Task(Base):
 
     # Связи с явным указанием foreign_keys
     parent_task: Mapped["Task"] = relationship(
-        remote_side=[id],
+        "Task",
+        remote_side="[Task.id]",
         back_populates="subtasks",
-        foreign_keys=[parent_task_id]  # Указываем, что parent_task использует parent_task_id
+        foreign_keys="[Task.parent_task_id]"
     )
     subtasks: Mapped[List["Task"]] = relationship(
         back_populates="parent_task",
-        foreign_keys=[parent_task_id]  # Указываем, что subtasks также использует parent_task_id
+        foreign_keys="[Task.parent_task_id]"  #
     )
     root_task: Mapped["Task"] = relationship(
-        remote_side=[id],
+        "Task",
+        remote_side="[Task.id]",
         back_populates="all_tasks_in_hierarchy",
-        foreign_keys=[root_task_id]  # Указываем, что root_task использует root_task_id
+        foreign_keys="[Task.root_task_id]"
     )
     all_tasks_in_hierarchy: Mapped[List["Task"]] = relationship(
         back_populates="root_task",
-        foreign_keys=[root_task_id]  # Указываем, что all_tasks_in_hierarchy использует root_task_id
+        foreign_keys="[Task.root_task_id]"  # Используем строковое представление
     )
 
     def __repr__(self) -> str:
