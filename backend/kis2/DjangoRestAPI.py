@@ -1056,7 +1056,112 @@ def create_timings_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any
     return timings_list
 
 
+def create_equipments_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей оборудования из КИС2 через REST API.
+    Args:
+        debug: Флаг для вывода отладочной информации
+    Returns:
+        Список словарей оборудования со следующими ключами:
+        - 'name': Название оборудования
+        - 'model': Модель оборудования
+        - 'vendore_code': Артикул/код поставщика
+        - 'description': Описание оборудования
+        - 'type': Тип оборудования (строка)
+        - 'manufacturer': Производитель (строка)
+        - 'price': Цена
+        - 'currency': Валюта (строка)
+        - 'relevance': Актуальность (True/False)
+        - 'price_date': Дата обновления цены
+    """
+    # Получаем данные о типах оборудования
+    equipment_types_data = get_data_from_kis2("EquipmentType", debug)
+    if not equipment_types_data:
+        if debug:
+            print("Не удалось получить данные о типах оборудования")
+        equipment_types_dict = {}
+    else:
+        # Создаем словарь id:name для типов оборудования
+        equipment_types_dict = {item["id"]: item["name"] for item in equipment_types_data if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(equipment_types_dict)} типов оборудования")
+
+    # Формируем словарь производителей с использованием get_entity_dict
+    manufacturers_dict = get_entity_dict(
+        entity_name="Manufacturers",
+        default_value="Неизвестный производитель",
+        debug=debug
+    )
+
+    if debug:
+        print(f"Получено {len(manufacturers_dict)} производителей")
+        print('manufacturers_dict', manufacturers_dict)
+    print('manufacturers_dict', manufacturers_dict)
+
+    # Получаем данные о валютах
+    currencies_data = get_data_from_kis2("Money", debug)
+    if not currencies_data:
+        if debug:
+            print("Не удалось получить данные о валютах")
+        currencies_dict = {}
+    else:
+        # Создаем словарь id:name для валют
+        currencies_dict = {item["id"]: item["name"] for item in currencies_data if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(currencies_dict)} валют")
+
+    # Получаем данные об оборудовании
+    equipments_data = get_data_from_kis2("Equipment", debug)
+    if not equipments_data:
+        if debug:
+            print("Не удалось получить данные об оборудовании")
+        return []
+
+    # Создаем список словарей оборудования
+    equipments_list = []
+    for equipment in equipments_data:
+        # Проверяем наличие необходимых ключей
+        if "name" in equipment and "model" in equipment:
+            # Получаем тип оборудования
+            type_id = equipment.get("type_id")
+            type_name = equipment_types_dict.get(type_id, "Неизвестный тип")
+
+            # Получаем производителя
+            manufacturer_name = manufacturers_dict.get(equipment.get("manufacturer_id"))
+
+            # Получаем валюту
+            currency_id = equipment.get("currency_id")
+            currency_name = currencies_dict.get(currency_id, "Неизвестная валюта")
+
+            # Преобразуем дату обновления цены
+            price_date_str = equipment.get("price_date")
+            price_date = price_date_str if price_date_str else None
+
+            # Собираем словарь оборудования
+            equipment_dict = {
+                'name': equipment["name"],
+                'model': equipment["model"],
+                'vendor_code': equipment.get("vendore_code", ""),
+                'description': equipment.get("description", ""),
+                'type': type_name,
+                'manufacturer': f"{manufacturer_name}",
+                'price': equipment.get("price", 0),
+                'currency': currency_name,
+                'relevance': equipment.get("relevance", True),
+                'price_date': price_date
+            }
+            equipments_list.append(equipment_dict)
+
+            if debug:
+                print(f"Добавлено оборудование: {equipment['name']} (Модель: {equipment['model']})")
+
+    if debug:
+        print(f"Получено {len(equipments_list)} единиц оборудования")
+
+    return equipments_list
+
+
 if __name__ == "__main__":
-    timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
-    for timings in timings_list_dict_from_kis2:
-        print(timings)
+    equipments_list = create_equipments_list_dict_from_kis2()
+    for equipment in equipments_list:
+        print(equipment)
