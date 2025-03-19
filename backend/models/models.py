@@ -397,55 +397,40 @@ class Task(Base):
     def __repr__(self) -> str:
         return f"Task(id={self.id!r}, name={self.name!r})"
 
-# @add_str_method
-# class Task(models.Model):  # Задачи
-#     name = models.CharField(null=False, max_length=64, verbose_name="Название")  # Название задачи
-#     executor = models.ForeignKey(  # Исполнитель задачи
-#         Person,
-#         null=True,
-#         # Уникальное имя 'related_name' для scheme_developer
-#         related_name="task_executor",
-#         verbose_name="Исполнитель задачи",
-#         on_delete=models.SET_NULL,
-#     )
-#     planned_duration = models.DurationField(null=True, blank=True)  # Планируемая продолжительность выполнения задачи
-#     actual_duration = models.DurationField(null=True, blank=True)  # Фактическая продолжительность выполнения задачи
-#     creation_moment = models.DateTimeField(null=True, blank=True)  # Дата и время создания заказа
-#     start_moment = models.DateTimeField(null=True, blank=True)  # Дата и время начала выполнения задачи
-#     end_moment = models.DateTimeField(null=True, blank=True)  # Дата и время завершения выполнения задачи
-#     status = models.ForeignKey(  # Статус выполнения задачи
-#         TaskStatus,
-#         null=True,
-#         on_delete=models.SET_NULL)
-#     cost = models.IntegerField(  # Стоимость выполнения задачи, т.е. сколько денег надо заплатить исполнителю, руб
-#         null=True,
-#         blank=True,
-#         verbose_name="Цена задачи",
-#     )
-#     payment_status = models.ForeignKey(  # Статус оплаты за задачу
-#         PaymentStatus,
-#         null=True,
-#         on_delete=models.SET_NULL)
-#     root_task = models.ForeignKey(
-#         'self',
-#         null=True,
-#         related_name='root_tasks',
-#         on_delete=models.SET_NULL
-#     )
-#     parent_task = models.ForeignKey(
-#         'self',
-#         null=True,
-#         related_name='child_tasks',  # Изменено на множественное число
-#         on_delete=models.SET_NULL
-#     )
-#     # child_task = models.ForeignKey(  # Родительская задача
-#     #     'self',  # Используем 'self' для ссылки на ту же модель,
-#     #     null=True,
-#     #     related_name='parent_task',
-#     #     on_delete=models.SET_NULL)
-#     description = models.TextField(null=True, blank=True)  # Описание задачи
-#
-#
+
+class Equipment(Base):
+    """
+    Класс "Оборудование"
+    """
+    __tablename__ = 'equipment'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(32), nullable=False)  # Имя
+    model: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, unique=True)  # Модель
+
+    # Артикул, код поставщика
+    vendor_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Описание
+    type_id: Mapped[Optional[int]] = mapped_column(ForeignKey('equipment_types.id'), nullable=True)  # Тип оборудования
+
+    # Производитель
+    manufacturer_id: Mapped[Optional[int]] = mapped_column(ForeignKey('manufacturers.id'), nullable=True)
+    price: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Цена
+    currency_id: Mapped[Optional[int]] = mapped_column(ForeignKey('currencies.id'), nullable=True)  # Валюта
+    relevance: Mapped[bool] = mapped_column(Boolean, default=True)  # Актуальность
+    price_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Дата обновления цены
+
+    # пока не решил как хранить фотки
+    # photo: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Путь к фото
+
+    # Отношения
+    type: Mapped["EquipmentType"] = relationship(back_populates="equipments")
+    manufacturer: Mapped["Manufacturer"] = relationship(back_populates="equipments")
+    currency: Mapped["Currency"] = relationship(back_populates="equipments")
+
+    def __repr__(self) -> str:
+        return f"Equipment(id={self.id!r}, name={self.name!r}, model={self.model!r})"
+
 # '''
 # class Equipment_Suppliers(models.Model):  # Поставщик-Оборудование
 #     equipment = models.OneToOneField(Equipment, on_delete=models.CASCADE)
