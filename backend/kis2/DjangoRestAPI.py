@@ -2,6 +2,7 @@
 """
 Модуль для работы с API КИС2 с использованием Django Rest Framework.
 """
+
 import requests
 import re
 import json
@@ -979,7 +980,83 @@ def create_order_comments_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
     return comments_list
 
 
+def create_timings_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей записей о потраченном времени (Timing) из КИС2 через REST API.
+    Args:
+        debug: Флаг для вывода отладочной информации
+    Returns:
+        Список словарей записей о потраченном времени со следующими ключами:
+        - 'order_serial': Серийный номер заказа
+        - 'task_id': ID задачи
+        - 'executor': Исполнитель (ФИО одной строкой)
+        - 'time': Потраченное время в формате ISO 8601 (например, "PT5H30M")
+        - 'date': Дата тайминга
+    """
+    # Получаем необходимые справочники
+    persons_dict = get_persons_dict(debug)  # Словарь ID:ФИО сотрудников
+
+    # Получаем данные о таймингах
+    timings_data = get_data_from_kis2("Timing", debug)
+    if not timings_data:
+        if debug:
+            print("Не удалось получить данные о потраченном времени")
+        return []
+
+    # Создаем список словарей таймингов
+    timings_list = []
+    for timing in timings_data:
+        # Проверяем наличие необходимых ключей
+        if "order_id" in timing and "task_id" in timing:
+            # Получаем информацию о заказе
+            order_serial = timing["order_id"]
+            # Вместо имени задачи используем только ID
+            task_id = timing.get("task_id")
+            # Получаем информацию об исполнителе
+            executor_id = timing.get("executor_id")
+            executor_name = persons_dict.get(executor_id, "Неизвестный исполнитель")  # Преобразуем ID в ФИО
+            # Конвертируем время в формат ISO 8601
+            time_spent = timing.get("time")
+            if time_spent:
+                # Используем регулярное выражение для извлечения часов, минут и секунд
+                match = re.match(r"P(\d+)DT(\d+)H(\d+)M(\d+)S", time_spent)
+                if match:
+                    days, hours, minutes, seconds = map(int, match.groups())
+                    total_hours = days * 24 + hours  # Переводим дни в часы
+                    # Формируем строку в формате ISO 8601 для интервала времени
+                    time_iso = f"PT{total_hours}H{minutes}M"
+                else:
+                    # Если формат не соответствует ожидаемому, возвращаем нулевой интервал
+                    print(f"Неподдерживаемый формат времени: {time_spent}")
+                    time_iso = "PT0H0M"
+            else:
+                time_iso = "PT0H0M"  # Если время не указано, возвращаем нулевой интервал
+
+            # Получаем дату
+            timing_date = timing.get("date")
+
+            # Собираем словарь тайминга
+            timing_dict = {
+                'order_serial': order_serial,
+                'task_id': task_id,  # Только ID задачи
+                'executor': executor_name,  # ФИО исполнителя строкой
+                'time': time_iso,  # Время в формате ISO 8601
+                'date': timing_date
+            }
+            timings_list.append(timing_dict)
+
+            if debug:
+                print(f"Добавлена запись о времени: Заказ {order_serial}, "
+                      f"Задача ID: {task_id}, Исполнитель: {executor_name}, "
+                      f"Время: {time_iso}, Дата: {timing_date}")
+
+    if debug:
+        print(f"Получено {len(timings_list)} записей о потраченном времени")
+
+    return timings_list
+
+
 if __name__ == "__main__":
-    order_comments_list_dict_from_kis2 = create_order_comments_list_dict_from_kis2()
-    for comment in order_comments_list_dict_from_kis2:
-        print(comment)
+    timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
+    for timings in timings_list_dict_from_kis2:
+        print(timings)
