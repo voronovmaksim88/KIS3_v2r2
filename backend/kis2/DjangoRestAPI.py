@@ -198,6 +198,35 @@ def get_entity_dict(entity_name: str, name_field: str = "name",
     return entity_dict
 
 
+def get_currencies_dict(debug=False):
+    """
+    Получает данные о валютах из KIS2 и создает словарь идентификаторов и имен валют.
+
+    Args:
+        debug (bool): Флаг для включения отладочной информации
+
+    Returns:
+        dict: Словарь в формате {id: name} для валют
+    """
+    # Получаем данные о валютах
+    currencies_data = get_data_from_kis2("Money", debug)
+
+    if not currencies_data:
+        if debug:
+            print("Не удалось получить данные о валютах")
+        return {}
+
+    # Создаем словарь id:name для валют
+    currencies_dict = {item["id"]: item["name"]
+                       for item in currencies_data
+                       if "id" in item and "name" in item}
+
+    if debug:
+        print(f"Получено {len(currencies_dict)} валют")
+
+    return currencies_dict
+
+
 def get_persons_dict(debug: bool = True) -> Dict[Any, str]:
     """
     Получает данные о сотрудниках и создает словарь id:полное_имя
@@ -1082,7 +1111,8 @@ def create_equipments_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, 
         equipment_types_dict = {}
     else:
         # Создаем словарь id:name для типов оборудования
-        equipment_types_dict = {item["id"]: item["name"] for item in equipment_types_data if "id" in item and "name" in item}
+        equipment_types_dict = {item["id"]: item["name"] for item in equipment_types_data if
+                                "id" in item and "name" in item}
         if debug:
             print(f"Получено {len(equipment_types_dict)} типов оборудования")
 
@@ -1099,16 +1129,7 @@ def create_equipments_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, 
     print('manufacturers_dict', manufacturers_dict)
 
     # Получаем данные о валютах
-    currencies_data = get_data_from_kis2("Money", debug)
-    if not currencies_data:
-        if debug:
-            print("Не удалось получить данные о валютах")
-        currencies_dict = {}
-    else:
-        # Создаем словарь id:name для валют
-        currencies_dict = {item["id"]: item["name"] for item in currencies_data if "id" in item and "name" in item}
-        if debug:
-            print(f"Получено {len(currencies_dict)} валют")
+    currencies_dict = get_currencies_dict(debug)
 
     # Получаем данные об оборудовании
     equipments_data = get_data_from_kis2("Equipment", debug)
@@ -1161,7 +1182,142 @@ def create_equipments_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, 
     return equipments_list
 
 
+def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]:
+    """
+    Создаёт список словарей корпусов шкафов (Box) из КИС2 через REST API.
+
+    Args:
+        debug: Флаг для вывода отладочной информации
+
+    Returns:
+        Список словарей корпусов шкафов со следующими ключами:
+        - 'equipment_id': ID оборудования/корпуса
+        - 'equipment_name': Название оборудования
+        - 'equipment_model': Модель оборудования
+        - 'material': Материал корпуса
+        - 'height': Высота корпуса
+        - 'width': Ширина корпуса
+        - 'depth': Глубина корпуса
+        - 'ip': Степень защиты корпуса
+        - 'manufacturer': Производитель оборудования
+        - 'price': Цена
+        - 'currency': Валюта (строка)
+    """
+    # Получаем данные о материалах корпусов
+    box_materials_data = get_data_from_kis2("BoxMaterial", debug)
+    if not box_materials_data:
+        if debug:
+            print("Не удалось получить данные о материалах корпусов")
+        box_materials_dict = {}
+    else:
+        # Создаем словарь id:name для материалов корпусов
+        box_materials_dict = {item["id"]: item["name"]
+                              for item in box_materials_data
+                              if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(box_materials_dict)} материалов корпусов")
+
+    # Получаем данные о степенях защиты корпусов
+    box_ip_data = get_data_from_kis2("BoxIp", debug)
+    if not box_ip_data:
+        if debug:
+            print("Не удалось получить данные о степенях защиты корпусов")
+        box_ip_dict = {}
+    else:
+        # Создаем словарь id:name для степеней защиты
+        box_ip_dict = {item["id"]: item["name"]
+                       for item in box_ip_data
+                       if "id" in item and "name" in item}
+        if debug:
+            print(f"Получено {len(box_ip_dict)} степеней защиты корпусов")
+
+    # Получаем данные об оборудовании
+    equipment_data = get_data_from_kis2("Equipment", debug)
+    if not equipment_data:
+        if debug:
+            print("Не удалось получить данные об оборудовании")
+        equipment_dict = {}
+    else:
+        # Создаем словарь для быстрого доступа к данным об оборудовании
+        equipment_dict = {item["id"]: item
+                          for item in equipment_data
+                          if "id" in item}
+        if debug:
+            print(f"Получено {len(equipment_dict)} единиц оборудования")
+
+    # Получаем данные о производителях
+    manufacturers_dict = get_entity_dict(
+        entity_name="Manufacturers",
+        default_value="Неизвестный производитель",
+        debug=debug
+    )
+
+    # Получаем данные о валютах
+    currencies_dict = get_currencies_dict(debug)
+
+    # Получаем данные о корпусах шкафов
+    boxes_data = get_data_from_kis2("Box", debug)
+    if not boxes_data:
+        if debug:
+            print("Не удалось получить данные о корпусах шкафов")
+        return []
+
+    # Создаем список словарей корпусов шкафов
+    boxes_list = []
+    for box in boxes_data:
+        # Проверяем наличие необходимого ключа equipment_id
+        if "equipment_id" in box:
+            equipment_id = box["equipment_id"]
+
+            # Получаем данные об оборудовании, связанном с этим корпусом
+            equipment = equipment_dict.get(equipment_id, {})
+
+            # Получаем материал корпуса
+            material_id = box.get("material_id")
+            material_name = box_materials_dict.get(material_id, "Неизвестный материал") if material_id else None
+
+            # Получаем степень защиты корпуса
+            ip_id = box.get("ip_id")
+            ip_name = box_ip_dict.get(ip_id, "Неизвестная степень защиты") if ip_id else None
+
+            # Получаем производителя оборудования
+            manufacturer_id = equipment.get("manufacturer_id")
+            manufacturer_name = manufacturers_dict.get(manufacturer_id,
+                                                       "Неизвестный производитель") if manufacturer_id else None
+
+            # Получаем валюту
+            currency_id = equipment.get("currency_id")
+            currency_name = currencies_dict.get(currency_id, "Неизвестная валюта") if currency_id else None
+
+            # Собираем словарь корпуса шкафа
+            box_dict = {
+                'equipment_id': equipment_id,
+                'equipment_name': equipment.get("name", "Неизвестное оборудование"),
+                'equipment_model': equipment.get("model", ""),
+                'material': material_name,
+                'height': box.get("height"),
+                'width': box.get("width"),
+                'depth': box.get("depth"),
+                'ip': ip_name,
+                'manufacturer': manufacturer_name,
+                'price': equipment.get("price", 0),
+                'currency': currency_name
+            }
+
+            boxes_list.append(box_dict)
+
+            if debug:
+                print(f"Добавлен корпус шкафа: {box_dict['equipment_name']} "
+                      f"(Материал: {material_name}, "
+                      f"Размеры: {box.get('height')}x{box.get('width')}x{box.get('depth')})")
+
+    if debug:
+        print(f"Всего получено {len(boxes_list)} корпусов шкафов")
+
+    return boxes_list
+
+
 if __name__ == "__main__":
-    equipments_list = create_equipments_list_dict_from_kis2()
-    for equipment in equipments_list:
-        print(equipment)
+    boxes_list_dict_from_kis2 = create_boxes_list_dict_from_kis2()
+    for box in boxes_list_dict_from_kis2:
+        print(box)
