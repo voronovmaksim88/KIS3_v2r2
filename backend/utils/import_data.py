@@ -1292,16 +1292,19 @@ def import_boxes_from_kis2() -> Dict[str, any]:
                 existing_boxes = {b.vendor_code: b for b in session.query(ControlCabinet).all() if b.vendor_code}
 
                 # Получаем ссылки на производителей
-                manufacturers_dict = {name: id for id, name in session.query(Manufacturer.id, Manufacturer.name).all()}
+                manufacturers_dict = {name: id for id, name in session.query(Manufacturer.id,
+                                                                             Manufacturer.name).all()}
 
                 # Получаем ссылки на типы оборудования
-                equipment_types_dict = {name: id for id, name in session.query(EquipmentType.id, EquipmentType.name).all()}
+                equipment_types_dict = {name: id for id, name in session.query(EquipmentType.id,
+                                                                               EquipmentType.name).all()}
 
                 # Получаем ссылки на валюты
                 currencies_dict = {name: id for id, name in session.query(Currency.id, Currency.name).all()}
 
                 # Получаем ссылки на материалы корпусов
-                materials_dict = {name: id for id, name in session.query(ControlCabinetMaterial.id, ControlCabinetMaterial.name).all()}
+                materials_dict = {name: id for id, name in session.query(ControlCabinetMaterial.id,
+                                                                         ControlCabinetMaterial.name).all()}
 
                 # Получаем ссылки на степени защиты IP
                 ips_dict = {name: id for id, name in session.query(Ip.id, Ip.name).all()}
@@ -1375,14 +1378,12 @@ def import_boxes_from_kis2() -> Dict[str, any]:
                     elif currency_name:
                         print(Fore.YELLOW + f"Валюта '{currency_name}' не найдена для корпуса {name}")
 
-                    material_id = None
                     if material_name and material_name in materials_dict:
                         material_id = materials_dict[material_name]
                     else:
                         print(Fore.YELLOW + f"Материал '{material_name}' не найден для корпуса {name}. Пропуск.")
                         continue
 
-                    ip_id = None
                     if ip_name and ip_name in ips_dict:
                         ip_id = ips_dict[ip_name]
                     else:
