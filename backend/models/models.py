@@ -414,8 +414,8 @@ class Equipment(Base):
     __tablename__ = 'equipment'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(32), nullable=False)  # Имя
-    model: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, unique=True)  # Модель
+    name: Mapped[str] = mapped_column(String(64), nullable=False)  # Имя
+    model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True)  # Модель
 
     # Артикул, код поставщика
     vendor_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, unique=True)

@@ -1294,6 +1294,8 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'equipment_id': equipment_id,
                 'equipment_name': equipment.get("name", "Неизвестное оборудование"),
                 'equipment_model': equipment.get("model", ""),
+                'vendor_code': equipment.get("vendore_code", ""),
+                'description': equipment.get("description", ""),
                 'material': material_name,
                 'height': box.get("height"),
                 'width': box.get("width"),
@@ -1301,7 +1303,8 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'ip': ip_name,
                 'manufacturer': manufacturer_name,
                 'price': equipment.get("price", 0),
-                'currency': currency_name
+                'currency': currency_name,
+                'price_date': equipment.get("price_date", ""),
             }
 
             boxes_list.append(box_dict)

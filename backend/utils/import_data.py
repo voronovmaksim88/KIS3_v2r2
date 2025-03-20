@@ -14,7 +14,7 @@ from typing import Dict, Set, Any
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_tasks_list_dict_from_kis2, \
-    create_order_comments_list_dict_from_kis2  # noqa: E402
+    create_order_comments_list_dict_from_kis2, create_boxes_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_box_accounting_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
@@ -27,7 +27,8 @@ from kis2.DjangoRestAPI import create_works_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment  # noqa: E402
+from models.models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment, ControlCabinet, \
+    ControlCabinetMaterial, Ip  # noqa: E402
 from models.models import BoxAccounting  # noqa: E402
 from models.models import Manufacturer  # noqa: E402
 from models.models import Counterparty  # noqa: E402
@@ -1273,6 +1274,219 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
         return result
 
 
+def import_boxes_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует корпуса шкафов из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_boxes_list = create_boxes_list_dict_from_kis2(debug=False)
+        if not kis2_boxes_list:
+            print(Fore.YELLOW + "Не удалось получить корпуса шкафов из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_boxes_list)} корпусов шкафов из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Получаем существующие корпуса шкафов
+                existing_boxes = {b.vendor_code: b for b in session.query(ControlCabinet).all() if b.vendor_code}
+
+                # Получаем ссылки на производителей
+                manufacturers_dict = {name: id for id, name in session.query(Manufacturer.id, Manufacturer.name).all()}
+
+                # Получаем ссылки на типы оборудования
+                equipment_types_dict = {name: id for id, name in session.query(EquipmentType.id, EquipmentType.name).all()}
+
+                # Получаем ссылки на валюты
+                currencies_dict = {name: id for id, name in session.query(Currency.id, Currency.name).all()}
+
+                # Получаем ссылки на материалы корпусов
+                materials_dict = {name: id for id, name in session.query(ControlCabinetMaterial.id, ControlCabinetMaterial.name).all()}
+
+                # Получаем ссылки на степени защиты IP
+                ips_dict = {name: id for id, name in session.query(Ip.id, Ip.name).all()}
+
+                # Проверяем, есть ли необходимые материалы и степени защиты
+                # Если нет - создаем их
+                unique_materials = set(item['material'] for item in kis2_boxes_list if 'material' in item)
+                for material_name in unique_materials:
+                    if material_name and material_name not in materials_dict:
+                        print(Fore.YELLOW + f"Добавление нового материала корпуса: {material_name}")
+                        new_material = ControlCabinetMaterial(name=material_name)
+                        session.add(new_material)
+                        session.flush()  # Чтобы получить id
+                        materials_dict[material_name] = new_material.id
+
+                unique_ips = set(item['ip'] for item in kis2_boxes_list if 'ip' in item)
+                for ip_name in unique_ips:
+                    if ip_name and ip_name not in ips_dict:
+                        print(Fore.YELLOW + f"Добавление новой степени защиты IP: {ip_name}")
+                        new_ip = Ip(name=ip_name)
+                        session.add(new_ip)
+                        session.flush()  # Чтобы получить id
+                        ips_dict[ip_name] = new_ip.id
+
+                # Убедимся, что в базе есть тип оборудования "Корпус шкафа"
+                box_type_name = "Корпус шкафа"
+                if box_type_name not in equipment_types_dict:
+                    print(Fore.YELLOW + f"Добавление типа оборудования: {box_type_name}")
+                    new_type = EquipmentType(name=box_type_name)
+                    session.add(new_type)
+                    session.flush()
+                    equipment_types_dict[box_type_name] = new_type.id
+
+                # Обрабатываем каждый корпус шкафа из КИС2
+                for box_data in kis2_boxes_list:
+                    name = box_data['equipment_name']
+                    model = box_data.get('equipment_model')
+                    vendor_code = box_data.get('vendor_code')
+                    description = box_data.get('description', '')
+                    manufacturer_name = box_data.get('manufacturer')
+                    price = box_data.get('price')
+                    currency_name = box_data.get('currency')
+                    material_name = box_data.get('material')
+                    ip_name = box_data.get('ip')
+                    height = box_data.get('height')
+                    width = box_data.get('width')
+                    depth = box_data.get('depth')
+                    relevance = box_data.get('relevance', True)
+                    price_date = box_data.get('price_date')
+                    if 'price_date' in box_data and box_data['price_date']:
+                        try:
+                            price_date = datetime.strptime(box_data['price_date'], "%Y-%m-%d").date()
+                        except ValueError:
+                            print(Fore.YELLOW + f"Неверный формат даты: {box_data['price_date']} для {name}")
+
+                    # Проверяем наличие обязательных полей
+                    if not vendor_code:
+                        print(Fore.YELLOW + f"Пропущен корпус без артикула: {name}")
+                        continue
+
+                    # Проверяем наличие ссылок на связанные объекты
+                    manufacturer_id = None
+                    if manufacturer_name and manufacturer_name in manufacturers_dict:
+                        manufacturer_id = manufacturers_dict[manufacturer_name]
+                    elif manufacturer_name:
+                        print(Fore.YELLOW + f"Производитель '{manufacturer_name}' не найден для корпуса {name}")
+
+                    currency_id = None
+                    if currency_name and currency_name in currencies_dict:
+                        currency_id = currencies_dict[currency_name]
+                    elif currency_name:
+                        print(Fore.YELLOW + f"Валюта '{currency_name}' не найдена для корпуса {name}")
+
+                    material_id = None
+                    if material_name and material_name in materials_dict:
+                        material_id = materials_dict[material_name]
+                    else:
+                        print(Fore.YELLOW + f"Материал '{material_name}' не найден для корпуса {name}. Пропуск.")
+                        continue
+
+                    ip_id = None
+                    if ip_name and ip_name in ips_dict:
+                        ip_id = ips_dict[ip_name]
+                    else:
+                        print(Fore.YELLOW + f"Степень защиты IP '{ip_name}' не найдена для корпуса {name}. Пропуск.")
+                        continue
+
+                    # Если корпус уже существует по артикулу, обновляем его
+                    if vendor_code in existing_boxes:
+                        box = existing_boxes[vendor_code]
+                        needs_update = False
+                        update_details = []
+
+                        # Проверяем изменения в основных полях
+                        if box.name != name:
+                            box.name = name
+                            needs_update = True
+                            update_details.append("название")
+                        if box.model != model:
+                            box.model = model
+                            needs_update = True
+                            update_details.append("модель")
+                        if box.description != description:
+                            box.description = description
+                            needs_update = True
+                            update_details.append("описание")
+                        if box.manufacturer_id != manufacturer_id:
+                            box.manufacturer_id = manufacturer_id
+                            needs_update = True
+                            update_details.append("производитель")
+                        if box.price != price:
+                            box.price = price
+                            needs_update = True
+                            update_details.append("цена")
+                        if box.currency_id != currency_id:
+                            box.currency_id = currency_id
+                            needs_update = True
+                            update_details.append("валюта")
+                        if box.relevance != relevance:
+                            box.relevance = relevance
+                            needs_update = True
+                            update_details.append("актуальность")
+                        if box.price_date != price_date:
+                            box.price_date = price_date
+                            needs_update = True
+                            update_details.append("дата цены")
+                        if box.material_id != material_id:
+                            box.material_id = material_id
+                            needs_update = True
+                            update_details.append("материал")
+                        if box.ip_id != ip_id:
+                            box.ip_id = ip_id
+                            needs_update = True
+                            update_details.append("степень защиты")
+                        if box.height != height:
+                            box.height = height
+                            needs_update = True
+                            update_details.append("высота")
+                        if box.width != width:
+                            box.width = width
+                            needs_update = True
+                            update_details.append("ширина")
+                        if box.depth != depth:
+                            box.depth = depth
+                            needs_update = True
+                            update_details.append("глубина")
+
+                        if needs_update:
+                            result['updated'] += 1
+                            print(Fore.BLUE + f"Обновлен корпус '{vendor_code}': {', '.join(update_details)}")
+                        else:
+                            result['unchanged'] += 1
+                    else:
+                        # Создаем новый корпус шкафа
+                        new_box = ControlCabinet(
+                            name=name,
+                            model=model,
+                            vendor_code=vendor_code,
+                            description=description,
+                            type_id=equipment_types_dict.get(box_type_name),
+                            manufacturer_id=manufacturer_id,
+                            price=price,
+                            currency_id=currency_id,
+                            relevance=relevance,
+                            price_date=datetime.strptime(price_date, "%Y-%m-%d").date(),
+                            material_id=material_id,
+                            ip_id=ip_id,
+                            height=height,
+                            width=width,
+                            depth=depth
+                        )
+                        session.add(new_box)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый корпус: {vendor_code} - {name}")
+
+                return commit_and_summarize_import(session, result, "корпусов шкафов")
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте корпусов шкафов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта корпусов шкафов: {e}")
+        return result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -1313,6 +1527,7 @@ if __name__ == "__main__":
         print("12 - import box accounting from KIS2")
         print("13 - import tasks from KIS2")
         print("14 - import order comments from KIS2")
+        print("15 - import box from KIS2")
         answer = input()
 
         operations = {
@@ -1330,6 +1545,7 @@ if __name__ == "__main__":
             "12": ("Импорт учёта шкафов из КИС2", import_box_accounting_from_kis2, "учёта шкафов"),
             "13": ("Импорт задач из КИС2", import_tasks_from_kis2, "задач"),
             "14": ("Импорт комментариев заказов из КИС2", import_order_comments_from_kis2, "комментариев к заказам"),
+            "15": ("Импорт корпусов шкафов из КИС2", import_boxes_from_kis2, "корпусов шкафов"),
         }
 
         if answer in operations:
