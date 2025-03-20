@@ -45,21 +45,10 @@ class Manufacturer(Base):
 
     # Опционально: добавление отношения к Country
     country: Mapped["Country"] = relationship()
+    equipments: Mapped[List["Equipment"]] = relationship(back_populates="manufacturer")
 
     def __repr__(self) -> str:
         return f"Manufacturer(id={self.id}, name={self.name})"
-
-
-class EquipmentType(Base):
-    """Типы оборудования"""
-    __tablename__ = 'equipment_types'
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    description: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    def __repr__(self) -> str:
-        return f"EquipmentType(id={self.id}, name={self.name})"
 
 
 class Currency(Base):
@@ -68,6 +57,9 @@ class Currency(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(3), nullable=False, unique=True)
+
+    # Отношения
+    equipments: Mapped[List["Equipment"]] = relationship(back_populates="currency")
 
     def __repr__(self) -> str:
         return f"Currency(id={self.id!r}, name={self.name!r})"
@@ -400,6 +392,21 @@ class Task(Base):
         return f"Task(id={self.id!r}, name={self.name!r})"
 
 
+class EquipmentType(Base):
+    """Типы оборудования"""
+    __tablename__ = 'equipment_types'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Отношения
+    equipments: Mapped[List["Equipment"]] = relationship(back_populates="type")
+
+    def __repr__(self) -> str:
+        return f"EquipmentType(id={self.id}, name={self.name})"
+
+
 class Equipment(Base):
     """
     Класс "Оборудование"
@@ -430,63 +437,51 @@ class Equipment(Base):
     manufacturer: Mapped["Manufacturer"] = relationship(back_populates="equipments")
     currency: Mapped["Currency"] = relationship(back_populates="equipments")
 
+    # Для наследования с одной таблицей
+    discriminator = mapped_column(String(50))
+    __mapper_args__ = {
+        'polymorphic_on': discriminator,
+        'polymorphic_identity': 'equipment'
+    }
+
     def __repr__(self) -> str:
         return f"Equipment(id={self.id!r}, name={self.name!r}, model={self.model!r})"
 
-# '''
-# class Equipment_Suppliers(models.Model):  # Поставщик-Оборудование
-#     equipment = models.OneToOneField(Equipment, on_delete=models.CASCADE)
-#     supplier =
-#     - Supplier_ID(компания)
-#     - Price_in(наша  входная   цена)
-#     - Price_out(выходная   цена, розница)
-#     - Link(ссылка)
-# '''
 
-# class Equipment(models.Model):  # Класс "Оборудование"
-#     name = models.CharField(max_length=32)  # Имя
-#     model = models.CharField(max_length=32, blank=True, unique=True)  # Модель
-#     vendor_code = models.CharField(
-#         max_length=32, blank=True, unique=True)  # Артикул, код поставщика
-#     description = models.TextField(blank=True)  # Описание
-#     type = models.ForeignKey(
-#         EquipmentType, on_delete=models.SET_NULL, null=True)  # Тип
-#     manufacturer = models.ForeignKey(
-#         Manufacturers, on_delete=models.SET_NULL, null=True)  # Производитель
-#     price = models.IntegerField(
-#         validators=[MinValueValidator(0), MaxValueValidator(999999)])  # Цена
-#     currency = models.ForeignKey(
-#         Money, on_delete=models.SET_NULL, null=True)  # Валюта
-#     relevance = models.BooleanField(default=True)  # Актуальность
-#     price_date = models.DateField()  # Дата обновления цены
-#     photo = models.ImageField(upload_to="photos", null=True)
-#     objects = models.Manager()
-#
-#
-# class BoxMaterial(models.Model):  # Материалы шкафов
-#     name = models.CharField(max_length=16)  # Имя
-#     objects = models.Manager()
-#
-#
-# class BoxIp(models.Model):  # Степень защиты корпусов
-#     name = models.CharField(max_length=16)  # Имя
-#     objects = models.Manager()
-#
-#
-# class Box(models.Model):  # Корпуса шкафов
-#     equipment = models.OneToOneField(
-#         Equipment, on_delete=models.CASCADE, primary_key=True)
-#     # Связь с таблицей оборудования
-#     # on_delete = models.CASCADE говорит, что данные текущей модели(UserAccount) будут удаляться в случае удаления
-#     # связанного объекта главной модели(User).
-#     # primary_key = True указывает, что внешний ключ(через который идет связь с главной моделью) в то же
-#     # время будет выступать и в качестве первичного ключа. И создавать отдельное поле для первичного ключа не надо.
-#     material = models.ForeignKey(
-#         BoxMaterial, on_delete=models.SET_NULL, null=True)  # материал
-#     height = models.IntegerField()  # высота
-#     width = models.IntegerField()  # ширина
-#     depth = models.IntegerField()  # глубина
-#     ip = models.ForeignKey(BoxIp, on_delete=models.SET_NULL,
-#                            null=True)  # степень защиты
-#     objects = models.Manager()
-#
+class ControlCabinetMaterial(Base):
+    __tablename__ = 'control_cabinet_materials'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    # Отношения
+    control_cabinets: Mapped[List["ControlCabinet"]] = relationship(back_populates="material")
+
+
+# Класс для степеней защиты по ip, возможно что он не только для корпусов шкафов пригодится
+class Ip(Base):
+    __tablename__ = 'ips'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    # Отношения
+    control_cabinets: Mapped[List["ControlCabinet"]] = relationship(back_populates="ip")
+
+
+class ControlCabinet(Equipment):
+    __tablename__ = 'control_cabinets'
+    id = Column(Integer, ForeignKey('equipment.id'), primary_key=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'control_cabinet'
+    }
+
+    material_id: Mapped[int] = mapped_column(ForeignKey('control_cabinet_materials.id'), nullable=False)
+    ip_id: Mapped[int] = mapped_column(ForeignKey('ips.id'), nullable=False)
+
+    material: Mapped["ControlCabinetMaterial"] = relationship(back_populates="control_cabinets")
+    ip: Mapped["Ip"] = relationship(back_populates="control_cabinets")
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    depth: Mapped[int] = mapped_column(Integer, nullable=False)
