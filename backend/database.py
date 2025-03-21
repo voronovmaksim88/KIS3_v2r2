@@ -17,8 +17,10 @@ from typing import List
 init(autoreset=True)
 
 # Формируем URL для подключения к базе данных
-DATABASE_URL_ASYNC = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-DATABASE_URL_SYNC = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+from urllib.parse import quote_plus
+
+DATABASE_URL_ASYNC = f"postgresql+asyncpg://{DB_USER}:{quote_plus(DB_PASS)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL_SYNC = f"postgresql://{DB_USER}:{quote_plus(DB_PASS)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # Создаем асинхронный движок и сессию
 async_engine = create_async_engine(DATABASE_URL_ASYNC, echo=True)

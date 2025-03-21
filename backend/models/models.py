@@ -110,8 +110,8 @@ class Person(Base):
     """Люди - сотрудники, представители заказчиков и т.д."""
     __tablename__ = 'people'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
+    # id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(UUID(as_uuid=True),primary_key=True, unique=True, nullable=False, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     patronymic: Mapped[str | None] = mapped_column(String, nullable=True)  # Отчество
     surname: Mapped[str] = mapped_column(String, nullable=False)  # Фамилия
@@ -126,7 +126,7 @@ class Person(Base):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)  # Примечание
 
     def __repr__(self) -> str:
-        return f"Person(id={self.id!r}, name={self.name!r}, surname={self.surname!r})"
+        return f"Person(id={self.uuid!r}, name={self.name!r}, surname={self.surname!r})"
 
     # relations
     developed_boxes = relationship("BoxAccounting", back_populates="scheme_developer",
@@ -255,10 +255,10 @@ class BoxAccounting(Base):
     serial_num: Mapped[int] = mapped_column(primary_key=True, unique=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)  # Название шкафа
     order_id: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
-    scheme_developer_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Разработчик схемы
-    assembler_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Сборщик
-    programmer_id: Mapped[int | None] = mapped_column(ForeignKey('people.id'), nullable=True)  # Программист
-    tester_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Тестировщик
+    scheme_developer_id: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=False)  # Разработчик схемы
+    assembler_id: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=False)  # Сборщик
+    programmer_id: Mapped[int | None] = mapped_column(ForeignKey('people.uuid'), nullable=True)  # Программист
+    tester_id: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=False)  # Тестировщик
 
     # Определяем отношения. Пока не знаю зачем
     order = relationship("Order", back_populates="boxes")
@@ -277,7 +277,7 @@ class OrderComment(Base):
     moment_of_creation: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.now,
                                                                    nullable=True)  # Дата и время публикации комментария
     text: Mapped[str] = mapped_column(Text, nullable=False)  # Текст комментария
-    person_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=False)  # Автор комментария
+    person_uuid: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=False)  # Автор комментария
 
     # relations
     order: Mapped["Order"] = relationship(back_populates="comments")
@@ -337,7 +337,7 @@ class Task(Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
     payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
-    executor_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=True)
+    executor_id: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=True)
 
     # Запланированное время на выполнение задачи
     planned_duration: Mapped[Optional[timedelta]] = mapped_column(Interval, nullable=True)
@@ -503,7 +503,7 @@ class Timing(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_serial: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
     task_id: Mapped[int] = mapped_column(ForeignKey('tasks.id'), nullable=False)  # Задача
-    executor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('people.id'), nullable=True)  # Исполнитель
+    executor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('people.uuid'), nullable=True)  # Исполнитель
     time: Mapped[timedelta] = mapped_column(Interval, nullable=False)  # Потраченное время
     timing_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Дата тайминга
 

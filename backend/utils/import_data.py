@@ -395,8 +395,8 @@ def import_person_from_kis2() -> Dict[str, any]:
         with SyncSession() as session:
             try:
                 existing_persons = {
-                    f"{p[3]}|{p[1]}|{p[2] or ''}": {'id': p[0], 'phone': p[4], 'email': p[5], 'counterparty_id': p[6]}
-                    for p in session.query(Person.id, Person.name, Person.patronymic,
+                    f"{p[3]}|{p[1]}|{p[2] or ''}": {'uuid': p[0], 'phone': p[4], 'email': p[5], 'counterparty_id': p[6]}
+                    for p in session.query(Person.uuid, Person.name, Person.patronymic,
                                            Person.surname, Person.phone, Person.email,
                                            Person.counterparty_id).all()}
                 companies_dict = {name: id for id, name in session.query(Counterparty.id, Counterparty.name).all()}
@@ -1197,7 +1197,7 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
                     full_name = f"{person.surname} {person.name}"
                     if person.patronymic:
                         full_name += f" {person.patronymic}"
-                    persons_by_name[full_name] = person.id
+                    persons_by_name[full_name] = person.uuid
 
                 # Получаем все записи из таблицы OrderComment
                 comments = session.query(OrderComment).all()
@@ -1217,7 +1217,7 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
                     moment_str = comment_data.get('moment_of_creation')
 
                     # Проверяем обязательные поля
-                    if not order_serial or not person_name or not text:
+                    if not order_serial or not person_name:
                         print(Fore.YELLOW + f"Пропущен комментарий с неполными данными: {comment_data}")
                         continue
 
@@ -1227,8 +1227,8 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
                         continue
 
                     # Ищем автора комментария
-                    person_id = persons_by_name.get(person_name)
-                    if not person_id:
+                    person_uuid = persons_by_name.get(person_name)
+                    if not person_uuid:
                         print(Fore.YELLOW + f"Не найден человек '{person_name}' в базе данных. Пропуск комментария.")
                         continue
 
@@ -1250,7 +1250,7 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
                         # Создаем новый комментарий
                         new_comment = OrderComment(
                             order_id=order_serial,
-                            person_id=person_id,
+                            person_uuid=person_uuid,
                             text=text,
                             moment_of_creation=moment_of_creation
                         )
