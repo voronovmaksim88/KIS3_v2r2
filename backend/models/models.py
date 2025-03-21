@@ -3,13 +3,16 @@
 Модуль для работы с базой данных через SQLAlchemy
 """
 
-from sqlalchemy import MetaData, Integer, String, ForeignKey, Date, Boolean, Text, DateTime, Table, Column
+from sqlalchemy import MetaData, Integer, String, ForeignKey, Date, Boolean, Text, DateTime, Table
 from sqlalchemy.orm import validates
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped  # используется для аннотации типов столбцов.
 from sqlalchemy.orm import mapped_column  # функция для определения столбцов с дополнительными
 from sqlalchemy.orm import relationship  # используется для связи таблиц
 from sqlalchemy import Interval  # Импортируем Interval для работы с временными интервалами
+import uuid
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import UUID
 
 from typing import Optional
 from typing import List
@@ -108,6 +111,7 @@ class Person(Base):
     __tablename__ = 'people'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     patronymic: Mapped[str | None] = mapped_column(String, nullable=True)  # Отчество
     surname: Mapped[str] = mapped_column(String, nullable=False)  # Фамилия
