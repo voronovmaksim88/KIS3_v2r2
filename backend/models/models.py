@@ -131,7 +131,10 @@ class Person(Base):
                                    foreign_keys="[BoxAccounting.assembler_id]")
     programmed_boxes = relationship("BoxAccounting", back_populates="programmer",
                                     foreign_keys="[BoxAccounting.programmer_id]")
-    tested_boxes = relationship("BoxAccounting", back_populates="tester", foreign_keys="[BoxAccounting.tester_id]")
+    tested_boxes = relationship("BoxAccounting", back_populates="tester",
+                                foreign_keys="[BoxAccounting.tester_id]")
+    timing_records = relationship("Timing", back_populates="executor",
+                                 foreign_keys="[Timing.executor_id]")
 
 
 # Вспомогательная таблица для связи многие-ко-многим между Order и Work
@@ -205,6 +208,7 @@ class Order(Base):
     works: Mapped[List["Work"]] = relationship(secondary="orders_works", back_populates="orders")
     tasks: Mapped[List["Task"]] = relationship(back_populates="order")  # Отношение с Task
     comments: Mapped[List["OrderComment"]] = relationship(back_populates="order")
+    timings: Mapped[List["Timing"]] = relationship(back_populates="order")  # Добавьте эту строку
 
     """
     Строки ниже нужны для грубой финансовой аналитики
@@ -325,15 +329,11 @@ class Task(Base):
     __tablename__ = 'tasks'
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False, unique=False)
-    #  Имя не уникально, т.к. в разных заказах может быть задача с одним именем например "протестировать"
+    #  Имя не уникально, поскольку в разных заказах может быть задача с одним именем например "протестировать"
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
     payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
     executor_id: Mapped[int] = mapped_column(ForeignKey('people.id'), nullable=True)
-
-    # Добавляем связи с другими таблицами
-    status: Mapped["TaskStatus"] = relationship(back_populates="tasks")
-    payment_status: Mapped["TaskPaymentStatus"] = relationship(back_populates="tasks")
 
     # Запланированное время на выполнение задачи
     planned_duration: Mapped[Optional[timedelta]] = mapped_column(Interval, nullable=True)
@@ -355,6 +355,11 @@ class Task(Base):
 
     # Стоимость выполнения задачи, т.е. сколько денег надо заплатить исполнителю, руб
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Добавляем связи с другими таблицами
+    status: Mapped["TaskStatus"] = relationship(back_populates="tasks")
+    payment_status: Mapped["TaskPaymentStatus"] = relationship(back_populates="tasks")
+    timings: Mapped[List["Timing"]] = relationship(back_populates="task")
 
     # Связь с заказами
     order_serial: Mapped[Optional[str]] = mapped_column(ForeignKey('orders.serial'), nullable=True)
@@ -485,3 +490,52 @@ class ControlCabinet(Equipment):
     height: Mapped[int] = mapped_column(Integer, nullable=False)
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     depth: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class Timing(Base):
+    """Таблица для хранения времени выполнения задач"""
+    __tablename__ = 'timings'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_serial: Mapped[str] = mapped_column(ForeignKey('orders.serial'), nullable=False)  # Заказ
+    task_id: Mapped[int] = mapped_column(ForeignKey('tasks.id'), nullable=False)  # Задача
+    executor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('people.id'), nullable=True)  # Исполнитель
+    time: Mapped[timedelta] = mapped_column(Interval, nullable=False)  # Потраченное время
+    timing_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Дата тайминга
+
+
+    # Отношения
+    order: Mapped["Order"] = relationship(back_populates="timings")
+    task: Mapped["Task"] = relationship(back_populates="timings")
+    executor: Mapped["Person"] = relationship(
+        back_populates="timing_records",
+        foreign_keys="[Timing.executor_id]"
+    )
+
+    def __repr__(self) -> str:
+        return f"Timing(id={self.id!r}, order_serial={self.order_serial!r}, task_id={self.task_id!r})"
+
+
+# class Timing(models.Model):  # Таблица для хранения времени выполнения задач
+#     order = models.ForeignKey(Order, null=False, on_delete=models.CASCADE)
+#     task = models.ForeignKey(Task, null=False, on_delete=models.CASCADE)
+#     executor = models.ForeignKey(  # Исполнитель задачи
+#         Person,
+#         null=True,
+#         related_name="timing_records",
+#         verbose_name="Исполнитель задачи",
+#         on_delete=models.SET_NULL,
+#     )
+#     time = models.DurationField(null=True, blank=True)  # Потраченное время в этом тайминге
+#     date = models.DateField(null=True, blank=True)  # Дата тайминга
+
+
+'''  
+class Equipment_Suppliers(models.Model):  # Поставщик-Оборудование
+    equipment = models.OneToOneField(Equipment, on_delete=models.CASCADE)
+    supplier = 
+    - Supplier_ID(компания)
+    - Price_in(наша  входная   цена)
+    - Price_out(выходная   цена, розница)
+    - Link(ссылка)
+'''

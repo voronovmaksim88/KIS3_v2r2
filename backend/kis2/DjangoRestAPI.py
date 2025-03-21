@@ -1321,6 +1321,6 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
 
 if __name__ == "__main__":
-    boxes_list_dict_from_kis2 = create_boxes_list_dict_from_kis2()
-    for box in boxes_list_dict_from_kis2:
-        print(box)
+    timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
+    for timing in timings_list_dict_from_kis2:
+        print(timing)
