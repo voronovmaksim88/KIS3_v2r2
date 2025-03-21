@@ -14,7 +14,8 @@ from typing import Dict, Set, Any
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kis2.DjangoRestAPI import create_countries_set_from_kis2, create_tasks_list_dict_from_kis2, \
-    create_order_comments_list_dict_from_kis2, create_boxes_list_dict_from_kis2  # noqa: E402
+    create_order_comments_list_dict_from_kis2, create_boxes_list_dict_from_kis2, \
+    create_timings_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_box_accounting_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_companies_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_list_dict_manufacturers  # noqa: E402
@@ -28,7 +29,7 @@ from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
 from models.models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment, ControlCabinet, \
-    ControlCabinetMaterial, Ip  # noqa: E402
+    ControlCabinetMaterial, Ip, Timing  # noqa: E402
 from models.models import BoxAccounting  # noqa: E402
 from models.models import Manufacturer  # noqa: E402
 from models.models import Counterparty  # noqa: E402
@@ -1488,6 +1489,122 @@ def import_boxes_from_kis2() -> Dict[str, any]:
         return result
 
 
+def import_timings_from_kis2() -> Dict[str, any]:
+    """
+    Импортирует данные о затраченном времени (таймингах) из КИС2 в базу данных КИС3.
+    """
+    result = {"status": "error", "added": 0, "updated": 0, "unchanged": 0}
+    try:
+        kis2_timings_list = create_timings_list_dict_from_kis2(debug=False)
+        if not kis2_timings_list:
+            print(Fore.YELLOW + "Не удалось получить данные о таймингах из КИС2 или список пуст.")
+            return result
+
+        print(Fore.CYAN + f"Получено {len(kis2_timings_list)} записей о таймингах из КИС2.")
+        with SyncSession() as session:
+            try:
+                # Создаем словарь для поиска людей по полному имени
+                persons_by_name = {}
+                for person in session.query(Person).all():
+                    full_name = f"{person.surname} {person.name}"
+                    if person.patronymic:
+                        full_name += f" {person.patronymic}"
+                    persons_by_name[full_name] = person.id
+
+                # Проверяем существование заказов и задач
+                existing_orders = set(serial[0] for serial in session.query(Order.serial).all())
+                existing_tasks = set(id[0] for id in session.query(Task.id).all())
+
+                # Получаем существующие тайминги для проверки дубликатов
+                existing_timings = []
+                for timing in session.query(Timing.order_serial, Timing.task_id, Timing.executor_id, Timing.timing_date).all():
+                    existing_timings.append({
+                        'order_serial': timing[0],
+                        'task_id': timing[1],
+                        'executor_id': timing[2],
+                        'timing_date': timing[3]
+                    })
+
+                # Обрабатываем каждый тайминг из КИС2
+                for timing_data in kis2_timings_list:
+                    order_serial = timing_data.get('order_serial')
+                    task_id = timing_data.get('task_id')
+                    executor_name = timing_data.get('executor')
+                    time_str = timing_data.get('time')
+                    date_str = timing_data.get('date')
+
+                    # Проверяем обязательные поля
+                    if not order_serial or not task_id or not time_str:
+                        print(Fore.YELLOW + f"Пропущен тайминг с неполными данными: {timing_data}")
+                        continue
+
+                    # Проверяем существование заказа
+                    if order_serial not in existing_orders:
+                        print(Fore.YELLOW + f"Не найден заказ '{order_serial}' для тайминга. Пропуск.")
+                        continue
+
+                    # Проверяем существование задачи
+                    if task_id not in existing_tasks:
+                        print(Fore.YELLOW + f"Не найдена задача с ID={task_id} для тайминга. Пропуск.")
+                        continue
+
+                    # Поиск исполнителя по имени
+                    executor_id = None
+                    if executor_name:
+                        executor_id = persons_by_name.get(executor_name)
+                        if not executor_id:
+                            print(Fore.YELLOW + f"Не найден исполнитель '{executor_name}' в базе данных. "
+                                                f"Тайминг будет привязан без исполнителя.")
+
+                    # Преобразуем строку времени в timedelta
+                    time_delta = parse_iso_duration(time_str)
+                    if not time_delta:
+                        print(Fore.YELLOW + f"Неверный формат времени '{time_str}' для тайминга. Пропуск.")
+                        continue
+
+                    # Преобразуем строку даты в объект date
+                    timing_date = None
+                    if date_str:
+                        try:
+                            timing_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                        except ValueError:
+                            print(Fore.YELLOW + f"Неверный формат даты '{date_str}' для тайминга. Используем None.")
+
+                    # Проверяем, существует ли тайминг с такими же параметрами
+                    is_duplicate = False
+                    for existing in existing_timings:
+                        if (existing['order_serial'] == order_serial and
+                            existing['task_id'] == task_id and
+                            existing['executor_id'] == executor_id and
+                            existing['timing_date'] == timing_date):
+                            is_duplicate = True
+                            result['unchanged'] += 1
+                            break
+
+                    if not is_duplicate:
+                        # Создаем новый тайминг
+                        new_timing = Timing(
+                            order_serial=order_serial,
+                            task_id=task_id,
+                            executor_id=executor_id,
+                            time=time_delta,
+                            timing_date=timing_date
+                        )
+                        session.add(new_timing)
+                        result['added'] += 1
+                        print(Fore.GREEN + f"Добавлен новый тайминг: Заказ {order_serial}, Задача {task_id}, "
+                                           f"Исполнитель {executor_name}, Время {time_str}, Дата {date_str}")
+
+                return commit_and_summarize_import(session, result, "записей о затраченном времени")
+            except Exception as e:
+                session.rollback()
+                print(Fore.RED + f"Ошибка при импорте таймингов: {e}")
+                return result
+    except Exception as e:
+        print(Fore.RED + f"Ошибка при выполнении импорта таймингов: {e}")
+        return result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -1529,6 +1646,7 @@ if __name__ == "__main__":
         print("13 - import tasks from KIS2")
         print("14 - import order comments from KIS2")
         print("15 - import box from KIS2")
+        print("16 - import timings from KIS2")
         answer = input()
 
         operations = {
@@ -1547,6 +1665,7 @@ if __name__ == "__main__":
             "13": ("Импорт задач из КИС2", import_tasks_from_kis2, "задач"),
             "14": ("Импорт комментариев заказов из КИС2", import_order_comments_from_kis2, "комментариев к заказам"),
             "15": ("Импорт корпусов шкафов из КИС2", import_boxes_from_kis2, "корпусов шкафов"),
+            "16": ("Импорт расписаний из КИС2", import_timings_from_kis2, "расписаний"),
         }
 
         if answer in operations:
