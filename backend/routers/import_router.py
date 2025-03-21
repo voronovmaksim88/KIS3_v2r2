@@ -3,7 +3,7 @@
 Тут функции - роутеры для импорта данных
 """
 from fastapi import APIRouter, HTTPException
-from typing import Dict
+from typing import Dict, Any
 import logging
 
 # Импортируем функцию для импорта стран
@@ -21,16 +21,16 @@ router = APIRouter(
 
 
 # синхронный эндпоинт, если вы предпочитаете получать результат сразу
-@router.post("/countries", response_model=Dict[str, str])
+@router.post("/countries", response_model=Dict[str, Any])
 def import_countries_sync():
     """
     Импортирует страны из КИС2 в КИС3 синхронно.
     Возвращает результат только после завершения импорта.
     """
     try:
-        # Выполняем импорт напрямую
-        added_count = import_countries_from_kis2()
-        return {"status": "success", "message": "Импорт стран успешно выполнен", "added_count": str(added_count)}
+        # Выполняем импорт напрямую и получаем полный словарь результата
+        result = import_countries_from_kis2()
+        return result
     except Exception as e:
         logger.error(f"Ошибка при импорте стран: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при импорте стран: {str(e)}")

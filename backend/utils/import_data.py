@@ -1206,11 +1206,8 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
                 existing_comments_moment_of_creation_set = {
                     comment.moment_of_creation for comment in comments
                 }
-                for existing_comments_moment_of_creation in existing_comments_moment_of_creation_set:
-                    print('existing_comments_moment_of_creation', existing_comments_moment_of_creation)
 
                 existing_orders_set = {order.serial for order in session.query(Order).all()}
-                print('existing_orders_set', existing_orders_set)
 
                 # Обрабатываем каждый комментарий из КИС2
                 for comment_data in kis2_comments_list:
@@ -1247,7 +1244,6 @@ def import_order_comments_from_kis2() -> Dict[str, any]:
 
                     # Создаем ключ для проверки наличия комментария
                     comment_key = moment_of_creation
-                    print('comment_key', comment_key)
 
                     # Проверяем существование комментария
                     if comment_key not in existing_comments_moment_of_creation_set:
@@ -1605,6 +1601,101 @@ def import_timings_from_kis2() -> Dict[str, any]:
         return result
 
 
+def import_all_from_kis2() -> Dict[str, any]:
+    """
+    Последовательно выполняет все функции импорта данных из КИС2 в КИС3
+    и возвращает обобщенный результат.
+    """
+    print(Fore.CYAN + "=== Запуск полного импорта данных из КИС2 ===")
+
+    if not test_sync_connection():
+        print(Fore.RED + "Операции с данными не выполнены: нет подключения к базе данных.")
+        return {"status": "error", "message": "Нет подключения к базе данных"}
+
+    total_result = {
+        "status": "success",
+        "total_added": 0,
+        "total_updated": 0,
+        "total_unchanged": 0,
+        "details": {}
+    }
+
+    # Список всех функций импорта в порядке выполнения
+    import_functions = [
+        ("Страны", import_countries_from_kis2),
+        ("Города", import_cities_from_kis2),
+        ("Валюты", import_currency_from_kis2),
+        ("Типы оборудования", import_equipment_type_from_kis2),
+        ("Формы контрагентов", import_counterparty_from_kis2),
+        ("Производители", import_manufacturers_from_kis2),
+        ("Компании", import_companies_from_kis2),
+        ("Люди", import_person_from_kis2),
+        ("Работы", import_works_from_kis2),
+        ("Статусы заказов", ensure_order_statuses_exist),
+        ("Заказы", import_orders_from_kis2),
+        ("Комментарии к заказам", import_order_comments_from_kis2),
+        ("Корпуса шкафов", import_boxes_from_kis2),
+        ("Учет шкафов", import_box_accounting_from_kis2),
+        ("Задачи", import_tasks_from_kis2),
+        ("Тайминги", import_timings_from_kis2)
+    ]
+
+    # Выполняем каждую функцию импорта
+    for entity_name, import_func in import_functions:
+        print(Fore.CYAN + f"\n=== Импорт: {entity_name} ===")
+        try:
+            result = import_func()
+
+            # Собираем статистику
+            if result["status"] == "success":
+                total_result["total_added"] += result.get("added", 0)
+                total_result["total_updated"] += result.get("updated", 0)
+                total_result["total_unchanged"] += result.get("unchanged", 0)
+
+                # Сохраняем детальную информацию по каждому типу данных
+                total_result["details"][entity_name] = {
+                    "added": result.get("added", 0),
+                    "updated": result.get("updated", 0),
+                    "unchanged": result.get("unchanged", 0)
+                }
+
+                # Выводим результат для текущей операции
+                added = result.get("added", 0)
+                updated = result.get("updated", 0)
+                unchanged = result.get("unchanged", 0)
+                total = added + updated + unchanged
+
+                result_messages = []
+                if added > 0:
+                    result_messages.append(f"добавлено: {added}")
+                if updated > 0:
+                    result_messages.append(f"обновлено: {updated}")
+                if unchanged > 0:
+                    result_messages.append(f"без изменений: {unchanged}")
+
+                if added > 0 or updated > 0:
+                    print(Fore.GREEN + f"Результат импорта {entity_name} ({total}): {', '.join(result_messages)}")
+                else:
+                    print(Fore.YELLOW + f"{entity_name} обработаны ({total}): {', '.join(result_messages)}")
+            else:
+                print(Fore.RED + f"Ошибка при импорте {entity_name}.")
+                total_result["details"][entity_name] = {"status": "error"}
+        except Exception as e:
+            error_message = f"Ошибка при выполнении импорта {entity_name}: {str(e)}"
+            print(Fore.RED + error_message)
+            total_result["details"][entity_name] = {"status": "error", "message": str(e)}
+
+    # Выводим итоговую статистику
+    print(Fore.CYAN + "\n=== Итоги полного импорта данных ===")
+    print(Fore.GREEN + f"Всего добавлено: {total_result['total_added']}")
+    print(Fore.BLUE + f"Всего обновлено: {total_result['total_updated']}")
+    print(Fore.YELLOW + f"Без изменений: {total_result['total_unchanged']}")
+    print(
+        Fore.CYAN + f"Всего обработано: {total_result['total_added'] + total_result['total_updated'] + total_result['total_unchanged']}")
+
+    return total_result
+
+
 if __name__ == "__main__":
     def print_import_results(import_result, entity_name):
         """
@@ -1647,6 +1738,7 @@ if __name__ == "__main__":
         print("14 - import order comments from KIS2")
         print("15 - import box from KIS2")
         print("16 - import timings from KIS2")
+        print("99 - import all")
         answer = input()
 
         operations = {
@@ -1665,7 +1757,8 @@ if __name__ == "__main__":
             "13": ("Импорт задач из КИС2", import_tasks_from_kis2, "задач"),
             "14": ("Импорт комментариев заказов из КИС2", import_order_comments_from_kis2, "комментариев к заказам"),
             "15": ("Импорт корпусов шкафов из КИС2", import_boxes_from_kis2, "корпусов шкафов"),
-            "16": ("Импорт расписаний из КИС2", import_timings_from_kis2, "расписаний"),
+            "16": ("Импорт расписаний из КИС2", import_timings_from_kis2, "таймингов"),
+            "99": ("Импорт всех данных из КИС2", import_all_from_kis2, "всех данных"),
         }
 
         if answer in operations:
