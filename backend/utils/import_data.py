@@ -787,7 +787,7 @@ def import_box_accounting_from_kis2() -> Dict[str, any]:
                     full_name = f"{person.surname} {person.name}"
                     if person.patronymic:
                         full_name += f" {person.patronymic}"
-                    persons_by_name[full_name] = person.id
+                    persons_by_name[full_name] = person.uuid
 
                 # Проходим по списку шкафов из КИС2
                 for box_data in kis2_boxes_list:
@@ -977,7 +977,7 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                     full_name = f"{person.surname} {person.name}"
                     if person.patronymic:
                         full_name += f" {person.patronymic}"
-                    persons_by_name[full_name] = person.id
+                    persons_by_name[full_name] = person.uuid
 
                 # Обрабатываем каждую задачу из КИС2
                 for task_data in kis2_tasks_list:
@@ -1464,7 +1464,7 @@ def import_boxes_from_kis2() -> Dict[str, any]:
                             price=price,
                             currency_id=currency_id,
                             relevance=relevance,
-                            price_date=datetime.strptime(price_date, "%Y-%m-%d").date(),
+                            price_date=price_date,
                             material_id=material_id,
                             ip_id=ip_id,
                             height=height,
@@ -1505,7 +1505,7 @@ def import_timings_from_kis2() -> Dict[str, any]:
                     full_name = f"{person.surname} {person.name}"
                     if person.patronymic:
                         full_name += f" {person.patronymic}"
-                    persons_by_name[full_name] = person.id
+                    persons_by_name[full_name] = person.uuid
 
                 # Проверяем существование заказов и задач
                 existing_orders = set(serial[0] for serial in session.query(Order.serial).all())
