@@ -17,7 +17,6 @@ from routers.test_views import router as test_router
 from models.models import *
 from routers import import_router
 
-
 app = FastAPI(root_path="/api")
 
 # Подключаем роутеры
@@ -280,7 +279,7 @@ async def get_all_people(db: AsyncSession = Depends(get_async_db)):
         # Преобразуем результат в список словарей
         people_list = [
             {
-                "id": person.id,
+                "uuid": person.uuid,
                 "name": person.name,
                 "patronymic": person.patronymic,
                 "surname": person.surname,
@@ -430,7 +429,7 @@ async def get_all_order_comments(db: AsyncSession = Depends(get_async_db)):
                 "order_id": comment.order_id,
                 "moment_of_creation": comment.moment_of_creation.isoformat() if comment.moment_of_creation else None,
                 "text": comment.text,
-                "person_id": comment.person_id
+                "person_uuid": comment.person_uuid
             }
             for comment in comments
         ]
