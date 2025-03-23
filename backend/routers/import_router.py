@@ -3,14 +3,11 @@
 Тут функции - роутеры для импорта данных
 """
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Any, Callable
+from typing import Callable
 import logging
 
 # Импортируем функцию для импорта стран
-from utils.import_data import import_countries_from_kis2
-from utils.import_data import import_cities_from_kis2
-from utils.import_data import import_manufacturers_from_kis2
-from utils.import_data import import_equipment_types_from_kis2
+from utils.import_data import *
 
 # Создаем логгер
 logger = logging.getLogger(__name__)
@@ -22,52 +19,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# синхронный эндпоинт, если вы предпочитаете получать результат сразу
-# @router.post("/countries", response_model=Dict[str, Any])
-# def import_countries_sync():
-#     """
-#     Импортирует страны из КИС2 в КИС3 синхронно.
-#     Возвращает результат только после завершения импорта.
-#     returns:
-#     JSONResponse
-#     {
-#       "status": "success",
-#       "added": 0,
-#       "updated": 0,
-#       "unchanged": 21
-#     }
-#     """
-#     try:
-#         # Выполняем импорт напрямую и получаем полный словарь результата
-#         result = import_countries_from_kis2()
-#         return result
-#     except Exception as e:
-#         logger.error(f"Ошибка при импорте стран: {e}")
-#         raise HTTPException(status_code=500, detail=f"Ошибка при импорте стран: {str(e)}")
-#
-#
-# @router.post("/manufacturers", response_model=Dict[str, Any])
-# def import_manufacturers_sync():
-#     """
-#     Импортирует производителей из КИС2 в КИС3 синхронно.
-#     Возвращает результат только после завершения импорта.
-#     returns:
-#     JSONResponse
-#     {
-#       "status": "success",
-#       "added": 0,
-#       "updated": 0,
-#       "unchanged": 21
-#     }
-#     """
-#     try:
-#         # Выполняем импорт напрямую и получаем полный словарь результата
-#         result = import_manufacturers_from_kis2()
-#         return result
-#     except Exception as e:
-#         logger.error(f"Ошибка при импорте производителей: {e}")
-#         raise HTTPException(status_code=500, detail=f"Ошибка при импорте производителей: {str(e)}")
-
 
 """
 Универсальный роутер для импорта данных
@@ -77,8 +28,20 @@ router = APIRouter(
 IMPORT_FUNCTIONS: Dict[str, Callable[[], Dict[str, Any]]] = {
     "countries": import_countries_from_kis2,
     "cities": import_cities_from_kis2,
+    "currencies": import_currency_from_kis2,
     "manufacturers": import_manufacturers_from_kis2,
     "equipment_types": import_equipment_types_from_kis2,
+    "counterparty_forms": import_counterparty_forms_from_kis2,
+    "companies": import_companies_from_kis2,
+    "people": import_people_from_kis2,
+    "works": import_works_from_kis2,
+    "order_statuses": ensure_order_statuses_exist,
+    "orders": import_orders_from_kis2,
+    "order_comments": import_order_comments_from_kis2,
+    "boxes": import_boxes_from_kis2,
+    "box_accounting": import_box_accounting_from_kis2,
+    "tasks": import_tasks_from_kis2,
+
 }
 
 

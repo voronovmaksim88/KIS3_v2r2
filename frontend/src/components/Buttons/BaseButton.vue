@@ -20,7 +20,7 @@ const buttonClasses = computed(() => {
   const styleMap = {
     Primary: "bg-blue-700 text-white hover:bg-blue-500 focus:ring-blue-300",
     Secondary: "bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-100",
-    Success: "bg-green-500 text-white hover:bg-green-600 focus:ring-green-300",
+    Success: "bg-green-500 text-black hover:bg-green-600 focus:ring-green-300",
     Info: "bg-cyan-500 text-white hover:bg-cyan-600 focus:ring-cyan-300",
     Warn: "bg-yellow-500 text-black hover:bg-yellow-600 focus:ring-yellow-300",
     Help: "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-300",

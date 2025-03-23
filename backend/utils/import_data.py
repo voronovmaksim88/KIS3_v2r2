@@ -276,7 +276,7 @@ def import_cities_from_kis2() -> Dict[str, any]:
         return result
 
 
-def import_counterparty_from_kis2() -> Dict[str, any]:
+def import_counterparty_forms_from_kis2() -> Dict[str, any]:
     """
     Импортирует названия форм контрагентов из КИС2 в базу данных КИС3.
     """
@@ -380,7 +380,7 @@ def import_companies_from_kis2() -> Dict[str, any]:
         return result
 
 
-def import_person_from_kis2() -> Dict[str, any]:
+def import_people_from_kis2() -> Dict[str, any]:
     """
     Импортирует людей (персоны) из КИС2 в базу данных КИС3.
     """
@@ -1108,7 +1108,7 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                             actual_duration=actual_duration,
                             creation_moment=creation_moment,
                             start_moment=start_moment,
-                            end_moment=end_moment,
+                            deadline_moment=end_moment,
                             price=task_data.get('cost'),
                             order_serial=task_data.get('order_id'),
                             parent_task_id=parent_task_id,
@@ -1626,10 +1626,10 @@ def import_all_from_kis2() -> Dict[str, any]:
         ("Города", import_cities_from_kis2),
         ("Валюты", import_currency_from_kis2),
         ("Типы оборудования", import_equipment_types_from_kis2),
-        ("Формы контрагентов", import_counterparty_from_kis2),
+        ("Формы контрагентов", import_counterparty_forms_from_kis2),
         ("Производители", import_manufacturers_from_kis2),
         ("Компании", import_companies_from_kis2),
-        ("Люди", import_person_from_kis2),
+        ("Люди", import_people_from_kis2),
         ("Работы", import_works_from_kis2),
         ("Статусы заказов", ensure_order_statuses_exist),
         ("Заказы", import_orders_from_kis2),
@@ -1747,9 +1747,9 @@ if __name__ == "__main__":
             "3": ("Импорт типов оборудования из КИС2", import_equipment_types_from_kis2, "типов оборудования"),
             "4": ("Импорт валют из КИС2", import_currency_from_kis2, "валют"),
             "5": ("Импорт городов из КИС2", import_cities_from_kis2, "городов"),
-            "6": ("Импорт форм контрагентов из КИС2", import_counterparty_from_kis2, "форм контрагентов"),
+            "6": ("Импорт форм контрагентов из КИС2", import_counterparty_forms_from_kis2, "форм контрагентов"),
             "7": ("Импорт компаний из КИС2", import_companies_from_kis2, "компаний"),
-            "8": ("Импорт людей из КИС2", import_person_from_kis2, "людей"),
+            "8": ("Импорт людей из КИС2", import_people_from_kis2, "людей"),
             "9": ("Импорт работ из КИС2", import_works_from_kis2, "работ"),
             "10": ("Проверка и создание стандартных статусов заказов", ensure_order_statuses_exist, "статусов заказов"),
             "11": ("Импорт заказов из КИС2", import_orders_from_kis2, "заказов"),

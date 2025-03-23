@@ -25,7 +25,7 @@ app.include_router(test_router)  # роутер для тестовых запр
 
 # Настройка CORS
 app.add_middleware(
-    CORSMiddleware, # type: ignore
+    CORSMiddleware,  # type: ignore
     allow_origins=["https://sibplc-kis3.ru", "http://localhost:3000", "http://localhost:80", "http://localhost",
                    'http://localhost:8000', 'http://localhost:5173'],
     allow_credentials=True,
@@ -384,8 +384,8 @@ async def get_all_orders(db: AsyncSession = Depends(get_async_db)):
         return {"error": f"An error occurred: {str(e)}"}
 
 
-@app.get("/all_boxes")  # Учёт шкафов автоматики
-async def get_all_boxes(db: AsyncSession = Depends(get_async_db)):
+@app.get("/all_box_accounting")  # Учёт шкафов автоматики
+async def get_all_box_accounting(db: AsyncSession = Depends(get_async_db)):
     """
     Функция для получения всех заказов
     """
@@ -434,5 +434,88 @@ async def get_all_order_comments(db: AsyncSession = Depends(get_async_db)):
         ]
 
         return {"order_comments": comments_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_control_cabinets")
+async def get_all_control_cabinets(db: AsyncSession = Depends(get_async_db)):
+    """
+    Функция для получения всех шкафов управления
+    """
+    try:
+        # Выполняем запрос для получения всех шкафов управления
+        query = select(ControlCabinet)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        cabinets = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        cabinets_list = [
+            {
+                "id": cabinet.id,
+                "name": cabinet.name,
+                "model": cabinet.model,
+                "vendor_code": cabinet.vendor_code,
+                "description": cabinet.description,
+                "type_id": cabinet.type_id,
+                "manufacturer_id": cabinet.manufacturer_id,
+                "equipment_type_id": cabinet.type_id,
+                "price": cabinet.price,
+                "currency_id": cabinet.currency_id,
+                "relevance": cabinet.relevance,
+                "price_date": cabinet.price_date,
+                "material_id": cabinet.material_id,
+                "ip_id": cabinet.ip_id,
+                "height": cabinet.height,
+                "width": cabinet.width,
+                "depth": cabinet.depth
+            }
+            for cabinet in cabinets
+        ]
+
+        return {"control_cabinets": cabinets_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_tasks")
+async def get_all_tasks(db: AsyncSession = Depends(get_async_db)):
+    """
+    Функция для получения всех задач
+    """
+    try:
+        # Выполняем запрос для получения всех задач
+        query = select(Task)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        tasks = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        tasks_list = [
+            {
+                "id": task.id,
+                "name": task.name,
+                "description": task.description,
+                "status_id": task.status_id,
+                "payment_status_id": task.payment_status_id,
+                "executor_id": task.executor_id,
+                "planned_duration": str(task.planned_duration) if task.planned_duration else None,
+                "actual_duration": str(task.actual_duration) if task.actual_duration else None,
+                "creation_moment": task.creation_moment.isoformat() if task.creation_moment else None,
+                "start_moment": task.start_moment.isoformat() if task.start_moment else None,
+                "deadline_moment": task.deadline_moment.isoformat() if task.deadline_moment else None,
+                "end_moment": task.end_moment.isoformat() if task.end_moment else None,
+                "price": task.price,
+                "order_serial": task.order_serial,
+                "parent_task_id": task.parent_task_id,
+                "root_task_id": task.root_task_id
+            }
+            for task in tasks
+        ]
+
+        return {"tasks": tasks_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}

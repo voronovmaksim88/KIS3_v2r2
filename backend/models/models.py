@@ -489,11 +489,13 @@ class ControlCabinet(Equipment):
     material_id: Mapped[int] = mapped_column(ForeignKey('control_cabinet_materials.id'), nullable=False)
     ip_id: Mapped[int] = mapped_column(ForeignKey('ips.id'), nullable=False)
 
-    material: Mapped["ControlCabinetMaterial"] = relationship(back_populates="control_cabinets")
-    ip: Mapped["Ip"] = relationship(back_populates="control_cabinets")
     height: Mapped[int] = mapped_column(Integer, nullable=False)
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     depth: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Отношения
+    material: Mapped["ControlCabinetMaterial"] = relationship(back_populates="control_cabinets")
+    ip: Mapped["Ip"] = relationship(back_populates="control_cabinets")
 
 
 class Timing(Base):
