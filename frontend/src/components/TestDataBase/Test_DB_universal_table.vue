@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import {computed, onUnmounted, ref} from 'vue'
 
-// Определяем интерфейс для ответа API импорта
+// Интерфейс ответа API импорта
 interface ImportResponse {
   status: string;
-  message: string;
-  added_count?: number; // Опциональное поле
+  added?: number;
+  updated?: number;
+  unchanged?: number;
 }
 
 // Интерфейс для пропсов компонента
@@ -31,6 +32,9 @@ const connectionError = ref<string>('')
 const importStatus = ref<string>('') // Для отображения статуса импорта
 const isImporting = ref<boolean>(false) // Флаг, указывающий на процесс импорта
 const importButtonState = ref<string>(props.importButtonText)
+
+// **Добавляем ref для хранения результата импорта**
+const importResult = ref<ImportResponse | null>(null)
 
 // Для очистки таймера при размонтировании компонента
 let buttonResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -91,7 +95,9 @@ async function importData(): Promise<void> {
     return;
   }
 
-  clearData()
+  // Очищаем предыдущие данные
+  clearData();
+  importResult.value = null;
 
   importStatus.value = 'Выполняется импорт...';
   connectionError.value = '';
@@ -109,23 +115,13 @@ async function importData(): Promise<void> {
     const data = await response.json() as ImportResponse;
 
     if (response.ok) {
-      // Выведем подробную информацию о полученных данных
-      console.log('Данные успешного ответа:', data);
-      console.log('Тип data.status:', typeof data.status);
-      console.log('Значение data.status:', data.status);
-
-      // Упростим проверку - при любом успешном ответе считаем импорт успешным
       importStatus.value = 'Импорт успешен!';
+      importButtonState.value = 'Импорт успешен!';
 
-      // Проверяем наличие свойства added_count и используем его, если оно существует
-      if (data.added_count !== undefined) {
-        importButtonState.value = `Импорт успешен! +${data.added_count}`;
-      } else {
-        importButtonState.value = 'Импорт успешен!';
-      }
+      // Сохраняем полученные данные в importResult
+      importResult.value = data;
 
     } else {
-      // Ошибка импорта
       const errorText = (data as any).detail || 'Неизвестная ошибка';
       importButtonState.value = `Ошибка!`;
       connectionError.value = `Ошибка импорта: ${errorText}`;
@@ -146,7 +142,7 @@ async function importData(): Promise<void> {
 
     buttonResetTimer = setTimeout(() => {
       importButtonState.value = props.importButtonText;
-      importStatus.value = ''; // Сбрасываем статус вместо класса
+      importStatus.value = '';
     }, 3000);
   }
 }
@@ -156,10 +152,11 @@ function clearData(): void {
   tableHeaders.value = []
   connectionError.value = ""
   importStatus.value = ""
+  importResult.value = null;
 }
 
 // Вычисляемое свойство для Tailwind классов
-const tailwindButtonClasses = computed((): string => {
+const importButtonClasses = computed((): string => {
   // Добавьте отладочное сообщение
   console.log('Текущий статус импорта:', importStatus.value);
   console.log('Условие для зеленой кнопки:', importStatus.value === 'Импорт успешен!');
@@ -179,26 +176,45 @@ const tailwindButtonClasses = computed((): string => {
 
 <template>
   <div class="grid grid-cols-4 gap-2">
-    <div class="col-span-2">
+    <div class="col-span-1">
       <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
     </div>
 
 
-
     <div>
-      <button class="btn btn-s w-full" @click="clearData">Свернуть</button>
+      <button
+          class="w-full py-2 px-4 rounded font-bold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50"
+          :class="'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-100'"
+          @click="clearData"
+      >
+        Свернуть
+      </button>
     </div>
 
     <!-- Кнопка импорта с Tailwind классами -->
     <div v-if="importName">
       <button
           class="w-full py-2 px-4 rounded font-bold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-          :class="tailwindButtonClasses"
+          :class="importButtonClasses"
           @click="importData"
           :disabled="isImporting"
       >
         {{ importButtonState }}
       </button>
+    </div>
+
+    <div v-if="importName">
+      <!-- Добавляем отображение результата импорта -->
+      <div v-if="importResult" class="ml-4 text-white bg-gray-700 p-2 rounded">
+        <p>Статус:
+          <span :class="{'text-green-400 font-bold': importResult.status === 'success'}">
+            {{ importResult.status }}
+          </span>
+        </p>
+        <p>Добавлено: {{ importResult.added ?? 0 }}</p>
+        <p>Обновлено: {{ importResult.updated ?? 0 }}</p>
+        <p>Без изменений: {{ importResult.unchanged ?? 0 }}</p>
+      </div>
     </div>
 
     <div class="col-span-4" v-if="tableData.length > 0">
