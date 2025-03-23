@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import {onUnmounted, ref} from 'vue'
-import ImportButton from '../Buttons/ImportButton.vue'; //
 import BaseButton from "../Buttons/BaseButton.vue";
-
 
 // Интерфейс ответа API импорта
 interface ImportResponse {
@@ -66,7 +64,7 @@ async function fetchData(): Promise<void> {
 
     if (!response.ok) {
       connectionError.value = `Ошибка при получении данных: ${response.status} ${response.statusText}`;
-      return; // Early return при ошибке
+      return;
     }
 
     const data = await response.json();
@@ -76,7 +74,7 @@ async function fetchData(): Promise<void> {
 
     if (!arrayKey || data[arrayKey].length === 0) {
       connectionError.value = 'Некорректный формат данных';
-      return; // Early return при ошибке
+      return;
     }
 
     tableData.value = data[arrayKey];
@@ -157,41 +155,42 @@ async function clearData(): Promise<void> {
   importStatus.value = ""
   importResult.value = null;
 }
-
-
 </script>
 
 <template>
   <div class="grid grid-cols-4 gap-2">
 
-    <BaseButton
-        :text='buttonText'
-        :action="fetchData"
-        :style="'Primary'"
-    >
-    </BaseButton>
-
-    <BaseButton
-        :action="clearData"
-        :text="'Свернуть'"
-        :style="'Secondary'"
-    >
-    </BaseButton>
-
-    <!-- Кнопка импорта данных -->
-    <div v-if="importName">
-      <ImportButton
-          :importAction="importData"
-          :isImporting="isImporting"
-          :importStatus="importStatus"
-          :importResult="importResult"
-          :importButtonText="props.importButtonText"
+    <!-- Кнопка "Получить данные" -->
+    <div>
+      <BaseButton
+          :text='buttonText'
+          :action="fetchData"
+          :style="'Primary'"
       />
     </div>
 
     <div v-if="importName">
-      <!-- Добавляем отображение результата импорта -->
-      <div v-if="importResult" class="ml-4 text-white bg-gray-700 p-2 rounded">
+      <!-- Кнопка "Свернуть" -->
+      <BaseButton
+          :text="'Свернуть'"
+          :action="clearData"
+          :style="'Secondary'"
+      />
+    </div>
+
+    <!-- Кнопка импорта данных -->
+    <div v-if="importName">
+      <BaseButton
+          :text="importButtonState"
+          :action="importData"
+          :style="isImporting ? 'Warn' : (importStatus === 'Импорт успешен!' ? 'Success' : 'Secondary')"
+          :disabled="isImporting"
+      />
+    </div>
+
+    <!-- Отображение результата импорта -->
+    <div class="col-span-3" v-if="importName && importResult">
+      <div class=" text-white bg-gray-700 p-2 rounded">
         <p>Статус:
           <span :class="{'text-green-400 font-bold': importResult.status === 'success'}">
             {{ importResult.status }}
@@ -203,6 +202,7 @@ async function clearData(): Promise<void> {
       </div>
     </div>
 
+    <!-- Таблица с данными -->
     <div class="col-span-4" v-if="tableData.length > 0">
       <div class="overflow-x-auto">
         <div :style="{ maxHeight: props.maxHeight, overflowY: 'auto' }">
@@ -224,6 +224,7 @@ async function clearData(): Promise<void> {
       </div>
     </div>
 
+    <!-- Ошибки -->
     <p class="text-red-400 col-span-4" v-if="connectionError">{{ connectionError }}</p>
 
   </div>

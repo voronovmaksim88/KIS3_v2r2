@@ -178,7 +178,7 @@ def import_manufacturers_from_kis2() -> Dict[str, any]:
         return result
 
 
-def import_equipment_type_from_kis2() -> Dict[str, any]:
+def import_equipment_types_from_kis2() -> Dict[str, any]:
     """
     Импортировать типы оборудования из КИС2 в базу данных КИС3.
     """
@@ -1625,7 +1625,7 @@ def import_all_from_kis2() -> Dict[str, any]:
         ("Страны", import_countries_from_kis2),
         ("Города", import_cities_from_kis2),
         ("Валюты", import_currency_from_kis2),
-        ("Типы оборудования", import_equipment_type_from_kis2),
+        ("Типы оборудования", import_equipment_types_from_kis2),
         ("Формы контрагентов", import_counterparty_from_kis2),
         ("Производители", import_manufacturers_from_kis2),
         ("Компании", import_companies_from_kis2),
@@ -1744,7 +1744,7 @@ if __name__ == "__main__":
         operations = {
             "1": ("Импорт стран из КИС2", import_countries_from_kis2, "стран"),
             "2": ("Импорт производителей из КИС2", import_manufacturers_from_kis2, "производителей"),
-            "3": ("Импорт типов оборудования из КИС2", import_equipment_type_from_kis2, "типов оборудования"),
+            "3": ("Импорт типов оборудования из КИС2", import_equipment_types_from_kis2, "типов оборудования"),
             "4": ("Импорт валют из КИС2", import_currency_from_kis2, "валют"),
             "5": ("Импорт городов из КИС2", import_cities_from_kis2, "городов"),
             "6": ("Импорт форм контрагентов из КИС2", import_counterparty_from_kis2, "форм контрагентов"),
