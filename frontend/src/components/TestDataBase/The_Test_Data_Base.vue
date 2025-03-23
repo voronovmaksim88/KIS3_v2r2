@@ -24,12 +24,14 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
       <Test_DB_universal_table
           :url="backend_url"
           endpoint="all_manufacturers"
-          buttonText="Производителей"
+          importName="manufacturers"
+          buttonText="Производители"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
           endpoint="all_equipment_types"
+          importName="equipment_types"
           buttonText="Типы оборудования"
       />
 

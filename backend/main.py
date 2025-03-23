@@ -25,8 +25,7 @@ app.include_router(test_router)  # роутер для тестовых запр
 
 # Настройка CORS
 app.add_middleware(
-    CORSMiddleware,  # type: ignore[arg-type]
-    # allow_origins=["*"], # Разрешить все источники (но это работает только для HTTP запросов)
+    CORSMiddleware, # type: ignore
     allow_origins=["https://sibplc-kis3.ru", "http://localhost:3000", "http://localhost:80", "http://localhost",
                    'http://localhost:8000', 'http://localhost:5173'],
     allow_credentials=True,
