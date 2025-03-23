@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import {computed, onUnmounted, ref} from 'vue'
+import {onUnmounted, ref} from 'vue'
+import ImportButton from '../Buttons/ImportButton.vue'; //
+import BaseButton  from "../Buttons/BaseButton.vue";
+
 
 // Интерфейс ответа API импорта
 interface ImportResponse {
@@ -96,7 +99,7 @@ async function importData(): Promise<void> {
   }
 
   // Очищаем предыдущие данные
-  clearData();
+  await clearData();
   importResult.value = null;
 
   importStatus.value = 'Выполняется импорт...';
@@ -147,7 +150,7 @@ async function importData(): Promise<void> {
   }
 }
 
-function clearData(): void {
+async function clearData(): Promise<void> {
   tableData.value = []
   tableHeaders.value = []
   connectionError.value = ""
@@ -155,23 +158,7 @@ function clearData(): void {
   importResult.value = null;
 }
 
-// Вычисляемое свойство для Tailwind классов
-const importButtonClasses = computed((): string => {
-  // Добавьте отладочное сообщение
-  console.log('Текущий статус импорта:', importStatus.value);
-  console.log('Условие для зеленой кнопки:', importStatus.value === 'Импорт успешен!');
 
-  if (isImporting.value) {
-    return 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500 focus:ring-yellow-500 cursor-wait';
-  }
-  if (importStatus.value === 'Импорт успешен!') {
-    return 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-700';
-  }
-  if (connectionError.value.includes('Ошибка импорта')) {
-    return 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-700';
-  }
-  return 'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-100';
-});
 </script>
 
 <template>
@@ -180,27 +167,21 @@ const importButtonClasses = computed((): string => {
       <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
     </div>
 
+    <BaseButton
+        :action="clearData"
+        :text="'Свернуть'"
+    >
+    </BaseButton>
 
-    <div>
-      <button
-          class="w-full py-2 px-4 rounded font-bold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-          :class="'bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-100'"
-          @click="clearData"
-      >
-        Свернуть
-      </button>
-    </div>
-
-    <!-- Кнопка импорта с Tailwind классами -->
+    <!-- Кнопка импорта данных -->
     <div v-if="importName">
-      <button
-          class="w-full py-2 px-4 rounded font-bold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50"
-          :class="importButtonClasses"
-          @click="importData"
-          :disabled="isImporting"
-      >
-        {{ importButtonState }}
-      </button>
+      <ImportButton
+          :importAction="importData"
+          :isImporting="isImporting"
+          :importStatus="importStatus"
+          :importResult="importResult"
+          :importButtonText="props.importButtonText"
+      />
     </div>
 
     <div v-if="importName">
