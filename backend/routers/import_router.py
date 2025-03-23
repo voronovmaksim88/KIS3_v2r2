@@ -8,6 +8,7 @@ import logging
 
 # Импортируем функцию для импорта стран
 from utils.import_data import import_countries_from_kis2
+from utils.import_data import import_cities_from_kis2
 from utils.import_data import import_manufacturers_from_kis2
 from utils.import_data import import_equipment_types_from_kis2
 
@@ -75,6 +76,7 @@ router = APIRouter(
 # **Словарь с СИНХРОННЫМИ функциями импорта**
 IMPORT_FUNCTIONS: Dict[str, Callable[[], Dict[str, Any]]] = {
     "countries": import_countries_from_kis2,
+    "cities": import_cities_from_kis2,
     "manufacturers": import_manufacturers_from_kis2,
     "equipment_types": import_equipment_types_from_kis2,
 }

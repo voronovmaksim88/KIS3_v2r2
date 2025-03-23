@@ -23,6 +23,13 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
 
       <Test_DB_universal_table
           :url="backend_url"
+          endpoint="all_cities"
+          importName="cities"
+          buttonText="Города"
+      />
+
+      <Test_DB_universal_table
+          :url="backend_url"
           endpoint="all_manufacturers"
           importName="manufacturers"
           buttonText="Производители"
@@ -39,12 +46,6 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
           :url="backend_url"
           endpoint="all_currencies"
           buttonText="Валюты"
-      />
-
-      <Test_DB_universal_table
-          :url="backend_url"
-          endpoint="all_cities"
-          buttonText="Города"
       />
 
       <Test_DB_universal_table
