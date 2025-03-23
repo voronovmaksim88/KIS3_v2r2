@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onUnmounted, ref} from 'vue'
 import ImportButton from '../Buttons/ImportButton.vue'; //
-import BaseButton  from "../Buttons/BaseButton.vue";
+import BaseButton from "../Buttons/BaseButton.vue";
 
 
 // Интерфейс ответа API импорта
@@ -163,13 +163,18 @@ async function clearData(): Promise<void> {
 
 <template>
   <div class="grid grid-cols-4 gap-2">
-    <div class="col-span-1">
-      <button class="btn btn-p w-full" @click="fetchData">{{ buttonText }}</button>
-    </div>
+
+    <BaseButton
+        :text='buttonText'
+        :action="fetchData"
+        :style="'Primary'"
+    >
+    </BaseButton>
 
     <BaseButton
         :action="clearData"
         :text="'Свернуть'"
+        :style="'Secondary'"
     >
     </BaseButton>
 
