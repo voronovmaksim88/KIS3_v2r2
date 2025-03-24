@@ -14,11 +14,11 @@ from jwt.exceptions import InvalidTokenError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from database import get_db
+from database import get_async_db
 from models.models import User as UserModel
 from datetime import datetime, UTC
 from loguru import logger
-from core.config import settings
+from config import settings
 
 from fastapi import Body
 from auth.utils import get_password_hash
@@ -55,7 +55,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 async def validate_auth_user(
     username: str = Form(),
     password: str = Form(),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> UserModel:
     """
     Проверяет учетные данные пользователя в базе данных.
@@ -79,7 +79,7 @@ async def validate_auth_user(
     )
     try:
         # Ищем пользователя в БД
-        query = select(UserModel).filter(UserModel.username == username)
+        query = select(UserModel).filter(UserModel.username.eq(username))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
@@ -139,7 +139,7 @@ async def get_current_token_payload(
 
 async def get_current_auth_user(
     payload: dict = Depends(get_current_token_payload),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> UserModel:
     """
     Получает текущего пользователя по данным из токена.
@@ -183,7 +183,7 @@ async def get_current_auth_user(
             )
 
         # Получаем пользователя из базы данных
-        query = select(UserModel).filter(UserModel.id == user_id)
+        query = select(UserModel).filter(UserModel.id.eq(user_id))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
@@ -284,7 +284,7 @@ async def auth_user_check_self_info(
 
 @router.post("/register/", response_model=UserBase)
 async def register_user(
-    user_data: UserCreate = Body(...), db: AsyncSession = Depends(get_db)
+    user_data: UserCreate = Body(...), db: AsyncSession = Depends(get_async_db)
 ):
     """
     Регистрация нового пользователя.

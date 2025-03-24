@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, UTC
 import bcrypt
 import jwt
 
-from core.config import settings
+from config import settings
 
 
 # Функция, которая создаёт jwt токен
