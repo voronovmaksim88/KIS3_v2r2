@@ -4,6 +4,7 @@
 """
 
 from sqlalchemy import MetaData, Integer, String, ForeignKey, Date, Boolean, Text, DateTime, Table
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import validates
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped  # используется для аннотации типов столбцов.
@@ -17,7 +18,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
 from typing import List
 
-from datetime import date
+from datetime import date, UTC
 from datetime import datetime
 from datetime import timedelta
 
@@ -111,7 +112,7 @@ class Person(Base):
     __tablename__ = 'people'
 
     # id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(UUID(as_uuid=True),primary_key=True, unique=True, nullable=False, default=uuid.uuid4)
+    uuid = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     patronymic: Mapped[str | None] = mapped_column(String, nullable=True)  # Отчество
     surname: Mapped[str] = mapped_column(String, nullable=False)  # Фамилия
@@ -138,7 +139,7 @@ class Person(Base):
     tested_boxes = relationship("BoxAccounting", back_populates="tester",
                                 foreign_keys="[BoxAccounting.tester_id]")
     timing_records = relationship("Timing", back_populates="executor",
-                                 foreign_keys="[Timing.executor_id]")
+                                  foreign_keys="[Timing.executor_id]")
 
 
 # Вспомогательная таблица для связи многие-ко-многим между Order и Work
@@ -509,7 +510,6 @@ class Timing(Base):
     time: Mapped[timedelta] = mapped_column(Interval, nullable=False)  # Потраченное время
     timing_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Дата тайминга
 
-
     # Отношения
     order: Mapped["Order"] = relationship(back_populates="timings")
     task: Mapped["Task"] = relationship(back_populates="timings")
@@ -521,6 +521,43 @@ class Timing(Base):
     def __repr__(self) -> str:
         return f"Timing(id={self.id!r}, order_serial={self.order_serial!r}, task_id={self.task_id!r})"
 
+
+class User(AsyncAttrs, Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True, index=True
+    )
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    last_login: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # # Задачи пользователя
+    # tasks: Mapped[List["Task"]] = relationship(
+    #     "Task", back_populates="user", lazy="selectin"
+    # )
+    #
+    # # Проекты, где пользователь является руководителем
+    # managed_projects: Mapped[List["Project"]] = relationship(
+    #     "Project", back_populates="manager", lazy="selectin"
+    # )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None,
+            # "managed_projects": [project.id for project in self.managed_projects],
+            # Список ID проектов, которыми управляет пользователь
+        }
 
 
 '''  
