@@ -4,19 +4,24 @@
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Depends
 from starlette.responses import HTMLResponse
 
 import uvicorn
 
 from auth import jwt_auth
-from database import get_async_db
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from routers.test_views import router as test_router
 from models.models import *
 from routers import import_router
+
+from fastapi import Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from loguru import logger
+
+from database import get_async_db
+from models.models import User as UserModel
+from auth.jwt_auth import get_current_auth_user
 
 app = FastAPI(root_path="/api")
 
@@ -68,12 +73,27 @@ def home():
 # далее будут функции которые будут доставать данные из базы данных, их надо потом будет вынести в отдельный файл,
 # и создать отдельный роутер
 
+
 @app.get("/all_countries")
-async def get_all_countries(db: AsyncSession = Depends(get_async_db)):
+async def get_all_countries(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех стран
+    Функция для получения всех стран.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to countries list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all countries")
+
         # Создаем запрос для выборки всех стран
         query = select(Country)
 
@@ -92,17 +112,39 @@ async def get_all_countries(db: AsyncSession = Depends(get_async_db)):
             for country in countries
         ]
 
+        logger.info(f"Successfully retrieved {len(countries_list)} countries for user {current_user.username}")
         return {"countries": countries_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching countries: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch countries: {str(e)}"
+        )
 
 
 @app.get("/all_manufacturers")
-async def get_all_manufacturers(db: AsyncSession = Depends(get_async_db)):
+async def get_all_manufacturers(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех производителей
+    Функция для получения всех производителей.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to manufacturers list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all manufacturers")
+
         # Выполняем запрос для получения всех производителей
         query = select(Manufacturer)
         result = await db.execute(query)
@@ -120,18 +162,40 @@ async def get_all_manufacturers(db: AsyncSession = Depends(get_async_db)):
             for manufacturer in manufacturers
         ]
 
+        logger.info(f"Successfully retrieved {len(manufacturers_list)} manufacturers for user {current_user.username}")
         return {"manufacturers": manufacturers_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching manufacturers: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch manufacturers: {str(e)}"
+        )
 
 
 @app.get("/all_equipment_types")
-async def get_all_equipment_types(db: AsyncSession = Depends(get_async_db)):
+async def get_all_equipment_types(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех типов оборудования
+    Функция для получения всех типов оборудования.
+    Требует аутентификации пользователя.
     """
     try:
-        # Выполняем запрос для получения всех производителей
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to equipment types list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all equipment types")
+
+        # Выполняем запрос для получения всех типов оборудования
         query = select(EquipmentType)
         result = await db.execute(query)
 
@@ -147,17 +211,40 @@ async def get_all_equipment_types(db: AsyncSession = Depends(get_async_db)):
             for equipment_type in equipment_types
         ]
 
+        logger.info(
+            f"Successfully retrieved {len(equipment_types_list)} equipment types for user {current_user.username}")
         return {"equipment_types": equipment_types_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching equipment types: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch equipment types: {str(e)}"
+        )
 
 
 @app.get("/all_currencies")
-async def get_all_currencies(db: AsyncSession = Depends(get_async_db)):
+async def get_all_currencies(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех валют
+    Функция для получения всех валют.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to currencies list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all currencies")
+
         # Выполняем запрос для получения всех валют
         query = select(Currency)
         result = await db.execute(query)
@@ -174,17 +261,39 @@ async def get_all_currencies(db: AsyncSession = Depends(get_async_db)):
             for currency in currencies
         ]
 
+        logger.info(f"Successfully retrieved {len(currencies_list)} currencies for user {current_user.username}")
         return {"currencies_list": currencies_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching currencies: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch currencies: {str(e)}"
+        )
 
 
 @app.get("/all_cities")
-async def get_all_cities(db: AsyncSession = Depends(get_async_db)):
+async def get_all_cities(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех городов
+    Функция для получения всех городов.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to cities list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all cities")
+
         # Выполняем запрос для получения всех городов
         query = select(City)
         result = await db.execute(query)
@@ -197,22 +306,44 @@ async def get_all_cities(db: AsyncSession = Depends(get_async_db)):
             {
                 "id": city.id,
                 "name": city.name,
-                "country_id": city.country_id  # Если нужно возвратить country_id
+                "country_id": city.country_id
             }
             for city in cities
         ]
 
+        logger.info(f"Successfully retrieved {len(cities_list)} cities for user {current_user.username}")
         return {"cities_list": cities_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching cities: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cities: {str(e)}"
+        )
 
 
 @app.get("/all_counterparty_forms")
-async def get_all_counterparty_forms(db: AsyncSession = Depends(get_async_db)):
+async def get_all_counterparty_forms(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех форм контрагентов
+    Функция для получения всех форм контрагентов.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to counterparty forms list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all counterparty forms")
+
         # Выполняем запрос для получения всех форм контрагентов
         query = select(CounterpartyForm)
         result = await db.execute(query)
@@ -229,17 +360,40 @@ async def get_all_counterparty_forms(db: AsyncSession = Depends(get_async_db)):
             for form in counterparty_forms
         ]
 
+        logger.info(
+            f"Successfully retrieved {len(counterparty_forms_list)} counterparty forms for user {current_user.username}")
         return {"counterparty_forms_list": counterparty_forms_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching counterparty forms: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch counterparty forms: {str(e)}"
+        )
 
 
 @app.get("/all_counterparties")
-async def get_all_counterparties(db: AsyncSession = Depends(get_async_db)):
+async def get_all_counterparties(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех контрагентов
+    Функция для получения всех контрагентов.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to counterparties list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all counterparties")
+
         # Выполняем запрос для получения всех контрагентов
         query = select(Counterparty)
         result = await db.execute(query)
@@ -259,17 +413,40 @@ async def get_all_counterparties(db: AsyncSession = Depends(get_async_db)):
             for counterparty in counterparties
         ]
 
+        logger.info(
+            f"Successfully retrieved {len(counterparties_list)} counterparties for user {current_user.username}")
         return {"counterparties_list": counterparties_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching counterparties: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch counterparties: {str(e)}"
+        )
 
 
 @app.get("/all_people")
-async def get_all_people(db: AsyncSession = Depends(get_async_db)):
+async def get_all_people(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех людей
+    Функция для получения всех людей.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to people list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all people")
+
         # Выполняем запрос для получения всех людей
         query = select(Person)
         result = await db.execute(query)
@@ -294,67 +471,84 @@ async def get_all_people(db: AsyncSession = Depends(get_async_db)):
             for person in people
         ]
 
+        logger.info(f"Successfully retrieved {len(people_list)} people for user {current_user.username}")
         return {"people_list": people_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
-
-
-@app.get("/all_works")
-async def get_all_works(db: AsyncSession = Depends(get_async_db)):
-    """
-    Функция для получения всех типов работ по заказу
-    """
-    try:
-        query = select(Work)
-        result = await db.execute(query)
-        works = result.scalars().all()
-
-        works_list = [
-            {
-                "id": work.id,
-                "name": work.name,
-                "description": work.description,
-                "active": work.active
-            }
-            for work in works
-        ]
-
-        return {"works": works_list}
-    except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
-
+        logger.error(f"Error fetching people: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch people: {str(e)}"
+        )
 
 @app.get("/all_order_statuses")
-async def get_all_order_statuses(db: AsyncSession = Depends(get_async_db)):
+async def get_all_order_statuses(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех возможных статусов заказа
+    Функция для получения всех возможных статусов заказа.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to order statuses list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all order statuses")
+
         query = select(OrderStatus)
         result = await db.execute(query)
         order_statuses = result.scalars().all()
 
         order_statuses_list = [
             {
-                "id": status.id,
-                "name": status.name,
-                "description": status.description
+                "id": order_status.id,
+                "name": order_status.name,
+                "description": order_status.description
             }
-            for status in order_statuses
+            for order_status in order_statuses
         ]
 
+        logger.info(f"Successfully retrieved {len(order_statuses_list)} order statuses for user {current_user.username}")
         return {"order_statuses": order_statuses_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching order statuses: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch order statuses: {str(e)}"
+        )
 
 
 @app.get("/all_orders")
-async def get_all_orders(db: AsyncSession = Depends(get_async_db)):
+async def get_all_orders(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех заказов
+    Функция для получения всех заказов.
+    Требует аутентификации пользователя.
     """
-
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to orders list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all orders")
+
         query = select(Order)
         result = await db.execute(query)
         orders = result.scalars().all()
@@ -381,17 +575,39 @@ async def get_all_orders(db: AsyncSession = Depends(get_async_db)):
             for order in orders
         ]
 
+        logger.info(f"Successfully retrieved {len(orders_list)} orders for user {current_user.username}")
         return {"orders": orders_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching orders: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch orders: {str(e)}"
+        )
 
 
 @app.get("/all_box_accounting")  # Учёт шкафов автоматики
-async def get_all_box_accounting(db: AsyncSession = Depends(get_async_db)):
+async def get_all_box_accounting(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех заказов
+    Функция для получения всех шкафов автоматики.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to box accounting list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all boxes")
+
         query = select(BoxAccounting)
         result = await db.execute(query)
         boxes = result.scalars().all()
@@ -409,17 +625,39 @@ async def get_all_box_accounting(db: AsyncSession = Depends(get_async_db)):
             for box in boxes
         ]
 
+        logger.info(f"Successfully retrieved {len(boxes_list)} boxes for user {current_user.username}")
         return {"boxes": boxes_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching boxes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch boxes: {str(e)}"
+        )
 
 
 @app.get("/all_order_comments")
-async def get_all_order_comments(db: AsyncSession = Depends(get_async_db)):
+async def get_all_order_comments(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех комментариев к заказам
+    Функция для получения всех комментариев к заказам.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to order comments list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all order comments")
+
         query = select(OrderComment)
         result = await db.execute(query)
         comments = result.scalars().all()
@@ -435,17 +673,39 @@ async def get_all_order_comments(db: AsyncSession = Depends(get_async_db)):
             for comment in comments
         ]
 
+        logger.info(f"Successfully retrieved {len(comments_list)} order comments for user {current_user.username}")
         return {"order_comments": comments_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching order comments: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch order comments: {str(e)}"
+        )
 
 
 @app.get("/all_control_cabinets")
-async def get_all_control_cabinets(db: AsyncSession = Depends(get_async_db)):
+async def get_all_control_cabinets(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех шкафов управления
+    Функция для получения всех шкафов управления.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to control cabinets list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all control cabinets")
+
         # Выполняем запрос для получения всех шкафов управления
         query = select(ControlCabinet)
         result = await db.execute(query)
@@ -477,17 +737,39 @@ async def get_all_control_cabinets(db: AsyncSession = Depends(get_async_db)):
             for cabinet in cabinets
         ]
 
+        logger.info(f"Successfully retrieved {len(cabinets_list)} control cabinets for user {current_user.username}")
         return {"control_cabinets": cabinets_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching control cabinets: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch control cabinets: {str(e)}"
+        )
 
 
 @app.get("/all_tasks")
-async def get_all_tasks(db: AsyncSession = Depends(get_async_db)):
+async def get_all_tasks(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех задач
+    Функция для получения всех задач.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to tasks list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all tasks")
+
         # Выполняем запрос для получения всех задач
         query = select(Task)
         result = await db.execute(query)
@@ -518,17 +800,39 @@ async def get_all_tasks(db: AsyncSession = Depends(get_async_db)):
             for task in tasks
         ]
 
+        logger.info(f"Successfully retrieved {len(tasks_list)} tasks for user {current_user.username}")
         return {"tasks": tasks_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching tasks: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch tasks: {str(e)}"
+        )
 
 
 @app.get("/all_timings")
-async def get_all_timings(db: AsyncSession = Depends(get_async_db)):
+async def get_all_timings(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_auth_user)
+):
     """
-    Функция для получения всех тайминговых записей
+    Функция для получения всех тайминговых записей.
+    Требует аутентификации пользователя.
     """
     try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to timings list")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting all timings")
+
         # Выполняем запрос для получения всех тайминговых записей
         query = select(Timing)
         result = await db.execute(query)
@@ -549,6 +853,14 @@ async def get_all_timings(db: AsyncSession = Depends(get_async_db)):
             for timing in timings
         ]
 
+        logger.info(f"Successfully retrieved {len(timings_list)} timings for user {current_user.username}")
         return {"timings": timings_list}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": f"An error occurred: {str(e)}"}
+        logger.error(f"Error fetching timings: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch timings: {str(e)}"
+        )
