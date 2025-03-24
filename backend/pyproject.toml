@@ -18,6 +18,7 @@ psycopg2-binary = "^2.9.9"
 colorama = "^0.4.6"
 requests = "^2.32.3"
 starlette = "^0.46.1"
+loguru = "^0.7.3"
 
 
 [build-system]
