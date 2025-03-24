@@ -519,3 +519,34 @@ async def get_all_tasks(db: AsyncSession = Depends(get_async_db)):
         return {"tasks": tasks_list}
     except Exception as e:
         return {"error": f"An error occurred: {str(e)}"}
+
+
+@app.get("/all_timings")
+async def get_all_timings(db: AsyncSession = Depends(get_async_db)):
+    """
+    Функция для получения всех тайминговых записей
+    """
+    try:
+        # Выполняем запрос для получения всех тайминговых записей
+        query = select(Timing)
+        result = await db.execute(query)
+
+        # Получаем все записи
+        timings = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        timings_list = [
+            {
+                "id": timing.id,
+                "order_serial": timing.order_serial,
+                "task_id": timing.task_id,
+                "executor_id": timing.executor_id,
+                "time": str(timing.time) if timing.time else None,  # Преобразуем timedelta в строку
+                "timing_date": timing.timing_date.isoformat() if timing.timing_date else None
+            }
+            for timing in timings
+        ]
+
+        return {"timings": timings_list}
+    except Exception as e:
+        return {"error": f"An error occurred: {str(e)}"}

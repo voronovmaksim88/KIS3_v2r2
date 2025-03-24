@@ -522,19 +522,6 @@ class Timing(Base):
         return f"Timing(id={self.id!r}, order_serial={self.order_serial!r}, task_id={self.task_id!r})"
 
 
-# class Timing(models.Model):  # Таблица для хранения времени выполнения задач
-#     order = models.ForeignKey(Order, null=False, on_delete=models.CASCADE)
-#     task = models.ForeignKey(Task, null=False, on_delete=models.CASCADE)
-#     executor = models.ForeignKey(  # Исполнитель задачи
-#         Person,
-#         null=True,
-#         related_name="timing_records",
-#         verbose_name="Исполнитель задачи",
-#         on_delete=models.SET_NULL,
-#     )
-#     time = models.DurationField(null=True, blank=True)  # Потраченное время в этом тайминге
-#     date = models.DateField(null=True, blank=True)  # Дата тайминга
-
 
 '''  
 class Equipment_Suppliers(models.Model):  # Поставщик-Оборудование
