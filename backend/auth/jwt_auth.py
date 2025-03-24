@@ -23,7 +23,7 @@ from config import settings
 from fastapi import Body
 from auth.utils import get_password_hash
 from schemas.user import UserCreate, UserBase
-from user_CRUD import get_user_by_email, get_user_by_username
+from auth.user_CRUD import get_user_by_email, get_user_by_username
 from fastapi import Response, Cookie
 from fastapi.security import APIKeyCookie
 from typing import Optional
@@ -79,7 +79,7 @@ async def validate_auth_user(
     )
     try:
         # Ищем пользователя в БД
-        query = select(UserModel).filter(UserModel.username.eq(username))
+        query = select(UserModel).where(UserModel.username == username)  # type: ignore
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
@@ -183,7 +183,7 @@ async def get_current_auth_user(
             )
 
         # Получаем пользователя из базы данных
-        query = select(UserModel).filter(UserModel.id.eq(user_id))
+        query = select(UserModel).where(UserModel.id == user_id)  # type: ignore
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 

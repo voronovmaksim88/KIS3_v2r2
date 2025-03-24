@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import User as UserModel
 import schemas
+from sqlalchemy import func
 
 
 # Создание
@@ -17,7 +18,7 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
 # Получение по ID
 async def get_user(db: AsyncSession, user_id: int):
     # Получаем пользователя из базы данных
-    query = select(UserModel).filter(UserModel.id.eq(user_id))
+    query = select(UserModel).where(UserModel.id == user_id)  # type: ignore
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
@@ -32,7 +33,7 @@ async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100):
 # Обновление
 async def update_user(db: AsyncSession, user_id: int, user_update: schemas.UserUpdate):
     # Получаем пользователя из базы данных
-    query = select(UserModel).filter(UserModel.id.eq(user_id))
+    query = select(UserModel).where(UserModel.id == user_id)  # type: ignore
     result = await db.execute(query)
     db_user = result.scalar_one_or_none()
 
@@ -47,7 +48,7 @@ async def update_user(db: AsyncSession, user_id: int, user_update: schemas.UserU
 # Удаление
 async def delete_user(db: AsyncSession, user_id: int):
     # Получаем пользователя из базы данных
-    query = select(UserModel).filter(UserModel.id.eq(user_id))
+    query = select(UserModel).where(UserModel.id == user_id)  # type: ignore
     result = await db.execute(query)
     db_user = result.scalar_one_or_none()
 
@@ -60,7 +61,7 @@ async def delete_user(db: AsyncSession, user_id: int):
 # Получение по username
 async def get_user_by_username(db: AsyncSession, username: str):
     # Ищем пользователя в БД по имени
-    query = select(UserModel).filter(UserModel.username.eq(username))
+    query = select(UserModel).where(UserModel.username == username)  # type: ignore
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
@@ -68,6 +69,6 @@ async def get_user_by_username(db: AsyncSession, username: str):
 # Получение по email
 async def get_user_by_email(db: AsyncSession, email: str):
     # Ищем пользователя в БД по email
-    query = select(UserModel).filter(UserModel.email.eq(email))
+    query = select(UserModel).where(func.lower(UserModel.email) == func.lower(email))  # type: ignore
     result = await db.execute(query)
     return result.scalar_one_or_none()

@@ -9,6 +9,7 @@ from starlette.responses import HTMLResponse
 
 import uvicorn
 
+from auth import jwt_auth
 from database import get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -22,6 +23,7 @@ app = FastAPI(root_path="/api")
 # Подключаем роутеры
 app.include_router(import_router.router)  # роутер для импорта данных
 app.include_router(test_router)  # роутер для тестовых запросов
+app.include_router(jwt_auth.router)
 
 # Настройка CORS
 app.add_middleware(
