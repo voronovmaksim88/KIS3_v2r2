@@ -158,10 +158,10 @@ async function clearData(): Promise<void> {
 </script>
 
 <template>
-  <div class="grid grid-cols-4 gap-2">
+  <div class="grid grid-cols-6 gap-2">
 
     <!-- Кнопка "Получить данные" -->
-    <div>
+    <div class="grid col-span-2">
       <BaseButton
           :text='buttonText'
           :action="fetchData"
@@ -189,8 +189,8 @@ async function clearData(): Promise<void> {
     </div>
 
     <!-- Отображение результата импорта -->
-    <div class="col-span-3" v-if="importName && importResult">
-      <div class=" text-white bg-gray-700 p-2 rounded">
+    <div class="grid col-span-2" v-if="importName && importResult">
+      <div class=" text-white bg-gray-700 px-2 rounded grid grid-cols-2 gap-0">
         <p>Статус:
           <span :class="{'text-green-400 font-bold': importResult.status === 'success'}">
             {{ importResult.status }}

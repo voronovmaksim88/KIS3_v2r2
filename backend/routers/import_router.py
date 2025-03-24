@@ -41,7 +41,7 @@ IMPORT_FUNCTIONS: Dict[str, Callable[[], Dict[str, Any]]] = {
     "boxes": import_boxes_from_kis2,
     "box_accounting": import_box_accounting_from_kis2,
     "tasks": import_tasks_from_kis2,
-
+    "timings": import_timings_from_kis2
 }
 
 

@@ -130,6 +130,13 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
           buttonText="задачи"
       />
 
+      <Test_DB_universal_table
+          :url="backend_url"
+          endpoint="all_timings"
+          importName="timings"
+          buttonText="тайминги"
+      />
+
       <!-- Добавляем отступ после последней таблицы -->
       <div class="h-16"></div>
 
