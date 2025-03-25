@@ -4,6 +4,9 @@ import TheLogin from "./TheLogin.vue"
 import {useAuthStore} from '../stores/storeAuth.ts';
 import {onMounted, watch} from 'vue'
 import {computed, ref} from 'vue'
+import {usePagesStore} from "../stores/storePages.ts";
+
+const pageStore = usePagesStore()
 
 const props = defineProps({
   apiUrl: {
@@ -15,30 +18,6 @@ const props = defineProps({
 const authStore = useAuthStore();
 const isAuthenticated = computed(() => authStore.isAuthenticated); // Использование геттера из Store
 const isLoading = ref(true); // для отслеживания состояния загрузки
-
-const emit = defineEmits([
-  'btnKis',
-  'btnYchetSnSkafov',
-  'btnTestFastAPI',
-  'btnCommercialOffer',
-  'btnTestDataBase'])
-
-function fnBtnYchetSnSkafov() {
-  emit('btnYchetSnSkafov')
-}
-
-function fnBtnTestFastAPI() {
-  emit('btnTestFastAPI')
-}
-
-function fnBtnCommercialOffer() {
-  emit('btnCommercialOffer')
-}
-
-function fnBtnTestDataBase() {
-  emit('btnTestDataBase')
-}
-
 
 onMounted(async () => {
   try {
@@ -92,15 +71,15 @@ watch(
 
     <div v-if="isAuthenticated" class="flex flex-col w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6 space-y-4">
 
-      <button class="btn btn-p" @click="fnBtnYchetSnSkafov">Учёт с/н шкафов</button>
+      <button class="btn btn-p" @click="pageStore.setPage('box-serial-num')">Учёт с/н шкафов</button>
       <button class="btn btn-s" >Заказы</button>
       <button class="btn btn-s" >Задачи</button>
       <button class="btn btn-s" >Тайминги</button>
-      <button class="btn btn-p" @click="fnBtnTestFastAPI">Тест FastAPI</button>
-      <button class="btn btn-p" @click="fnBtnTestDataBase">Тест DataBase</button>
+      <button class="btn btn-p" @click="pageStore.setPage('test-fastapi')">Тест FastAPI</button>
+      <button class="btn btn-p" @click="pageStore.setPage('test-db')">Тест базы данных</button>
 
 
-      <button class="btn btn-s" @click="fnBtnCommercialOffer">Составление КП</button>
+      <button class="btn btn-s" @click="">Составление КП</button>
       <button class="btn btn-s" >Бланк ТЗ для ШАОВ</button>
       <button class="btn btn-s" >Расчёт стоимости ША</button>
       <button class="btn btn-s" >Подбор ПЛК</button>

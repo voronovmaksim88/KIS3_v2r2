@@ -5,7 +5,7 @@ import {usePagesStore} from "../stores/storePages.ts";
 const pageStore = usePagesStore()
 
 function GoHome() {
-  pageStore.setPage('home')
+  pageStore.setPage('main')
 }
 </script>
 
