@@ -14,17 +14,17 @@ const pageStore = usePagesStore()
     <div class="flex flex-col w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6 space-y-4">
 
       <button class="btn btn-p" @click="pageStore.setPage('box-serial-num')">Учёт с/н шкафов</button>
-      <button class="btn btn-s" >Заказы</button>
-      <button class="btn btn-s" >Задачи</button>
-      <button class="btn btn-s" >Тайминги</button>
+      <button class="btn btn-s">Заказы</button>
+      <button class="btn btn-s">Задачи</button>
+      <button class="btn btn-s">Тайминги</button>
       <button class="btn btn-p" @click="pageStore.setPage('test-fastapi')">Тест FastAPI</button>
       <button class="btn btn-p" @click="pageStore.setPage('test-db')">Тест базы данных</button>
 
 
       <button class="btn btn-s" @click="">Составление КП</button>
-      <button class="btn btn-s" >Бланк ТЗ для ШАОВ</button>
-      <button class="btn btn-s" >Расчёт стоимости ША</button>
-      <button class="btn btn-s" >Подбор ПЛК</button>
+      <button class="btn btn-s">Бланк ТЗ для ШАОВ</button>
+      <button class="btn btn-s">Расчёт стоимости ША</button>
+      <button class="btn btn-s">Подбор ПЛК</button>
     </div>
   </div>
 </template>
