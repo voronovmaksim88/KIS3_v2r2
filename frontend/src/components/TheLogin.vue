@@ -3,12 +3,6 @@
 import {ref} from 'vue'
 import {useAuthStore} from '../stores/storeAuth'
 
-const props = defineProps({
-  apiUrl: {
-    type: String,
-    required: true
-  }
-})
 
 const emit = defineEmits(['auth-success'])
 const authStore = useAuthStore()
@@ -38,7 +32,6 @@ async function login() {
     const success = await authStore.login(
         credentials.value.username,
         credentials.value.password,
-        props.apiUrl
     )
 
     if (success) {
