@@ -1,7 +1,7 @@
 <!--TheLogin.vue-->
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useAuthStore } from '../stores/storeAuth'
+import {ref} from 'vue'
+import {useAuthStore} from '../stores/storeAuth'
 
 const props = defineProps({
   apiUrl: {
@@ -93,7 +93,8 @@ async function login() {
       <button
           @click="login"
           :disabled="isLoading"
-          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600
+                  disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span v-if="isLoading">Вход...</span>
         <span v-else>Войти</span>
