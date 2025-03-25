@@ -63,7 +63,7 @@ async function login() {
 
 <template>
   <div class="p-4">
-    <div class="flex flex-col space-y-4 border-gray-500 border rounded-md p-3">
+    <div class="flex flex-col space-y-4 border-gray-500 border-2 rounded-md p-3 bg-gray-600">
       <h2 class="text-white text-xl">Вход в систему</h2>
 
       <input

@@ -2,11 +2,23 @@
 import BaseButton from '@/components/Buttons/BaseButton.vue'
 import {usePagesStore} from "../stores/storePages.ts";
 
+
+const props = defineProps({
+  PageName: {
+    type: String,
+    default: "My Header" // Значение по умолчанию
+  }
+})
+
+
 const pageStore = usePagesStore()
 
 function GoHome() {
   pageStore.setPage('main')
 }
+
+
+
 </script>
 
 <template>
@@ -16,6 +28,7 @@ function GoHome() {
         :action="GoHome"
         :style="'Primary'"
     />
+    <p class="ml-auto text-white text-lg">{{ props.PageName }}</p>
   </div>
 
 </template>

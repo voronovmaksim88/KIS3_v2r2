@@ -10,13 +10,13 @@ export const usePagesStore = defineStore('tabs', {
     state: () => ({
         selectedPage: 'main',  // по умолчанию показываем вкладку "задачи"
         tabs: [
-            {id: 'main', label: 'Задачи'},
+            {id: 'main', label: 'Главная'},
             {id: 'task', label: 'Задачи'},
             {id: 'order', label: 'Заказы'},
             {id: 'timings', label: 'Тайминги'},
             {id: 'box-serial-num', label: 'Учёт с/н ША'},
             {id: 'test-fastapi', label: 'Тесты FastAPI'},
-            {id: 'test-db', label: 'Тесты БД>'},
+            {id: 'test-db', label: 'Тесты БД'},
         ] as Tab[],
     }),
     actions: {
