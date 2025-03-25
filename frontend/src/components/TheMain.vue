@@ -1,10 +1,8 @@
 <!--src/components/TheMain.vue-->
 <script setup lang="ts">
-import {useAuthStore} from '../stores/storeAuth.ts';
 import {usePagesStore} from "../stores/storePages.ts";
 
 const pageStore = usePagesStore()
-const authStore = useAuthStore();
 
 
 </script>

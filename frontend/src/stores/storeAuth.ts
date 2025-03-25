@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', {
                 formData.append('username', username)
                 formData.append('password', password)
 
-                const response = await axios.post(`${apiUrl}/jwt/login/`, formData, {
+                const response = await axios.post(`${apiUrl}jwt/login/`, formData, {
                     withCredentials: true // Важно для работы с cookie
                 })
 

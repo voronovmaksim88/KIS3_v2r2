@@ -12,7 +12,15 @@ import {computed, onMounted, ref, watch} from 'vue';
 import {useAuthStore} from "./stores/storeAuth.ts";
 import TheLogin from "@/components/TheLogin.vue";
 
-const apiUrl="http://localhost:8000/api"
+const apiUrl = ref<string>('');
+
+onMounted(() => {
+  if (!import.meta.env.VITE_API_URL) {
+    console.error('VITE_API_URL не определен в переменных окружения');
+  }
+  apiUrl.value = import.meta.env.VITE_API_URL;
+});
+
 
 const pageStore = usePagesStore()
 const authStore = useAuthStore();
@@ -23,7 +31,7 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     // Проверяем авторизацию при загрузке
-    await authStore.checkAuth(apiUrl)
+    await authStore.checkAuth(apiUrl.value)
 
     // Если пользователь авторизован, загружаем данные
     if (authStore.isAuthenticated) {
@@ -77,7 +85,6 @@ const currentPageLabel = computed(() => {
 
     <TheMain
         v-if="pageStore.selectedPage == 'main'"
-        api-url="http://localhost:8000/api"
     />
     <BoxSerialNum v-if="pageStore.selectedPage == 'box-serial-num'"/>
     <TheTestFastAPI v-if="pageStore.selectedPage == 'test-fastapi'"/>
