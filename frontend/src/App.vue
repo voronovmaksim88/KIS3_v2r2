@@ -1,12 +1,13 @@
-<script setup>
+<!--App.vue-->
+<script setup lang="ts">
 import { ref } from 'vue'
 
-import HomePage from "@/components/HomePage.vue";
-import KIS from "@/components/KIS.vue";
-import BoxSerialNum from "@/components/BoxSerialNum.vue";
-import CommercialOffer from "@/components/CommercialOffer.vue";
-import BD_FastAPI_PostGreSQL from "@/components/Test_FastAPI/The_Test_FastAPI.vue";
-import The_Test_Data_Base from "@/components/TestDataBase/The_Test_Data_Base.vue";
+import TheMain from "./components/TheMain.vue";
+import KIS from "./components/KIS.vue";
+import BoxSerialNum from "./components/BoxSerialNum.vue";
+import CommercialOffer from "./components/CommercialOffer.vue";
+import BD_FastAPI_PostGreSQL from "./components/Test_FastAPI/The_Test_FastAPI.vue";
+import The_Test_Data_Base from "./components/TestDataBase/The_Test_Data_Base.vue";
 
 const show_Home = ref(true)
 const show_KIS = ref(false)
@@ -57,13 +58,14 @@ function ButtonShowTestDataBaseClicked() {
 
 <template>
   <button class="btn btn-p" @click="ButtonShowHomeClicked">Home</button>
-  <HomePage
+  <TheMain
       v-if="show_Home"
       @btnKis="ButtonShowKisClicked"
       @btnYchetSnSkafov="ButtonShowYchetSnSkafovClicked"
       @btnTestFastAPI="ButtonTestFastAPIClicked"
       @btnCommercialOffer="Button_Commercial_Offer_Clicked"
       @btnTestDataBase="ButtonShowTestDataBaseClicked"
+      api-url="http://localhost:8000/api"
   />
   <KIS v-if="show_KIS"/>
   <BoxSerialNum v-if="show_Box_SerialNum"/>
