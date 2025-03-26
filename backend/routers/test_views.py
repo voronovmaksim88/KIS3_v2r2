@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from starlette.responses import FileResponse
 from pydantic import BaseModel
 from datetime import datetime
+from pathlib import Path
 
 router = APIRouter(prefix="/test")
 
@@ -55,17 +56,28 @@ def change_user_name(user_id: int, user_update: UserNameUpdate):
     current_user['name'] = user_update.new_name  # Обновляем имя пользователя
     return {'status': 200, 'data': current_user}
 
+# Определяем базовый путь к контенту относительно текущего файла
+BASE_DIR = Path(__file__).resolve().parent.parent
+CONTENT_DIR = BASE_DIR / "content"
 
 @router.get("/load_test_html_page")
 def root():
-    return FileResponse("../content/HTML_example.html")
+    html_path = CONTENT_DIR / "HTML_example.html"
+    if not html_path.exists():
+        raise HTTPException(status_code=404, detail="HTML файл не найден")
+    return FileResponse(str(html_path))
 
 
 @router.get("/load_test_file")
 def root():
-    return FileResponse("../content/test_file.txt",
-                        filename="test_file.txt",
-                        media_type="application/octet-stream")
+    file_path = CONTENT_DIR / "test_file.txt"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Текстовый файл не найден")
+    return FileResponse(
+        str(file_path),
+        filename="test_file.txt",
+        media_type="application/octet-stream"
+    )
 
 
 @router.post("/summa")
