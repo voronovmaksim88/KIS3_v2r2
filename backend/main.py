@@ -7,12 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 
 import uvicorn
-
+from models import *
 from auth import jwt_auth
 
 from routers.test_views import router as test_router
-from models import *
 from routers import import_router
+from routers.box_accountig_router import router as box_accountig_router
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +29,7 @@ app = FastAPI(root_path="/api")
 app.include_router(import_router.router)  # роутер для импорта данных
 app.include_router(test_router)  # роутер для тестовых запросов
 app.include_router(jwt_auth.router)
+app.include_router(box_accountig_router)
 
 # Настройка CORS
 app.add_middleware(
@@ -361,7 +362,8 @@ async def get_all_counterparty_forms(
         ]
 
         logger.info(
-            f"Successfully retrieved {len(counterparty_forms_list)} counterparty forms for user {current_user.username}")
+            f"Successfully retrieved {len(counterparty_forms_list)} counterparty forms "
+            f"for user {current_user.username}")
         return {"counterparty_forms_list": counterparty_forms_list}
 
     except HTTPException:
@@ -483,10 +485,11 @@ async def get_all_people(
             detail=f"Failed to fetch people: {str(e)}"
         )
 
+
 @app.get("/all_order_statuses")
 async def get_all_order_statuses(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех возможных статусов заказа.
@@ -516,7 +519,8 @@ async def get_all_order_statuses(
             for order_status in order_statuses
         ]
 
-        logger.info(f"Successfully retrieved {len(order_statuses_list)} order statuses for user {current_user.username}")
+        logger.info(f"Successfully retrieved {len(order_statuses_list)} order "
+                    f"statuses for user {current_user.username}")
         return {"order_statuses": order_statuses_list}
 
     except HTTPException:
@@ -531,8 +535,8 @@ async def get_all_order_statuses(
 
 @app.get("/all_orders")
 async def get_all_orders(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех заказов.
@@ -590,8 +594,8 @@ async def get_all_orders(
 
 @app.get("/all_box_accounting")  # Учёт шкафов автоматики
 async def get_all_box_accounting(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех шкафов автоматики.
@@ -640,8 +644,8 @@ async def get_all_box_accounting(
 
 @app.get("/all_order_comments")
 async def get_all_order_comments(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех комментариев к заказам.
@@ -688,8 +692,8 @@ async def get_all_order_comments(
 
 @app.get("/all_control_cabinets")
 async def get_all_control_cabinets(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех шкафов управления.
@@ -752,8 +756,8 @@ async def get_all_control_cabinets(
 
 @app.get("/all_tasks")
 async def get_all_tasks(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех задач.
@@ -815,8 +819,8 @@ async def get_all_tasks(
 
 @app.get("/all_timings")
 async def get_all_timings(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_auth_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
     Функция для получения всех тайминговых записей.

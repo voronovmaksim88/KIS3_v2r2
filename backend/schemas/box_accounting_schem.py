@@ -10,7 +10,7 @@ class PersonBase(BaseModel):
     surname: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class BoxAccountingBase(BaseModel):
@@ -33,7 +33,7 @@ class BoxAccountingResponse(BoxAccountingBase):
     tester: PersonBase
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PaginatedBoxAccounting(BaseModel):
