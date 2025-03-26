@@ -1,7 +1,7 @@
 # user_CRUD.py
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.models import User as UserModel
+from models import User as UserModel
 import schemas
 from sqlalchemy import func
 

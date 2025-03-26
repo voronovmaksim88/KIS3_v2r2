@@ -11,7 +11,7 @@ import uvicorn
 from auth import jwt_auth
 
 from routers.test_views import router as test_router
-from models.models import *
+from models import *
 from routers import import_router
 
 from fastapi import Depends, HTTPException, status
@@ -20,7 +20,7 @@ from sqlalchemy import select
 from loguru import logger
 
 from database import get_async_db
-from models.models import User as UserModel
+from models import User as UserModel
 from auth.jwt_auth import get_current_auth_user
 
 app = FastAPI(root_path="/api")

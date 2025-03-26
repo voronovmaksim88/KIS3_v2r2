@@ -28,19 +28,19 @@ from kis2.DjangoRestAPI import create_works_list_dict_from_kis2  # noqa: E402
 from kis2.DjangoRestAPI import create_orders_list_dict_from_kis2  # noqa: E402
 
 from database import SyncSession, test_sync_connection  # noqa: E402
-from models.models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment, ControlCabinet, \
+from models import Country, TaskStatus, TaskPaymentStatus, Task, OrderComment, ControlCabinet, \
     ControlCabinetMaterial, Ip, Timing  # noqa: E402
-from models.models import BoxAccounting  # noqa: E402
-from models.models import Manufacturer  # noqa: E402
-from models.models import Counterparty  # noqa: E402
-from models.models import CounterpartyForm  # noqa: E402
-from models.models import City  # noqa: E402
-from models.models import OrderStatus  # noqa: E402
-from models.models import EquipmentType  # noqa: E402
-from models.models import Currency  # noqa: E402
-from models.models import Person  # noqa: E402
-from models.models import Work  # noqa: E402
-from models.models import Order  # noqa: E402
+from models import BoxAccounting  # noqa: E402
+from models import Manufacturer  # noqa: E402
+from models import Counterparty  # noqa: E402
+from models import CounterpartyForm  # noqa: E402
+from models import City  # noqa: E402
+from models import OrderStatus  # noqa: E402
+from models import EquipmentType  # noqa: E402
+from models import Currency  # noqa: E402
+from models import Person  # noqa: E402
+from models import Work  # noqa: E402
+from models import Order  # noqa: E402
 
 # Инициализируем colorama
 init(autoreset=True)

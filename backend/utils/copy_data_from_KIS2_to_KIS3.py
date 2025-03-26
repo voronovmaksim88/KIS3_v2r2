@@ -35,8 +35,8 @@ from kis2.work_with_DB import get_list_dict_orders as get_list_dict_orders_from_
 from kis2.work_with_DB import get_list_dict_box_accounting as get_list_dict_box_accounting_from_sqlite3
 from kis2.work_with_DB import get_list_dict_order_comment as get_list_dict_order_comment_from_sqlite3
 
-from models.models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
-                           Person, Work, OrderStatus, Order, BoxAccounting, OrderComment)
+from models import (Country, Manufacturer, EquipmentType, Currency, City, CounterpartyForm, Counterparty,
+                    Person, Work, OrderStatus, Order, BoxAccounting, OrderComment)
 
 import logging
 

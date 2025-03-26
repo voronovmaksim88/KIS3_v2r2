@@ -15,7 +15,7 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_async_db
-from models.models import User as UserModel
+from models import User as UserModel
 from datetime import datetime, UTC
 from loguru import logger
 from config import settings
