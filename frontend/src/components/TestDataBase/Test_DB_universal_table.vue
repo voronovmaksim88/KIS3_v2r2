@@ -53,7 +53,19 @@ async function fetchData(): Promise<void> {
   importStatus.value = '';
 
   const timeout = 3000;
-  const fetchPromise = fetch(`${props.url}${props.endpoint}`);
+
+  // Создаем объект запроса с необходимыми заголовками для авторизации
+  const fetchOptions: RequestInit = {
+    method: 'GET',
+    credentials: 'include', // Важно для отправки cookie с запросом
+    headers: {
+      'Content-Type': 'application/json',
+      // Если используется Bearer-токен (например, JWT), можно добавить его так:
+      // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  };
+
+  const fetchPromise = fetch(`${props.url}${props.endpoint}`, fetchOptions);
   const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Превышено время ожидания запроса')), timeout)
   );
@@ -61,6 +73,17 @@ async function fetchData(): Promise<void> {
   try {
     const response = await Promise.race([fetchPromise, timeoutPromise]);
     console.log('Статус ответа:', response.status);
+
+    // Обработка ошибок авторизации
+    if (response.status === 401) {
+      connectionError.value = 'Ошибка авторизации: вы не авторизованы или срок действия сессии истек';
+      return;
+    }
+
+    if (response.status === 403) {
+      connectionError.value = 'Доступ запрещен: у вас нет прав для доступа к этому ресурсу';
+      return;
+    }
 
     if (!response.ok) {
       connectionError.value = `Ошибка при получении данных: ${response.status} ${response.statusText}`;
@@ -90,6 +113,7 @@ async function fetchData(): Promise<void> {
   }
 }
 
+
 async function importData(): Promise<void> {
   if (!props.importName) {
     connectionError.value = 'Ошибка: не указано имя импорта';
@@ -108,10 +132,26 @@ async function importData(): Promise<void> {
   try {
     const response = await fetch(`${props.url}import/${props.importName}`, {
       method: 'POST',
+      credentials: 'include', // Для отправки cookie авторизации
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // Если используется Bearer-токен:
+        // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
       }
     });
+
+    // Обработка ошибок авторизации
+    if (response.status === 401) {
+      importButtonState.value = 'Ошибка!';
+      connectionError.value = 'Ошибка авторизации: вы не авторизованы или срок действия сессии истек';
+      return;
+    }
+
+    if (response.status === 403) {
+      importButtonState.value = 'Ошибка!';
+      connectionError.value = 'Доступ запрещен: у вас нет прав для выполнения этой операции';
+      return;
+    }
 
     const data = await response.json() as ImportResponse;
 
