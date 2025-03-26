@@ -243,7 +243,7 @@ async function clearData(): Promise<void> {
     </div>
 
     <!-- Таблица с данными -->
-    <div class="col-span-4" v-if="tableData.length > 0">
+    <div class="col-span-6" v-if="tableData.length > 0">
       <div class="overflow-x-auto">
         <div :style="{ maxHeight: props.maxHeight, overflowY: 'auto' }">
           <table class="w-full bg-gray-700">

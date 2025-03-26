@@ -10,8 +10,8 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
 </script>
 
 <template>
-  <div class="w-full min-h-screen flex flex-col items-center bg-gray-800" id="BD_FastAPI_PostGreSQL">
-    <div class="flex flex-col w-full sm:w-1/1 md:w-2/3 lg:w-2/3 xl:w-10/12 space-y-4">
+  <div class="w-full min-h-screen  flex flex-col items-center bg-gray-800" id="BD_FastAPI_PostGreSQL">
+    <div class="flex flex-col w-full mt-4 sm:w-1/1 md:w-2/3 lg:w-5/6 xl:w-10/12 space-y-4">
 
       <Test_DB_universal_table
           :url="backend_url"
@@ -54,17 +54,6 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
           importName="companies"
           buttonText="Контрагенты"
       />
-
-
-
-
-
-
-
-
-
-
-
 
       <Test_DB_universal_table
           :url="backend_url"
