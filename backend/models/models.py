@@ -470,6 +470,9 @@ class ControlCabinetMaterial(Base):
 
 # Класс для степеней защиты по ip, возможно что он не только для корпусов шкафов пригодится
 class Ip(Base):
+    """
+    IP - степень защиты шкафов автоматики
+    """
     __tablename__ = 'ips'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -480,6 +483,9 @@ class Ip(Base):
 
 
 class ControlCabinet(Equipment):
+    """
+    Корпуса шкафов автоматики
+    """
     __tablename__ = 'control_cabinets'
     id = Column(Integer, ForeignKey('equipment.id'), primary_key=True)
 
