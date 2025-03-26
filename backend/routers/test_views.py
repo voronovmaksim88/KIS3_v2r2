@@ -5,12 +5,18 @@ from pydantic import BaseModel
 from datetime import datetime
 from pathlib import Path
 
-router = APIRouter(prefix="/test")
+router = APIRouter(
+    prefix="/test",
+    tags=["test"],
+)
 
 
 # Пример приветственного сообщения
 @router.get("/hello_world")
 def hello_world():
+    """
+    Самый простой эндпоинт
+    """
     return {"message": "Hello World!!"}
 
 

@@ -1,4 +1,7 @@
 #  schemas / box_accounting_schem.py
+"""
+Все схемы для учета шкафов
+"""
 from pydantic import BaseModel
 from typing import Optional, List
 import uuid
@@ -10,7 +13,11 @@ class PersonBase(BaseModel):
     surname: str
 
     class Config:
+        """
+        Конфигурация модели
+        """
         from_attributes = True
+
 
 
 class BoxAccountingBase(BaseModel):
@@ -33,12 +40,25 @@ class BoxAccountingResponse(BoxAccountingBase):
     tester: PersonBase
 
     class Config:
+        """
+        Конфигурация модели
+        """
         from_attributes = True
 
 
+
 class PaginatedBoxAccounting(BaseModel):
-    items: List[BoxAccountingResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+    """
+    Модель для пагинированного ответа с данными учета шкафов.
+    """
+    items: List[BoxAccountingResponse]  # Список записей учета шкафов
+    total: int  # Общее количество записей
+    page: int  # Текущая страница
+    size: int  # Количество элементов на странице
+    pages: int  # Общее количество страниц
+
+    class Config:
+        """
+        Конфигурация модели
+        """
+        from_attributes = True  # Разрешает работу с ORM-моделями
