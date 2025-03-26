@@ -127,7 +127,7 @@ async function importData(): Promise<void> {
   importStatus.value = 'Выполняется импорт...';
   connectionError.value = '';
   isImporting.value = true;
-  importButtonState.value = 'Импортирую...';
+  importButtonState.value = 'Импортирую....';
 
   try {
     const response = await fetch(`${props.url}import/${props.importName}`, {
