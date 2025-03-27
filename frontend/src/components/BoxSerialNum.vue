@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useBoxAccountingStore } from '../stores/storeBoxAccounting';
-import { storeToRefs } from 'pinia';
+import {onMounted, ref} from 'vue';
+import {useBoxAccountingStore} from '../stores/storeBoxAccounting';
+import {storeToRefs} from 'pinia';
 
 const boxAccountingStore = useBoxAccountingStore();
-const { boxes, isLoading, error, pagination } = storeToRefs(boxAccountingStore);
+const {boxes, isLoading, error, pagination} = storeToRefs(boxAccountingStore);
 
 // URL вашего API-сервера
 const apiUrl = ref(import.meta.env.VITE_API_URL || 'http://localhost:8000');
@@ -18,7 +18,6 @@ onMounted(async () => {
 
 <template>
   <div class="w-full h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
-    <h1 class="text-2xl font-bold mb-4">Box Accounting Dashboard</h1>
 
     <!-- Показываем индикатор загрузки -->
     <div v-if="isLoading" class="w-full flex justify-center my-4">
@@ -50,10 +49,25 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ box.serial_num }}</td>
             <td class="px-4 py-2">{{ box.name }}</td>
             <td class="px-4 py-2">{{ box.order_id }}</td>
-            <td class="px-4 py-2">{{ box.scheme_developer_id }}</td>
-            <td class="px-4 py-2">{{ box.assembler_id }}</td>
-            <td class="px-4 py-2">{{ box.programmer_id || 'N/A' }}</td>
-            <td class="px-4 py-2">{{ box.tester_id }}</td>
+            <td class="px-4 py-2">
+              {{
+                box.scheme_developer.surname + ' ' + box.scheme_developer.name[0] + box.scheme_developer.patronymic[0]
+              }}
+            </td>
+            <td class="px-4 py-2">
+              {{ box.assembler.surname + ' ' + box.assembler.name[0] + box.assembler.patronymic[0] }}
+            </td>
+            <td class="px-4 py-2">
+              <template v-if="box.programmer">
+                {{ box.programmer.surname + ' ' + box.programmer.name[0] + '.' + box.programmer.patronymic[0] + '.' }}
+              </template>
+              <template v-else>
+                N/A
+              </template>
+            </td>
+            <td class="px-4 py-2">
+              {{ box.tester.surname + ' ' + box.tester.name[0] + box.tester.patronymic[0] }}
+            </td>
           </tr>
           </tbody>
         </table>
@@ -62,8 +76,8 @@ onMounted(async () => {
       <!-- Пагинация -->
       <div class="flex justify-between items-center mt-4">
         <span>
-          Showing {{ boxes.length }} of {{ pagination.total }} boxes
-          (Page {{ pagination.page }} of {{ pagination.pages }})
+          Показано {{ boxes.length }} из {{ pagination.total }} записей
+          (Страница {{ pagination.page }} из {{ pagination.pages }})
         </span>
         <div class="flex space-x-2">
           <button
@@ -71,7 +85,7 @@ onMounted(async () => {
               :disabled="pagination.page <= 1"
               class="px-4 py-2 bg-blue-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Previous
+            Prev
           </button>
           <button
               @click="boxAccountingStore.changePage(apiUrl, pagination.page + 1)"

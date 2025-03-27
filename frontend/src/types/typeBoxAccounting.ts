@@ -1,9 +1,5 @@
 // typeBoxAccounting.ts
-export interface Person {
-    uuid: string;
-    name: string;
-    surname: string;
-}
+import { Person } from './typePerson';
 
 export interface BoxAccounting {
     serial_num: number;
@@ -23,7 +19,7 @@ export interface PaginatedBoxAccounting {
     pages: number;
 }
 
-// Дополнительные типы для операций с шкафами
+// Дополнительные типы для операций со шкафами
 export interface BoxAccountingCreateRequest {
     name: string;
     order_id: string;
