@@ -35,13 +35,13 @@ onMounted(async () => {
         <table class="min-w-full bg-gray-700 rounded-lg">
           <thead>
           <tr>
-            <th class="px-4 py-2 text-left">Serial #</th>
-            <th class="px-4 py-2 text-left">Name</th>
-            <th class="px-4 py-2 text-left">Order ID</th>
-            <th class="px-4 py-2 text-left">Scheme Developer</th>
-            <th class="px-4 py-2 text-left">Assembler</th>
-            <th class="px-4 py-2 text-left">Programmer</th>
-            <th class="px-4 py-2 text-left">Tester</th>
+            <th class="px-4 py-2 text-left">С/Н</th>
+            <th class="px-4 py-2 text-left">Название</th>
+            <th class="px-4 py-2 text-left">Заказ</th>
+            <th class="px-4 py-2 text-left">Разработчик схемы</th>
+            <th class="px-4 py-2 text-left">Сборщик</th>
+            <th class="px-4 py-2 text-left">Программист</th>
+            <th class="px-4 py-2 text-left">Тестировщик</th>
           </tr>
           </thead>
           <tbody>
@@ -51,22 +51,29 @@ onMounted(async () => {
             <td class="px-4 py-2">{{ box.order_id }}</td>
             <td class="px-4 py-2">
               {{
-                box.scheme_developer.surname + ' ' + box.scheme_developer.name[0] + box.scheme_developer.patronymic[0]
+                box.scheme_developer.surname + ' ' + box.scheme_developer.name[0] + '.'
+                + box.scheme_developer.patronymic[0] + '.'
               }}
             </td>
             <td class="px-4 py-2">
-              {{ box.assembler.surname + ' ' + box.assembler.name[0] + box.assembler.patronymic[0] }}
+              {{
+                box.assembler.surname + ' ' + box.assembler.name[0] + '.'
+                + box.assembler.patronymic[0] + '.'
+              }}
             </td>
             <td class="px-4 py-2">
               <template v-if="box.programmer">
                 {{ box.programmer.surname + ' ' + box.programmer.name[0] + '.' + box.programmer.patronymic[0] + '.' }}
               </template>
               <template v-else>
-                N/A
+                ---
               </template>
             </td>
             <td class="px-4 py-2">
-              {{ box.tester.surname + ' ' + box.tester.name[0] + box.tester.patronymic[0] }}
+              {{
+                box.tester.surname + ' ' + box.tester.name[0] + '.'
+                + box.tester.patronymic[0] + '.'
+              }}
             </td>
           </tr>
           </tbody>
