@@ -4,7 +4,7 @@ import { computed } from 'vue';
 
 // Интерфейс для входных параметров
 interface Props {
-  action: () => Promise<void>; // Функция, вызываемая при нажатии на кнопку
+  action: () => void; // Функция, вызываемая при нажатии на кнопку
   text: string; // Текст кнопки
   style?: 'Primary' | 'Secondary' | 'Success' | 'Info' | 'Warn' | 'Help' | 'Danger' | 'Contrast'; // Опциональный стиль кнопки
 }

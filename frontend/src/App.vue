@@ -2,8 +2,8 @@
 <script setup lang="ts">
 
 import TheMain from "./components/TheMain.vue";
-import BoxSerialNum from "./components/BoxSerialNum.vue";
-//import CommercialOffer from "./components/CommercialOffer.vue";
+import BoxSerialNum from "./components/TheBoxSerialNum.vue";
+//import CommercialOffer from "./components/TheCommercialOffer.vue";
 import TheTestFastAPI from "./components/Test_FastAPI/The_Test_FastAPI.vue";
 import TheTestDataBase from "./components/TestDataBase/TheTestDataBase.vue";
 import TheHeader from "@/components/TheHeader.vue";

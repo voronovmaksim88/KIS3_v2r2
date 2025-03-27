@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
 import {useBoxAccountingStore} from '../stores/storeBoxAccounting';
+import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {storeToRefs} from 'pinia';
+import TheFormAddRowInBoxAccounting from "@/components/TheFormAddRowInBoxAccounting.vue";
+import BaseButton from "@/components/Buttons/BaseButton.vue";
+
+
 
 const boxAccountingStore = useBoxAccountingStore();
+const formsVisibilityStore = useFormsVisibilityStore();
+
 const {boxes, isLoading, error, pagination} = storeToRefs(boxAccountingStore);
 
 // URL вашего API-сервера
@@ -14,6 +21,11 @@ onMounted(async () => {
   await boxAccountingStore.fetchBoxes(apiUrl.value);
   console.log('Boxes loaded:', boxes.value.length);
 });
+
+function addNewRow() {
+  formsVisibilityStore.isFormAddRowInBoxAccountingVisible = true
+}
+
 </script>
 
 <template>
@@ -29,11 +41,30 @@ onMounted(async () => {
       {{ error }}
     </div>
 
+    <!-- Показываем форму добавления если надо -->
+    <!-- Анимация появления и исчезновения формы -->
+    <transition name="fade-slide">
+      <TheFormAddRowInBoxAccounting
+          v-if="formsVisibilityStore.isFormAddRowInBoxAccountingVisible"
+      />
+    </transition>
+
     <!-- Показываем данные -->
     <div v-if="!isLoading && boxes.length > 0" class="w-full">
       <div class="overflow-x-auto">
         <table class="min-w-full bg-gray-700 rounded-lg">
           <thead>
+          <tr>
+            <th colspan="7" class="px-2 py-2 text-center bg-gray-600 ">
+              <div  class="px-1 py-1 bg-gray-600 flex justify-end items-center">
+              <BaseButton
+                  :action="addNewRow"
+                  :text="'Добавить'"
+                  :style="'Success'"
+              />
+              </div>
+            </th>
+          </tr>
           <tr>
             <th class="px-4 py-2 text-left">С/Н</th>
             <th class="px-4 py-2 text-left">Название</th>
@@ -110,9 +141,30 @@ onMounted(async () => {
       No boxes found. Please add some boxes to get started.
     </div>
   </div>
+
+  <!-- Невидимый элемент, чтобы линтер не жаловался -->
+  <div v-if="false" class="fade-slide-enter-active fade-slide-leave-active fade-slide-enter-from fade-slide-leave-to">
+
+  </div>
 </template>
 
 <style scoped>
+/* Анимация появления и исчезновения */
+/* stylelint-disable */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.5s ease-in-out;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+/* stylelint-enable */
+
+
+/* Стиль таблицы */
 table {
   border-collapse: separate;
   border-spacing: 0;

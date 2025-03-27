@@ -25,7 +25,7 @@ function GoHome() {
 function Logout() {
   // Вызываем метод выхода из авторизационного хранилища.
   // Заменяем URL на ваш API URL
-  authStore.logout(import.meta.env.VITE_API_URL)
+  authStore.logout()
       .then(() => {
         // После успешного выхода переходим на главную страницу
         pageStore.setPage('main');
