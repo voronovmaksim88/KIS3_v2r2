@@ -11,13 +11,13 @@ class PersonBase(BaseModel):
     uuid: uuid.UUID
     name: str
     surname: str
+    patronymic: Optional[str]
 
     class Config:
         """
         Конфигурация модели
         """
         from_attributes = True
-
 
 
 class BoxAccountingBase(BaseModel):
@@ -44,7 +44,6 @@ class BoxAccountingResponse(BoxAccountingBase):
         Конфигурация модели
         """
         from_attributes = True
-
 
 
 class PaginatedBoxAccounting(BaseModel):
