@@ -54,6 +54,46 @@ if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
 
+async def _fetch_list(
+        db: AsyncSession,
+        current_user: UserModel,
+        model: type,
+        list_name: str,
+        fields: list[str]
+):
+    """Общая функция для получения списков сущностей"""
+    if not current_user:
+        logger.warning(f"Unauthorized access attempt to {list_name} list")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    logger.debug(f"User {current_user.username} requesting all {list_name}")
+
+    try:
+        # Выполняем запрос для получения всех записей
+        query = select(model)
+        result = await db.execute(query)
+        items = result.scalars().all()
+
+        # Преобразуем результат в список словарей
+        items_list = [
+            {field: getattr(item, field) for field in fields}
+            for item in items
+        ]
+
+        logger.info(f"Successfully retrieved {len(items_list)} {list_name} for user {current_user.username}")
+        return {list_name: items_list}
+
+    except Exception as e:
+        logger.error(f"Error fetching {list_name}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch {list_name}: {str(e)}"
+        )
+
+
 @app.get("/")
 def home():
     """Домашняя страница"""
@@ -84,46 +124,13 @@ async def get_all_countries(
     Функция для получения всех стран.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to countries list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all countries")
-
-        # Создаем запрос для выборки всех стран
-        query = select(Country)
-
-        # Выполняем запрос
-        result = await db.execute(query)
-
-        # Получаем все записи
-        countries = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        countries_list = [
-            {
-                "id": country.id,
-                "name": country.name
-            }
-            for country in countries
-        ]
-
-        logger.info(f"Successfully retrieved {len(countries_list)} countries for user {current_user.username}")
-        return {"countries": countries_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching countries: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch countries: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=Country,
+        list_name="countries",
+        fields=["id", "name"]
+    )
 
 
 @app.get("/all_manufacturers")
@@ -135,45 +142,13 @@ async def get_all_manufacturers(
     Функция для получения всех производителей.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to manufacturers list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all manufacturers")
-
-        # Выполняем запрос для получения всех производителей
-        query = select(Manufacturer)
-        result = await db.execute(query)
-
-        # Получаем все записи
-        manufacturers = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        manufacturers_list = [
-            {
-                "id": manufacturer.id,
-                "name": manufacturer.name,
-                "country_id": manufacturer.country_id
-            }
-            for manufacturer in manufacturers
-        ]
-
-        logger.info(f"Successfully retrieved {len(manufacturers_list)} manufacturers for user {current_user.username}")
-        return {"manufacturers": manufacturers_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching manufacturers: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch manufacturers: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=Manufacturer,
+        list_name="manufacturers",
+        fields=["id", "name", "country_id"]
+    )
 
 
 @app.get("/all_equipment_types")
@@ -185,45 +160,13 @@ async def get_all_equipment_types(
     Функция для получения всех типов оборудования.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to equipment types list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all equipment types")
-
-        # Выполняем запрос для получения всех типов оборудования
-        query = select(EquipmentType)
-        result = await db.execute(query)
-
-        # Получаем все записи
-        equipment_types = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        equipment_types_list = [
-            {
-                "id": equipment_type.id,
-                "name": equipment_type.name,
-            }
-            for equipment_type in equipment_types
-        ]
-
-        logger.info(
-            f"Successfully retrieved {len(equipment_types_list)} equipment types for user {current_user.username}")
-        return {"equipment_types": equipment_types_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching equipment types: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch equipment types: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=EquipmentType,
+        list_name="equipment_types",
+        fields=["id", "name"]
+    )
 
 
 @app.get("/all_currencies")
@@ -235,44 +178,13 @@ async def get_all_currencies(
     Функция для получения всех валют.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to currencies list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all currencies")
-
-        # Выполняем запрос для получения всех валют
-        query = select(Currency)
-        result = await db.execute(query)
-
-        # Получаем все записи
-        currencies = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        currencies_list = [
-            {
-                "id": currency.id,
-                "name": currency.name,
-            }
-            for currency in currencies
-        ]
-
-        logger.info(f"Successfully retrieved {len(currencies_list)} currencies for user {current_user.username}")
-        return {"currencies_list": currencies_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching currencies: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch currencies: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=Currency,
+        list_name="currencies",
+        fields=["id", "name"]
+    )
 
 
 @app.get("/all_cities")
@@ -284,45 +196,13 @@ async def get_all_cities(
     Функция для получения всех городов.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to cities list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all cities")
-
-        # Выполняем запрос для получения всех городов
-        query = select(City)
-        result = await db.execute(query)
-
-        # Получаем все записи
-        cities = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        cities_list = [
-            {
-                "id": city.id,
-                "name": city.name,
-                "country_id": city.country_id
-            }
-            for city in cities
-        ]
-
-        logger.info(f"Successfully retrieved {len(cities_list)} cities for user {current_user.username}")
-        return {"cities_list": cities_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching cities: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch cities: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=City,
+        list_name="cities",
+        fields=["id", "name", "country_id"]
+    )
 
 
 @app.get("/all_counterparty_forms")
@@ -334,46 +214,13 @@ async def get_all_counterparty_forms(
     Функция для получения всех форм контрагентов.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to counterparty forms list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all counterparty forms")
-
-        # Выполняем запрос для получения всех форм контрагентов
-        query = select(CounterpartyForm)
-        result = await db.execute(query)
-
-        # Получаем все записи
-        counterparty_forms = result.scalars().all()
-
-        # Преобразуем результат в список словарей
-        counterparty_forms_list = [
-            {
-                "id": form.id,
-                "name": form.name,
-            }
-            for form in counterparty_forms
-        ]
-
-        logger.info(
-            f"Successfully retrieved {len(counterparty_forms_list)} counterparty forms "
-            f"for user {current_user.username}")
-        return {"counterparty_forms_list": counterparty_forms_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching counterparty forms: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch counterparty forms: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=CounterpartyForm,
+        list_name="counterparty_forms",
+        fields=["id", "name"]
+    )
 
 
 @app.get("/all_counterparties")
@@ -486,51 +333,40 @@ async def get_all_people(
         )
 
 
+@app.get("/all_works")
+async def get_all_works(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user)
+):
+    """
+    Функция для получения всех видов работ.
+    Требует аутентификации пользователя.
+    """
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=Work,
+        list_name="works",
+        fields=["id", "name", "description", "active"]
+    )
+
+
 @app.get("/all_order_statuses")
 async def get_all_order_statuses(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
-    Функция для получения всех возможных статусов заказа.
+    Функция для получения всех статусов заказов.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to order statuses list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all order statuses")
-
-        query = select(OrderStatus)
-        result = await db.execute(query)
-        order_statuses = result.scalars().all()
-
-        order_statuses_list = [
-            {
-                "id": order_status.id,
-                "name": order_status.name,
-                "description": order_status.description
-            }
-            for order_status in order_statuses
-        ]
-
-        logger.info(f"Successfully retrieved {len(order_statuses_list)} order "
-                    f"statuses for user {current_user.username}")
-        return {"order_statuses": order_statuses_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching order statuses: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch order statuses: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=OrderStatus,
+        list_name="order_statuses",
+        fields=["id", "name", "description"]
+    )
 
 
 @app.get("/all_orders")
@@ -592,54 +428,29 @@ async def get_all_orders(
         )
 
 
-@app.get("/all_box_accounting")  # Учёт шкафов автоматики
+@app.get("/all_box_accounting")
 async def get_all_box_accounting(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
 ):
     """
-    Функция для получения всех шкафов автоматики.
+    Функция для получения всех записей учета шкафов.
     Требует аутентификации пользователя.
     """
-    try:
-        # Проверяем, что пользователь авторизован
-        if not current_user:
-            logger.warning("Unauthorized access attempt to box accounting list")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-            )
-
-        logger.debug(f"User {current_user.username} requesting all boxes")
-
-        query = select(BoxAccounting)
-        result = await db.execute(query)
-        boxes = result.scalars().all()
-
-        boxes_list = [
-            {
-                "serial_num": box.serial_num,
-                "name": box.name,
-                "order_id": box.order_id,
-                "scheme_developer_id": box.scheme_developer_id,
-                "assembler_id": box.assembler_id,
-                "programmer_id": box.programmer_id,
-                "tester_id": box.tester_id
-            }
-            for box in boxes
-        ]
-
-        logger.info(f"Successfully retrieved {len(boxes_list)} boxes for user {current_user.username}")
-        return {"boxes": boxes_list}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching boxes: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch boxes: {str(e)}"
-        )
+    return await _fetch_list(
+        db=db,
+        current_user=current_user,
+        model=BoxAccounting,
+        list_name="boxes",
+        fields=["serial_num",
+                "name",
+                "order_id",
+                "scheme_developer_id",
+                "assembler_id",
+                "programmer_id",
+                "tester_id"
+                ]
+    )
 
 
 @app.get("/all_order_comments")
