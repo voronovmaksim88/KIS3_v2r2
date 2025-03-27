@@ -2,6 +2,9 @@
 """
 Все роутеры для учёта шкафов
 """
+import uuid
+import models
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi import Query
 
@@ -15,7 +18,7 @@ from models import BoxAccounting as BoxAccountingModel
 from models import User as UserModel
 from loguru import logger
 
-from schemas import PaginatedBoxAccounting, BoxAccountingResponse
+from schemas import PaginatedBoxAccounting, BoxAccountingResponse, BoxAccountingCreate
 
 router = APIRouter(
     prefix="/box-accounting",
@@ -106,4 +109,121 @@ async def read_box_accounting(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch box accounting records",
+        )
+
+
+async def _check_person_exists(db: AsyncSession, person_id: uuid.UUID) -> bool:
+    """
+    Вспомогательная функция для проверки существования человека по ID.
+    """
+    # Преобразуем person_id в строку или число, если модель ожидает такой тип
+    result = await db.execute(
+        select(models.Person).filter(models.Person.uuid == person_id)
+    )
+    return result.scalar_one_or_none() is not None
+
+
+@router.post("/create/", response_model=BoxAccountingResponse, status_code=status.HTTP_201_CREATED)
+async def create_box_accounting(
+        box_data: BoxAccountingCreate,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user),
+):
+    """
+    Создание новой записи о серийном номере шкафа.
+    Принимает данные о шкафе и сохраняет их в базе данных.
+    Требует аутентификации пользователя.
+    """
+    try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to create box accounting record")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} creating new box accounting record")
+
+        # Проверяем существование заказа
+        order_check = select(func.count()).select_from(models.Order).where(models.Order.serial == box_data.order_id)
+        order_exists = await db.execute(order_check)
+        if order_exists.scalar() == 0:
+            logger.warning(f"Order with ID {box_data.order_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order with ID {box_data.order_id} not found"
+            )
+
+        # Проверяем существование разработчика схемы
+        if not await _check_person_exists(db, box_data.scheme_developer_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Scheme developer with ID {box_data.scheme_developer_id} not found"
+            )
+
+        # Проверяем существование сборщика
+        if not await _check_person_exists(db, box_data.assembler_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Assembler with ID {box_data.assembler_id} not found"
+            )
+
+        # Проверяем существование программиста (если указан)
+        if box_data.programmer_id and not await _check_person_exists(db, box_data.programmer_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Programmer with ID {box_data.programmer_id} not found"
+            )
+
+        # Проверяем существование тестировщика
+        if not await _check_person_exists(db, box_data.tester_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tester with ID {box_data.tester_id} not found"
+            )
+
+        # Получаем максимальный существующий serial_num
+        max_serial_query = select(func.max(BoxAccountingModel.serial_num))
+        result = await db.execute(max_serial_query)
+        max_serial = result.scalar()
+
+        # Генерируем новый serial_num (max + 1 или 1, если записей ещё нет)
+        new_serial_num = 1 if max_serial is None else max_serial + 1
+
+        logger.info(f"Automatically generating new serial_num: {new_serial_num}")
+
+        # Создаем новую запись о шкафе с автоматически сгенерированным serial_num
+        new_box = BoxAccountingModel(
+            serial_num=new_serial_num,
+            name=box_data.name,
+            order_id=box_data.order_id,
+            scheme_developer_id=box_data.scheme_developer_id,
+            assembler_id=box_data.assembler_id,
+            programmer_id=box_data.programmer_id,
+            tester_id=box_data.tester_id
+        )
+
+        # Добавляем запись в базу данных
+        db.add(new_box)
+        await db.commit()
+        await db.refresh(new_box)
+
+        # Загружаем связанные данные для ответа
+        await db.refresh(new_box, ["scheme_developer", "assembler", "programmer", "tester", "order"])
+
+        logger.info(f"Successfully created box accounting record with serial number {new_box.serial_num}")
+
+        # Преобразуем ORM-объект в Pydantic-модель для ответа
+        return BoxAccountingResponse.model_validate(new_box)
+
+    except HTTPException:
+        # Пробрасываем HTTP-исключения дальше
+        raise
+    except Exception as e:
+        # Логируем необработанные исключения и отправляем обобщенный ответ
+        logger.error(f"Error creating box accounting record: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create box accounting record: {str(e)}",
         )

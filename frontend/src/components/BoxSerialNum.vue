@@ -17,7 +17,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
+  <div class="w-full min-h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
 
     <!-- Показываем индикатор загрузки -->
     <div v-if="isLoading" class="w-full flex justify-center my-4">

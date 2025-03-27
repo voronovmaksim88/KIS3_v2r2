@@ -26,7 +26,9 @@ class BoxAccountingBase(BaseModel):
     order_id: str
 
 
-class BoxAccountingCreate(BoxAccountingBase):
+class BoxAccountingCreate(BaseModel):
+    name: str
+    order_id: str
     scheme_developer_id: uuid.UUID
     assembler_id: uuid.UUID
     programmer_id: Optional[uuid.UUID] = None
