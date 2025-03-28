@@ -1,3 +1,4 @@
+// src/components/TheFormAddRowInBoxAccounting.vue
 <script setup lang="ts">
 import {faCircleCheck} from '@fortawesome/free-regular-svg-icons'  // иконка птичка
 import {faCircleXmark} from '@fortawesome/free-regular-svg-icons'  // иконка крестик в кружочке
@@ -15,11 +16,11 @@ const {people, isLoading, error} = storeToRefs(peopleStore);
 library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
 const newRowOk = ref(false)
 
-function cancel(){
+function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
 }
 
-function addNewRow(){
+function addNewRow() {
 }
 
 // Загрузка данных при монтировании компонента
@@ -38,35 +39,65 @@ onMounted(async () => {
 <template>
   <!-- Форма для добавления новой записи -->
   <div class="w-full bg-gray-700 p-4 rounded-lg mb-4">
-    <h2 class="text-xl font-bold mb-4">Добавить новую запись</h2>
+    <h2 class="text-xl font-bold mb-4">Добавление новой записи</h2>
 
-    <!-- Контейнер для кнопок -->
-    <div class="flex justify-end space-x-2">
-      <!-- Кнопка "Отмена" -->
-      <button
-          class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded
-                 min-w-[40px] md:min-w-[120px] transition-all duration-200"
-          @click="cancel"
-      >
-        <FontAwesomeIcon
-            :icon="['far', 'circle-xmark']"
-            class="w-6 h-6 text-red-500 md:mr-2"
-        />
-        <span class="hidden md:inline">Отмена</span>
-      </button>
+    <!-- Показываем данные -->
+    <div v-if="!isLoading " class="w-full">
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-gray-700 rounded-lg mb-4">
+          <thead>
+          <tr>
+            <th class="px-4 py-2 text-left">С/Н</th>
+            <th class="px-4 py-2 text-left">Название</th>
+            <th class="px-4 py-2 text-left">Заказ</th>
+            <th class="px-4 py-2 text-left">Разработчик схемы</th>
+            <th class="px-4 py-2 text-left">Сборщик</th>
+            <th class="px-4 py-2 text-left">Программист</th>
+            <th class="px-4 py-2 text-left">Тестировщик</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr class="border-t border-gray-600">
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Кнопка "Записать" -->
-      <button
-          class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded
-                 min-w-[40px] md:min-w-[120px] transition-all duration-200"
-          @click="addNewRow"
-      >
-        <FontAwesomeIcon
-            :icon="['far', 'circle-check']"
-            :class="[newRowOk ? 'w-6 h-6 text-green-500 md:mr-2' : 'w-6 h-6 text-gray-300 md:mr-2']"
-        />
-        <span class="hidden md:inline">Записать</span>
-      </button>
+      <!-- Контейнер для кнопок -->
+      <div class="flex justify-end space-x-2">
+        <!-- Кнопка "Отмена" -->
+        <button
+            class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600
+          to-gray-800 rounded min-w-[40px] md:min-w-[120px] transition-all duration-200"
+            @click="cancel"
+        >
+          <FontAwesomeIcon
+              :icon="['far', 'circle-xmark']"
+              class="w-6 h-6 text-red-500 md:mr-2"
+          />
+          <span class="hidden md:inline">Отмена</span>
+        </button>
+
+        <!-- Кнопка "Записать" -->
+        <button
+            class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600
+           to-gray-800 rounded min-w-[40px] md:min-w-[120px] transition-all duration-200"
+            @click="addNewRow"
+        >
+          <FontAwesomeIcon
+              :icon="['far', 'circle-check']"
+              :class="[newRowOk ? 'w-6 h-6 text-green-500 md:mr-2' : 'w-6 h-6 text-gray-300 md:mr-2']"
+          />
+          <span class="hidden md:inline">Записать</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
