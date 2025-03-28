@@ -31,7 +31,7 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     // Проверяем авторизацию при загрузке
-    await authStore.checkAuth(apiUrl.value)
+    await authStore.checkAuth()
 
     // Если пользователь авторизован, загружаем данные
     if (authStore.isAuthenticated) {

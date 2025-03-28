@@ -1,6 +1,7 @@
 // stores/storeAuth.ts
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import { getApiUrl } from '../utils/apiUrlHelper';
 
 // Добавляем интерфейс для пользователя
 interface User {
@@ -17,16 +18,7 @@ export const useAuthStore = defineStore('auth', {
     // Добавляем геттеры
     getters: {
         username: (state) => state.user ? state.user.username : '',
-
-        // Геттер для получения API URL
-        apiUrl: () => {
-            const url = import.meta.env.VITE_API_URL;
-            if (!url) {
-                console.error('VITE_API_URL не определен в переменных окружения!');
-                return 'http://localhost:8000/api'; // Резервный URL по умолчанию
-            }
-            return url;
-        }
+        apiUrl: () => getApiUrl()
     },
 
     actions: {

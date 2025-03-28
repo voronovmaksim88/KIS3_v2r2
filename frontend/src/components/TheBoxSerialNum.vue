@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import {onMounted} from 'vue';
 import {useBoxAccountingStore} from '../stores/storeBoxAccounting';
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {storeToRefs} from 'pinia';
@@ -13,12 +13,9 @@ const formsVisibilityStore = useFormsVisibilityStore();
 
 const {boxes, isLoading, error, pagination} = storeToRefs(boxAccountingStore);
 
-// URL вашего API-сервера
-const apiUrl = ref(import.meta.env.VITE_API_URL || 'http://localhost:8000');
-
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
-  await boxAccountingStore.fetchBoxes(apiUrl.value);
+  await boxAccountingStore.fetchBoxes();
   console.log('Boxes loaded:', boxes.value.length);
 });
 
@@ -119,14 +116,14 @@ function addNewRow() {
         </span>
         <div class="flex space-x-2">
           <button
-              @click="boxAccountingStore.changePage(apiUrl, pagination.page - 1)"
+              @click="boxAccountingStore.changePage(pagination.page - 1)"
               :disabled="pagination.page <= 1"
               class="px-4 py-2 bg-blue-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Prev
           </button>
           <button
-              @click="boxAccountingStore.changePage(apiUrl, pagination.page + 1)"
+              @click="boxAccountingStore.changePage(pagination.page + 1)"
               :disabled="pagination.page >= pagination.pages"
               class="px-4 py-2 bg-blue-600 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           >

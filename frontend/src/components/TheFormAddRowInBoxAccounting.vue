@@ -3,10 +3,14 @@ import {faCircleCheck} from '@fortawesome/free-regular-svg-icons'  // иконк
 import {faCircleXmark} from '@fortawesome/free-regular-svg-icons'  // иконка крестик в кружочке
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import {library} from '@fortawesome/fontawesome-svg-core'
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
+import {usePeopleStore} from "@/stores/storePeople.ts";
+import {storeToRefs} from "pinia";
 
 const formsVisibilityStore = useFormsVisibilityStore();
+const peopleStore = usePeopleStore();
+const {people, isLoading, error} = storeToRefs(peopleStore);
 
 library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
 const newRowOk = ref(false)
@@ -16,8 +20,19 @@ function cancel(){
 }
 
 function addNewRow(){
-
 }
+
+// Загрузка данных при монтировании компонента
+onMounted(async () => {
+  try {
+    await peopleStore.fetchPeople();
+    console.log('People loaded:', people.value.length);
+    console.log('isLoading:', isLoading.value);
+    console.log('error:', error.value);
+  } catch (error) {
+    console.error('Failed to load people:', error);
+  }
+});
 </script>
 
 <template>
@@ -29,26 +44,28 @@ function addNewRow(){
     <div class="flex justify-end space-x-2">
       <!-- Кнопка "Отмена" -->
       <button
-          class="flex items-center justify-center w-1/12 px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded"
+          class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded
+                 min-w-[40px] md:min-w-[120px] transition-all duration-200"
           @click="cancel"
       >
         <FontAwesomeIcon
             :icon="['far', 'circle-xmark']"
-            class="w-6 h-6 text-red-500 mr-2"
+            class="w-6 h-6 text-red-500 md:mr-2"
         />
-        Отмена
+        <span class="hidden md:inline">Отмена</span>
       </button>
 
       <!-- Кнопка "Записать" -->
       <button
-          class="flex items-center justify-center w-1/12 px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded"
+          class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600 to-gray-800 rounded
+                 min-w-[40px] md:min-w-[120px] transition-all duration-200"
           @click="addNewRow"
       >
         <FontAwesomeIcon
             :icon="['far', 'circle-check']"
-            :class="[newRowOk ? 'w-6 h-6 text-green-500 mr-2' : 'w-6 h-6 text-gray-300 mr-2']"
+            :class="[newRowOk ? 'w-6 h-6 text-green-500 md:mr-2' : 'w-6 h-6 text-gray-300 md:mr-2']"
         />
-        Записать
+        <span class="hidden md:inline">Записать</span>
       </button>
     </div>
   </div>

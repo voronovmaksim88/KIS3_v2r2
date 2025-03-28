@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import { BoxAccounting, PaginatedBoxAccounting } from '../types/typeBoxAccounting';
+import { getApiUrl } from '../utils/apiUrlHelper';
 
 export const useBoxAccountingStore = defineStore('boxAccounting', () => {
     // Состояние
@@ -44,13 +45,13 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         error.value = message;
     }
 
-    async function fetchBoxes(apiUrl: string, page: number = 1, size: number = 20) {
+    async function fetchBoxes(page: number = 1, size: number = 20) {
         clearError();
         isLoading.value = true;
 
         try {
             const response = await axios.get<PaginatedBoxAccounting>(
-                `${apiUrl}box-accounting/read/`,
+                `${getApiUrl()}box-accounting/read/`,
                 {
                     params: { page, size },
                     withCredentials: true
@@ -80,7 +81,6 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
     }
 
     async function addBox(
-        apiUrl: string,
         name: string,
         order_id: string,
         scheme_developer_id: string,
@@ -97,7 +97,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
 
         try {
             const response = await axios.post(
-                `${apiUrl}/box-accounting/create/`,
+                `${getApiUrl()}/box-accounting/create/`,
                 {
                     name: name.trim(),
                     order_id,
@@ -110,7 +110,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
             );
 
             // Обновляем список шкафов после успешного добавления
-            await fetchBoxes(apiUrl, pagination.value.page, pagination.value.size);
+            await fetchBoxes(pagination.value.page, pagination.value.size);
 
             return response.data;
         } catch (e) {
@@ -126,7 +126,6 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
     }
 
     async function updateBox(
-        apiUrl: string,
         serial_num: number,
         name: string,
         order_id: string,
@@ -144,7 +143,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
 
         try {
             const response = await axios.put(
-                `${apiUrl}/-/update/${serial_num}`,
+                `${getApiUrl()}/-/update/${serial_num}`,
                 {
                     name: name.trim(),
                     order_id,
@@ -175,15 +174,15 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         }
     }
 
-    async function changePage(apiUrl: string, page: number) {
+    async function changePage(page: number) {
         if (page < 1 || page > pagination.value.pages) {
             return false;
         }
-        return await fetchBoxes(apiUrl, page, pagination.value.size) !== null;
+        return await fetchBoxes(page, pagination.value.size) !== null;
     }
 
-    async function changePageSize(apiUrl: string, size: number) {
-        return await fetchBoxes(apiUrl, 1, size) !== null;
+    async function changePageSize(size: number) {
+        return await fetchBoxes(1, size) !== null;
     }
 
     // Функция для получения шкафа по его серийному номеру
