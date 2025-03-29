@@ -15,112 +15,112 @@ const backend_url = import.meta.env.VITE_API_URL; // Если используе
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_countries"
+          endpoint="countries"
           importName="countries"
           buttonText="Страны"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_cities"
+          endpoint="cities"
           importName="cities"
           buttonText="Города"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_currencies"
+          endpoint="currencies"
           importName="currencies"
           buttonText="Валюты"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_equipment_types"
+          endpoint="equipment_types"
           importName="equipment_types"
           buttonText="Типы оборудования"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_counterparty_forms"
+          endpoint="counterparty_forms"
           importName="counterparty_forms"
           buttonText="Формы контрагентов"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_counterparties"
+          endpoint="counterparties"
           importName="companies"
           buttonText="Контрагенты"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_manufacturers"
+          endpoint="manufacturers"
           importName="manufacturers"
           buttonText="Производители"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_people"
+          endpoint="people"
           importName="people"
           buttonText="Люди"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_works"
+          endpoint="works"
           importName="works"
           buttonText="Работы"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_order_statuses"
+          endpoint="order_statuses"
           importName="order_statuses"
           buttonText="Статусы заказов"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_orders"
+          endpoint="orders"
           importName="orders"
           buttonText="Заказы"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_order_comments"
+          endpoint="order_comments"
           importName="order_comments"
           buttonText="Комментарии к заказам"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_control_cabinets"
+          endpoint="control_cabinets"
           importName="boxes"
           buttonText="корпуса шкафов"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_box_accounting"
+          endpoint="box_accounting"
           importName="box_accounting"
           buttonText="записи о серийных номерах"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_tasks"
+          endpoint="tasks"
           importName="tasks"
           buttonText="задачи"
       />
 
       <Test_DB_universal_table
           :url="backend_url"
-          endpoint="all_timings"
+          endpoint="timings"
           importName="timings"
           buttonText="тайминги"
       />

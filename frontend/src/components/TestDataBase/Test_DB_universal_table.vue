@@ -65,7 +65,7 @@ async function fetchData(): Promise<void> {
     },
   };
 
-  const fetchPromise = fetch(`${props.url}${props.endpoint}`, fetchOptions);
+  const fetchPromise = fetch(`${props.url}get_all/${props.endpoint}`, fetchOptions);
   const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Превышено время ожидания запроса')), timeout)
   );
