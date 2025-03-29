@@ -93,7 +93,15 @@ onMounted(async () => {
               </div>
             </td>
 
-            <td class="px-4 py-2">{{''}}</td>
+            <!-- Поле для названия шкафа -->
+            <td class="px-4 py-2">
+              <input
+                  type="text"
+                  v-model="newBox.name"
+                  class="w-full bg-gray-600 px-2 py-1 rounded"
+                  placeholder="Введите название"
+              />
+            </td>
             <td class="px-4 py-2">{{ ''}}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
