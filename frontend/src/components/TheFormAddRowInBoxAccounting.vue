@@ -1,4 +1,4 @@
-// src/components/TheFormAddRowInBoxAccounting.vue
+<!-- src/components/TheFormAddRowInBoxAccounting.vue-->
 <script setup lang="ts">
 import {faCircleCheck} from '@fortawesome/free-regular-svg-icons'  // иконка птичка
 import {faCircleXmark} from '@fortawesome/free-regular-svg-icons'  // иконка крестик в кружочке
@@ -10,12 +10,17 @@ import {usePeopleStore} from "@/stores/storePeople.ts";
 import {useBoxAccountingStore} from "@/stores/storeBoxAccounting"; // Импортируем стор для учёта шкафов
 import {storeToRefs} from "pinia";
 import {BoxAccountingCreateRequest} from "@/types/typeBoxAccounting";
+import {useOrdersStore} from "@/stores/storeOrders";
+import AutoComplete from 'primevue/autocomplete';
+import {typeOrderSerial} from "@/types/typeOrder.ts";
 
 const formsVisibilityStore = useFormsVisibilityStore();
 const peopleStore = usePeopleStore();
 const {people, isLoading, error} = storeToRefs(peopleStore);
 const boxAccountingStore = useBoxAccountingStore(); // Используем стор для шкафов
-const {boxes, isLoading: isBoxesLoading} = storeToRefs(boxAccountingStore);
+const {boxes} = storeToRefs(boxAccountingStore);
+const ordersStore = useOrdersStore();
+const {orderSerials} = storeToRefs(ordersStore);
 
 
 library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
@@ -40,6 +45,10 @@ const nextSerialNum = computed(() => {
   return maxSerialNum + 1;
 });
 
+// Для AutoComplete
+const selectedOrder = ref(null);
+const filteredOrders = ref<typeOrderSerial[]>([]);
+
 function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
 }
@@ -59,8 +68,30 @@ onMounted(async () => {
     console.error('Failed to load people:', error);
   }
 
-
+  // Загружаем список заказов
+  try {
+    await ordersStore.fetchOrderSerials();
+    console.log('Orders loaded:', orderSerials.value.length);
+  } catch (error) {
+    console.error('Failed to load orders:', error);
+  }
 });
+
+// Функция для поиска заказов
+function searchOrder(event: { query: string }) {
+  const query = event.query.toLowerCase();
+  filteredOrders.value = orderSerials.value.filter(order =>
+      order.serial.toLowerCase().includes(query)
+  );
+}
+
+// Функция для обработки выбора заказа
+function handleOrderSelect(event: { value: typeOrderSerial }) {
+  // Устанавливаем id заказа в новую запись
+  newBox.value.order_id = event.value.serial;
+  console.log('Selected order:', event.value);
+}
+
 </script>
 
 <template>
@@ -89,7 +120,7 @@ onMounted(async () => {
             <!-- Поле для серийного номера (только для чтения) -->
             <td class="px-4 py-2">
               <div class="bg-gray-600 px-2 py-1 rounded">
-                <p> {{nextSerialNum}}</p>
+                <p> {{ nextSerialNum }}</p>
               </div>
             </td>
 
@@ -102,11 +133,25 @@ onMounted(async () => {
                   placeholder="Введите название"
               />
             </td>
-            <td class="px-4 py-2">{{''}}</td>
+
+            <!-- Поле выбора заказа -->
+            <td class="px-4 py-2">
+              <AutoComplete
+                  v-model="selectedOrder"
+                  dropdown
+                  :suggestions="filteredOrders"
+                  @complete="searchOrder($event)"
+                  optionLabel="serial"
+                  class="w-full bg-gray-600 px-2 py-1 rounded"
+                  @item-select="handleOrderSelect"
+              />
+            </td>
+
+
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{''}}</td>
+            <td class="px-4 py-2">{{ '' }}</td>
           </tr>
           </tbody>
         </table>

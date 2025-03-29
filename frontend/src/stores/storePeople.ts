@@ -45,7 +45,7 @@ export const usePeopleStore = defineStore('people', () => {
 
         try {
             const response = await axios.get<Person[]>(
-                `${getApiUrl()}all_people/`,
+                `${getApiUrl()}get_all/people/`,
                 { withCredentials: true }
             );
 
@@ -213,7 +213,5 @@ export const usePeopleStore = defineStore('people', () => {
         deletePerson,
         getPersonByUuid,
         searchPeople,
-
-
     };
 });
