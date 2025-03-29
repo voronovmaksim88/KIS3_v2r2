@@ -17,7 +17,7 @@ class OrderStatusSchema(BaseModel):
         """
         Конфигурация модели
         """
-        orm_mode = True
+        from_attributes = True
 
 
 class CounterpartySchema(BaseModel):
@@ -29,7 +29,7 @@ class CounterpartySchema(BaseModel):
         """
         Конфигурация модели
         """
-        orm_mode = True
+        from_attributes = True
 
 
 class WorkSchema(BaseModel):
@@ -42,7 +42,7 @@ class WorkSchema(BaseModel):
         """
         Конфигурация модели
         """
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderBase(BaseModel):
@@ -80,6 +80,9 @@ class OrderBase(BaseModel):
         if v < 1 or v > 8:
             raise ValueError("Status ID must be between 1 and 8")
         return v
+
+class OrderSerial(BaseModel):
+    serial: str
 
 
 
@@ -125,7 +128,7 @@ class OrderBase(BaseModel):
 #         """
 #         Конфигурация модели
 #         """
-#         orm_mode = True
+#         from_attributes = True
 #
 #
 # class OrderWithRelations(OrderResponse):
@@ -135,7 +138,7 @@ class OrderBase(BaseModel):
 #         """
 #         Конфигурация модели
 #         """
-#         orm_mode = True
+#         from_attributes = True
 #
 #
 # class OrderWorkAssociation(BaseModel):
@@ -146,4 +149,4 @@ class OrderBase(BaseModel):
 #         """
 #         Конфигурация модели
 #         """
-#         orm_mode = True
+#         from_attributes = True

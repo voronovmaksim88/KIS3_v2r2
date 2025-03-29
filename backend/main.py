@@ -13,6 +13,7 @@ from routers.test_views import router as test_router
 from routers.import_router import router as import_router
 from routers.box_accountig_router import router as box_accountig_router
 from routers.get_all_router import router as get_all_router
+from routers.order_router import router as order_router
 
 app = FastAPI(root_path="/api")
 
@@ -22,6 +23,7 @@ app.include_router(test_router)  # роутер для тестовых запр
 app.include_router(jwt_auth.router)
 app.include_router(box_accountig_router)
 app.include_router(get_all_router)
+app.include_router(order_router)
 
 # Настройка CORS
 app.add_middleware(
