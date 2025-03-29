@@ -102,7 +102,7 @@ onMounted(async () => {
                   placeholder="Введите название"
               />
             </td>
-            <td class="px-4 py-2">{{ ''}}</td>
+            <td class="px-4 py-2">{{''}}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
