@@ -80,7 +80,7 @@ async def get_all_countries(
     )
 
 
-@router.get("/all_manufacturers")
+@router.get("/manufacturers")
 async def get_all_manufacturers(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -98,7 +98,7 @@ async def get_all_manufacturers(
     )
 
 
-@router.get("/all_equipment_types")
+@router.get("/equipment_types")
 async def get_all_equipment_types(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -116,7 +116,7 @@ async def get_all_equipment_types(
     )
 
 
-@router.get("/all_currencies")
+@router.get("/currencies")
 async def get_all_currencies(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -134,7 +134,7 @@ async def get_all_currencies(
     )
 
 
-@router.get("/all_cities")
+@router.get("/cities")
 async def get_all_cities(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -152,7 +152,7 @@ async def get_all_cities(
     )
 
 
-@router.get("/all_counterparty_forms")
+@router.get("/counterparty_forms")
 async def get_all_counterparty_forms(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -170,7 +170,7 @@ async def get_all_counterparty_forms(
     )
 
 
-@router.get("/all_counterparties")
+@router.get("/counterparties")
 async def get_all_counterparties(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -223,7 +223,7 @@ async def get_all_counterparties(
         )
 
 
-@router.get("/all_people")
+@router.get("/people")
 async def get_all_people(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -280,7 +280,7 @@ async def get_all_people(
         )
 
 
-@router.get("/all_works")
+@router.get("/works")
 async def get_all_works(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -298,7 +298,7 @@ async def get_all_works(
     )
 
 
-@router.get("/all_order_statuses")
+@router.get("/order_statuses")
 async def get_all_order_statuses(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -316,7 +316,7 @@ async def get_all_order_statuses(
     )
 
 
-@router.get("/all_orders")
+@router.get("/orders")
 async def get_all_orders(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -375,7 +375,7 @@ async def get_all_orders(
         )
 
 
-@router.get("/all_box_accounting")
+@router.get("/box_accounting")
 async def get_all_box_accounting(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -400,7 +400,7 @@ async def get_all_box_accounting(
     )
 
 
-@router.get("/all_order_comments")
+@router.get("/order_comments")
 async def get_all_order_comments(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -448,7 +448,7 @@ async def get_all_order_comments(
         )
 
 
-@router.get("/all_control_cabinets")
+@router.get("/control_cabinets")
 async def get_all_control_cabinets(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -512,7 +512,7 @@ async def get_all_control_cabinets(
         )
 
 
-@router.get("/all_tasks")
+@router.get("/tasks")
 async def get_all_tasks(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
@@ -575,7 +575,7 @@ async def get_all_tasks(
         )
 
 
-@router.get("/all_timings")
+@router.get("/timings")
 async def get_all_timings(
         db: AsyncSession = Depends(get_async_db),
         current_user: UserModel = Depends(get_current_auth_user)
