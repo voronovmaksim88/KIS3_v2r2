@@ -4,17 +4,41 @@ import {faCircleCheck} from '@fortawesome/free-regular-svg-icons'  // иконк
 import {faCircleXmark} from '@fortawesome/free-regular-svg-icons'  // иконка крестик в кружочке
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import {library} from '@fortawesome/fontawesome-svg-core'
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {usePeopleStore} from "@/stores/storePeople.ts";
+import {useBoxAccountingStore} from "@/stores/storeBoxAccounting"; // Импортируем стор для учёта шкафов
 import {storeToRefs} from "pinia";
+import {BoxAccountingCreateRequest} from "@/types/typeBoxAccounting";
 
 const formsVisibilityStore = useFormsVisibilityStore();
 const peopleStore = usePeopleStore();
 const {people, isLoading, error} = storeToRefs(peopleStore);
+const boxAccountingStore = useBoxAccountingStore(); // Используем стор для шкафов
+const {boxes, isLoading: isBoxesLoading} = storeToRefs(boxAccountingStore);
+
 
 library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
 const newRowOk = ref(false)
+
+// Создаем объект для новой записи, реактивную ссылку с явным указанием типа
+const newBox = ref<BoxAccountingCreateRequest>({
+  name: '',
+  order_id: '',
+  scheme_developer_id: '',
+  assembler_id: '',
+  programmer_id: undefined, // или null в зависимости от того, что ожидает ваш бэкенд
+  tester_id: ''
+})
+
+// Вычисляем следующий серийный номер
+const nextSerialNum = computed(() => {
+  if (!boxes.value || boxes.value.length === 0) return 1;
+
+  // Находим максимальный серийный номер и добавляем 1
+  const maxSerialNum = Math.max(...boxes.value.map(box => box.serial_num));
+  return maxSerialNum + 1;
+});
 
 function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
@@ -25,6 +49,7 @@ function addNewRow() {
 
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
+  // Загружаем список людей
   try {
     await peopleStore.fetchPeople();
     console.log('People loaded:', people.value.length);
@@ -33,6 +58,8 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to load people:', error);
   }
+
+
 });
 </script>
 
@@ -58,13 +85,20 @@ onMounted(async () => {
           </thead>
           <tbody>
           <tr class="border-t border-gray-600">
+
+            <!-- Поле для серийного номера (только для чтения) -->
+            <td class="px-4 py-2">
+              <div class="bg-gray-600 px-2 py-1 rounded">
+                <p> {{nextSerialNum}}</p>
+              </div>
+            </td>
+
+            <td class="px-4 py-2">{{''}}</td>
+            <td class="px-4 py-2">{{ ''}}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{''}}</td>
           </tr>
           </tbody>
         </table>
