@@ -135,20 +135,21 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
             </td>
 
             <!-- Поле выбора заказа -->
-            <td class="px-4 py-2">
+            <td>
               <AutoComplete
                   v-model="selectedOrder"
                   dropdown
                   :suggestions="filteredOrders"
                   @complete="searchOrder($event)"
                   optionLabel="serial"
-                  class="w-full bg-gray-600 px-2 py-1 rounded"
+                  class="bg-gray-600 rounded"
                   @item-select="handleOrderSelect"
+                  size="small"
               />
             </td>
 
 
-            <td class="px-4 py-2">{{ }}</td>
+            <td class="px-4 py-2">{{ ""}}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ '' }}</td>
