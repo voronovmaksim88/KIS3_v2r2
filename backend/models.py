@@ -125,6 +125,10 @@ class Person(Base):
     # Активен, т.е. если это сотрудник, то с ним можно работать в настоящий момент,
     # если это представитель заказчика, то он жив и ещё работает в нашей сфере
     note: Mapped[str | None] = mapped_column(Text, nullable=True)  # Примечание
+    can_be_scheme_developer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    can_be_assembler: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    can_be_programmer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    can_be_tester: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     def __repr__(self) -> str:
         return f"Person(id={self.uuid!r}, name={self.name!r}, surname={self.surname!r})"
