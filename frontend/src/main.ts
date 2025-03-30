@@ -4,6 +4,9 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura';
+// Попробуйте импортировать тёмную версию Aura
+
+
 
 
 const app = createApp(App)
@@ -13,10 +16,13 @@ const pinia = createPinia()
 // в которых используются хранилища
 app.use(pinia)
 
+
 // Используйте PrimeVue
 app.use(PrimeVue, {
+    // Default theme configuration
     theme: {
-        preset: Aura
+        preset: Aura,
+        dark: true
     }
 });
 

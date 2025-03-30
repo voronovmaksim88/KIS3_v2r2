@@ -49,7 +49,16 @@ function addNewRow() {
     <!-- Показываем данные -->
     <div v-if="!isLoading && boxes.length > 0" class="w-full">
       <div class="overflow-x-auto">
-        <table class="min-w-full bg-gray-700 rounded-lg">
+        <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
+          <colgroup>
+            <col style="width: 7%">  <!-- С/Н -->
+            <col style="width: 15%"> <!-- Название -->
+            <col style="width: 18%"> <!-- Заказ -->
+            <col style="width: 15%"> <!-- Разработчик схемы -->
+            <col style="width: 15%"> <!-- Сборщик -->
+            <col style="width: 15%"> <!-- Программист -->
+            <col style="width: 15%"> <!-- Тестировщик -->
+          </colgroup>
           <thead>
           <tr>
             <th colspan="7" class="px-2 py-2 text-center bg-gray-600 ">
@@ -177,5 +186,11 @@ tr:last-child td {
 
 tr:hover {
   background-color: rgba(55, 65, 81, 0.7);
+}
+
+/* Стили для таблицы с фиксированной шириной */
+.table-fixed {
+  table-layout: fixed;
+  width: 100%;
 }
 </style>

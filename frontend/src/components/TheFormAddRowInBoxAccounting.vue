@@ -70,7 +70,7 @@ onMounted(async () => {
 
   // Загружаем список заказов
   try {
-    await ordersStore.fetchOrderSerials();
+    await ordersStore.fetchOrderSerials(2); // выбираем только заказы которые "в работе"
     console.log('Orders loaded:', orderSerials.value.length);
   } catch (error) {
     console.error('Failed to load orders:', error);
@@ -102,7 +102,16 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
     <!-- Показываем данные -->
     <div v-if="!isLoading " class="w-full">
       <div class="overflow-x-auto">
-        <table class="min-w-full bg-gray-700 rounded-lg mb-4">
+        <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
+          <colgroup>
+            <col style="width: 7%">  <!-- С/Н -->
+            <col style="width: 15%"> <!-- Название -->
+            <col style="width: 18%"> <!-- Заказ -->
+            <col style="width: 15%"> <!-- Разработчик схемы -->
+            <col style="width: 15%"> <!-- Сборщик -->
+            <col style="width: 15%"> <!-- Программист -->
+            <col style="width: 15%"> <!-- Тестировщик -->
+          </colgroup>
           <thead>
           <tr>
             <th class="px-4 py-2 text-left">С/Н</th>
@@ -142,7 +151,6 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
                   :suggestions="filteredOrders"
                   @complete="searchOrder($event)"
                   optionLabel="serial"
-                  class="bg-gray-600 rounded"
                   @item-select="handleOrderSelect"
                   size="small"
               />
@@ -210,5 +218,11 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Стили для таблицы с фиксированной шириной */
+.table-fixed {
+  table-layout: fixed;
+  width: 100%;
 }
 </style>
