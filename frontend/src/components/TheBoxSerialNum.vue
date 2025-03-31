@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted} from 'vue';
+import {computed, onMounted} from 'vue';
 import {useBoxAccountingStore} from '../stores/storeBoxAccounting';
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {storeToRefs} from 'pinia';
@@ -12,6 +12,11 @@ const boxAccountingStore = useBoxAccountingStore();
 const formsVisibilityStore = useFormsVisibilityStore();
 
 const {boxes, isLoading, error, pagination} = storeToRefs(boxAccountingStore);
+
+// Вычисляемое свойство для сортировки шкафов по убыванию серийных номеров
+const sortedBoxes = computed(() => {
+  return [...boxes.value].sort((a, b) => b.serial_num - a.serial_num);
+});
 
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
@@ -82,7 +87,7 @@ function addNewRow() {
           </tr>
           </thead>
           <tbody>
-          <tr v-for="box in boxes" :key="box.serial_num" class="border-t border-gray-600">
+          <tr v-for="box in sortedBoxes" :key="box.serial_num" class="border-t border-gray-600">
             <td class="px-4 py-2">{{ box.serial_num }}</td>
             <td class="px-4 py-2">{{ box.name }}</td>
             <td class="px-4 py-2">{{ box.order_id }}</td>

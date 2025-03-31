@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import { BoxAccounting, PaginatedBoxAccounting } from '../types/typeBoxAccounting';
+// import { BoxAccountingResponse, BoxAccountingCreateRequest } from '../types/typeBoxAccounting';
 import { getApiUrl } from '../utils/apiUrlHelper';
 
 export const useBoxAccountingStore = defineStore('boxAccounting', () => {
@@ -97,7 +98,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
 
         try {
             const response = await axios.post(
-                `${getApiUrl()}/box-accounting/create/`,
+                `${getApiUrl()}box-accounting/create/`,
                 {
                     name: name.trim(),
                     order_id,
@@ -190,6 +191,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         return boxes.value.find(box => box.serial_num === serial_num);
     }
 
+
     return {
         // Состояние
         boxes,
@@ -208,6 +210,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         updateBox,
         changePage,
         changePageSize,
-        getBoxBySerialNum
+        getBoxBySerialNum,
+        setError
     };
 });

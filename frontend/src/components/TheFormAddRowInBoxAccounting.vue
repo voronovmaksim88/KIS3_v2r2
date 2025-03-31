@@ -54,6 +54,9 @@ const initialNewBoxState: BoxAccountingCreateRequest = {
   tester_id: ''
 };
 
+// Реф для хранения сообщения об успехе
+const successMessage = ref<string>('');
+
 // Используем клон начального состояния
 const newBox = ref<BoxAccountingCreateRequest>({ ...initialNewBoxState });
 
@@ -69,11 +72,66 @@ function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
 }
 
-function addNewRow() {
-  // Логика добавления строки...
-  // После успешного добавления можно вызвать функцию очистки или скрыть форму
-  // cleanupComponentState();
-  // formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false;
+async function addNewRow() {
+  // Сбрасываем флаг успешного добавления и сообщение
+  newRowOk.value = false;
+  successMessage.value = '';
+
+  // Проверяем обязательные поля перед отправкой
+  if (!newBox.value.name.trim()) {
+    boxAccountingStore.setError('Название шкафа не может быть пустым');
+    return;
+  }
+
+  if (!newBox.value.order_id) {
+    boxAccountingStore.setError('Необходимо выбрать заказ');
+    return;
+  }
+
+  if (!newBox.value.scheme_developer_id) {
+    boxAccountingStore.setError('Необходимо выбрать разработчика схемы');
+    return;
+  }
+
+  if (!newBox.value.assembler_id) {
+    boxAccountingStore.setError('Необходимо выбрать сборщика');
+    return;
+  }
+
+  if (!newBox.value.tester_id) {
+    boxAccountingStore.setError('Необходимо выбрать тестировщика');
+    return;
+  }
+
+  try {
+    // Вызываем метод хранилища для добавления нового шкафа
+    const result = await boxAccountingStore.addBox(
+        newBox.value.name,
+        newBox.value.order_id,
+        newBox.value.scheme_developer_id,
+        newBox.value.assembler_id,
+        newBox.value.programmer_id || null,
+        newBox.value.tester_id
+    );
+
+    if (result) {
+      // Если добавление успешно
+      newRowOk.value = true;
+      successMessage.value = 'Шкаф успешно внесён в базу данных';
+
+      // Очищаем форму и скрываем её через небольшую задержку
+      setTimeout(() => {
+        cleanupComponentState();
+        formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false;
+      }, 2000); // Задержка 1 секунда, чтобы пользователь увидел галочку успеха
+    } else {
+      // Если есть ошибка, она уже должна быть в store.error
+      console.error('Failed to add box:', boxAccountingStore.error);
+    }
+  } catch (error) {
+    console.error('Unexpected error when adding box:', error);
+    boxAccountingStore.setError('Произошла неизвестная ошибка при добавлении шкафа');
+  }
 }
 
 // === ЛОГИКА ЗАГРУЗКИ в onMounted ===
@@ -133,6 +191,9 @@ function cleanupComponentState() {
   assemblers.value = [];
   programmers.value = [];
   testers.value = [];
+
+  // Сбрасываем сообщение об успехе
+  successMessage.value = '';
 
   // Очистка выбранных значений в AutoComplete
   selectedOrder.value = null;
@@ -249,12 +310,19 @@ function formatPersonName(person: Person): string {
   <div class="w-full bg-gray-700 p-4 rounded-lg mb-4">
     <h2 class="text-xl font-bold mb-4">Добавление новой записи</h2>
 
+    <!-- Сообщения об ошибках в peopleStore -->
     <div v-if="peopleStore.error" class="w-full bg-red-500 text-white p-4 rounded mb-4">
       {{ peopleStore.error }}
     </div>
 
+    <!-- Сообщения об ошибках в ordersStore -->
     <div v-if="ordersStore.error" class="w-full bg-red-500 text-white p-4 rounded mb-4">
       {{ ordersStore.error }}
+    </div>
+
+    <!-- Сообщение об успехе -->
+    <div v-if="successMessage" class="w-full bg-green-200 text-green-800 p-4 rounded mb-4">
+      {{ successMessage }}
     </div>
 
     <div v-if="peopleStore.isLoading || ordersStore.isLoading" class="w-full flex justify-center my-4">
