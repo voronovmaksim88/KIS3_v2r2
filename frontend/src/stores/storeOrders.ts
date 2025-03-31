@@ -10,12 +10,12 @@ export const useOrdersStore = defineStore('orders', () => {
     // Состояние (state) с использованием ref для реактивности
     const orderSerials = ref<typeOrderSerial[]>([]);
     const loading = ref(false);
-    const error = ref<string | null>(null);
+    const error = ref<string | null>(null); // Состояние для ошибки
 
     // Действие (action) для получения серийных номеров заказов
     const fetchOrderSerials = async (statusId: number | null = null) => {
         loading.value = true;
-        error.value = null;
+        error.value = null; // Сбрасываем ошибку перед каждым запросом
 
         try {
             // Формируем параметры запроса
@@ -25,7 +25,10 @@ export const useOrdersStore = defineStore('orders', () => {
             }
 
             // Выполняем запрос к API
-            const response = await axios.get<typeOrderSerial[]>(`${getApiUrl()}order/read-serial`, { params });
+            const response = await axios.get<typeOrderSerial[]>(`${getApiUrl()}order/read-serial`, {
+                params,
+                withCredentials: true // Добавляем, если требуется аутентификация через cookie
+            });
 
             // Обновляем состояние с полученными данными
             orderSerials.value = response.data;
@@ -33,29 +36,38 @@ export const useOrdersStore = defineStore('orders', () => {
             console.error('Error fetching order serials:', err);
             // Типизированная обработка ошибки
             if (axios.isAxiosError(err)) {
+                // Пытаемся извлечь 'detail' или используем стандартное сообщение
                 error.value = err.response?.data?.detail || err.message || 'Failed to fetch order serials';
-            } else {
-                error.value = 'Unknown error occurred';
+            } else if (err instanceof Error) {
+                error.value = err.message; // Обработка стандартных ошибок JS
+            }
+            else {
+                error.value = 'An unknown error occurred'; // Обработка неизвестных ошибок
             }
         } finally {
             loading.value = false;
         }
     };
 
-    // Действие для очистки состояния
+    // Действие для очистки состояния (списка серийных номеров и ошибки)
     const resetOrderSerials = () => {
         orderSerials.value = [];
+        error.value = null; // Также сбрасываем ошибку при полном сбросе
+    };
+
+    // Действие для очистки только ошибки
+    const clearError = () => {
         error.value = null;
     };
 
     // Вычисляемые свойства (computed)
     const serialsCount = computed(() => orderSerials.value.length);
     const isLoading = computed(() => loading.value);
-    const getError = computed(() => error.value);
+
 
     // Возвращаем все, что должно быть доступно из хранилища
     return {
-        // Состояние
+        // Состояние (можно получить через storeToRefs или напрямую store.error)
         orderSerials,
         loading,
         error,
@@ -63,10 +75,10 @@ export const useOrdersStore = defineStore('orders', () => {
         // Действия
         fetchOrderSerials,
         resetOrderSerials,
+        clearError,
 
         // Вычисляемые свойства
         serialsCount,
         isLoading,
-        getError
     };
 });

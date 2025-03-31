@@ -1,13 +1,13 @@
-<!-- src/components/TheFormAddRowInBoxAccounting.vue-->
+// src/components/TheFormAddRowInBoxAccounting.vue
 <script setup lang="ts">
-import {faCircleCheck} from '@fortawesome/free-regular-svg-icons'  // иконка птичка
-import {faCircleXmark} from '@fortawesome/free-regular-svg-icons'  // иконка крестик в кружочке
+import {faCircleCheck, faCircleXmark} from '@fortawesome/free-regular-svg-icons'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import {library} from '@fortawesome/fontawesome-svg-core'
-import {computed, onMounted, ref} from "vue";
+// Добавляем импорт onUnmounted
+import {computed, onMounted, onUnmounted, ref} from "vue";
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {usePeopleStore} from "@/stores/storePeople.ts";
-import {useBoxAccountingStore} from "@/stores/storeBoxAccounting"; // Импортируем стор для учёта шкафов
+import {useBoxAccountingStore} from "@/stores/storeBoxAccounting";
 import {storeToRefs} from "pinia";
 import {BoxAccountingCreateRequest} from "@/types/typeBoxAccounting";
 import {useOrdersStore} from "@/stores/storeOrders";
@@ -15,160 +15,259 @@ import AutoComplete from 'primevue/autocomplete';
 import {typeOrderSerial} from "@/types/typeOrder.ts";
 import {Person} from "@/types/typePerson.ts";
 
-
 const formsVisibilityStore = useFormsVisibilityStore();
 const peopleStore = usePeopleStore();
-const {people, isLoading, error} = storeToRefs(peopleStore);
-const boxAccountingStore = useBoxAccountingStore(); // Используем стор для шкафов
+const { error: peopleError } = storeToRefs(peopleStore);
+const boxAccountingStore = useBoxAccountingStore();
 const {boxes} = storeToRefs(boxAccountingStore);
 const ordersStore = useOrdersStore();
 const {orderSerials} = storeToRefs(ordersStore);
 
-// 🧠 Добавляем переменные для хранения специалистов по ролям
+// Переменные для хранения специалистов по ролям
 const schemDevelopers = ref<Person[]>([]);
 const assemblers = ref<Person[]>([]);
 const programmers = ref<Person[]>([]);
 const testers = ref<Person[]>([]);
 
-library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
+// Переменные для AutoComplete и их фильтрованных списков
+const selectedOrder = ref<typeOrderSerial | null>(null);
+const filteredOrders = ref<typeOrderSerial[]>([]);
+const selectedShemDeveloper = ref<Person | null>(null);
+const filteredShemDevelopers = ref<Person[]>([]);
+const selectedAssembler = ref<Person | null>(null);
+const filteredAssemblers = ref<Person[]>([]);
+const selectedProgrammer = ref<Person | null>(null);
+const filteredProgrammers = ref<Person[]>([]);
+const selectedTester = ref<Person | null>(null);
+const filteredTesters = ref<Person[]>([]);
+
+library.add(faCircleCheck, faCircleXmark)
 const newRowOk = ref(false)
 
-// Создаем объект для новой записи, реактивную ссылку с явным указанием типа
-const newBox = ref<BoxAccountingCreateRequest>({
+// Начальное состояние для сброса newBox
+const initialNewBoxState: BoxAccountingCreateRequest = {
   name: '',
   order_id: '',
   scheme_developer_id: '',
   assembler_id: '',
-  programmer_id: undefined, // или null в зависимости от того, что ожидает ваш бэкенд
+  programmer_id: undefined,
   tester_id: ''
-})
+};
 
-// Вычисляем следующий серийный номер
+// Используем клон начального состояния
+const newBox = ref<BoxAccountingCreateRequest>({ ...initialNewBoxState });
+
 const nextSerialNum = computed(() => {
   if (!boxes.value || boxes.value.length === 0) return 1;
-
   // Находим максимальный серийный номер и добавляем 1
   const maxSerialNum = Math.max(...boxes.value.map(box => box.serial_num));
   return maxSerialNum + 1;
 });
 
-// Для AutoComplete
-const selectedOrder = ref(null);
-const filteredOrders = ref<typeOrderSerial[]>([]);
 
 function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
 }
 
 function addNewRow() {
+  // Логика добавления строки...
+  // После успешного добавления можно вызвать функцию очистки или скрыть форму
+  // cleanupComponentState();
+  // formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false;
 }
 
-// Загрузка данных при монтировании компонента
+// === ЛОГИКА ЗАГРУЗКИ в onMounted ===
 onMounted(async () => {
-  // Загружаем список активных специалистов
-  try {
-    schemDevelopers.value = await peopleStore.fetchActiveSpecialists("developer") || []
-    assemblers.value = await peopleStore.fetchActiveSpecialists("assembler") || []
-    programmers.value = await peopleStore.fetchActiveSpecialists("programmer") || []
-    testers.value = await peopleStore.fetchActiveSpecialists("tester") || []
-    console.log('developers:', schemDevelopers.value);
-  } catch (error) {
-    console.error("Ошибка загрузки специалистов:", error);
-  }
-  // Загружаем список людей
-  try {
-    await peopleStore.fetchPeople();
-    console.log('People loaded:', people.value.length);
-    console.log('isLoading:', isLoading.value);
-    console.log('error:', error.value);
-  } catch (error) {
-    console.error('Failed to load people:', error);
-  }
+  console.log("Component Mounted - Starting data load...");
 
-  // Загружаем список заказов
+  // --- Загрузка и распределение специалистов ---
   try {
-    await ordersStore.fetchOrderSerials(2); // выбираем только заказы которые "в работе"
+    console.log("Fetching active people...");
+    const activePeople = await peopleStore.fetchActivePeople();
+
+    // Очищаем списки перед заполнением (уже есть, но для ясности)
+    schemDevelopers.value = [];
+    assemblers.value = [];
+    programmers.value = [];
+    testers.value = [];
+
+    if (activePeople && Array.isArray(activePeople)) {
+      console.log(`Workspaceed ${activePeople.length} active people. Distributing by roles...`);
+      activePeople.forEach(person => {
+        if (person.can_be_scheme_developer) schemDevelopers.value.push(person);
+        if (person.can_be_assembler) assemblers.value.push(person);
+        if (person.can_be_programmer) programmers.value.push(person);
+        if (person.can_be_tester) testers.value.push(person);
+      });
+      console.log('Distribution complete.');
+    } else {
+      console.warn("Не удалось загрузить активных специалистов или результат не массив.");
+      if(peopleError.value) {
+        console.error("People store error:", peopleError.value);
+      }
+    }
+  } catch (error) {
+    console.error("Критическая ошибка при загрузке и распределении специалистов:", error);
+  }
+  // --- Конец загрузки специалистов ---
+
+  // --- Загрузка заказов ---
+  try {
+    console.log("Fetching order serials...");
+    await ordersStore.fetchOrderSerials(2);
     console.log('Orders loaded:', orderSerials.value.length);
   } catch (error) {
     console.error('Failed to load orders:', error);
   }
+  // --- Конец загрузки заказов ---
+
+  console.log("Data loading finished.");
 });
 
-// Функция для поиска заказов
+// === ЛОГИКА ОЧИСТКИ при Размонтировании ===
+// Функция для очистки состояния компонента
+function cleanupComponentState() {
+  console.log("Cleaning up component state...");
+  // Очистка списков специалистов
+  schemDevelopers.value = [];
+  assemblers.value = [];
+  programmers.value = [];
+  testers.value = [];
+
+  // Очистка выбранных значений в AutoComplete
+  selectedOrder.value = null;
+  selectedShemDeveloper.value = null;
+  selectedAssembler.value = null;
+  selectedProgrammer.value = null;
+  selectedTester.value = null;
+
+  // Очистка отфильтрованных списков
+  filteredOrders.value = [];
+  filteredShemDevelopers.value = [];
+  filteredAssemblers.value = [];
+  filteredProgrammers.value = [];
+  filteredTesters.value = [];
+
+  // Сброс данных новой строки к начальному состоянию
+  newBox.value = { ...initialNewBoxState };
+
+  // Сброс флага успешной строки
+  newRowOk.value = false;
+
+  // Опционально: Очистка ошибок в сторах, если это нужно при уходе со страницы
+  peopleStore.clearError();
+  ordersStore.clearError();
+
+  console.log("Component state cleaned.");
+}
+
+// Вызов функции очистки при размонтировании компонента
+onUnmounted(() => {
+  console.log("Component Unmounted - Triggering cleanup...");
+  cleanupComponentState();
+
+  // Сбрасываем видимость формы при уходе с компонента
+  // (если форма не должна оставаться видимой при возвращении)
+  formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false;
+  console.log("Form visibility reset.");
+});
+// === КОНЕЦ ЛОГИКИ ОЧИСТКИ ===
+
+
+// --- Функции поиска и выбора для AutoComplete ---
+
 function searchOrder(event: { query: string }) {
   const query = event.query.toLowerCase();
   filteredOrders.value = orderSerials.value.filter(order =>
       order.serial.toLowerCase().includes(query)
   );
 }
-
-// Функция для обработки выбора заказа
 function handleOrderSelect(event: { value: typeOrderSerial }) {
-  // Устанавливаем id заказа в новую запись
   newBox.value.order_id = event.value.serial;
   console.log('Selected order:', event.value);
 }
 
-// Для выбора разработчика схемы
-const selectedShemDeveloper = ref(null);
-const filteredShemDevelopers = ref<Person[]>([]);
-
-// Функция для поиска разработчиков
 function searchSchemDevelopers(event: { query: string }) {
   const query = event.query.toLowerCase();
   filteredShemDevelopers.value = schemDevelopers.value.filter(developer =>
-      developer.name.toLowerCase().includes(query)
+      (developer.name && developer.name.toLowerCase().includes(query)) ||
+      (developer.surname && developer.surname.toLowerCase().includes(query))
   );
 }
-
-// Функция для обработки выбора разработчика
 function handleSchemDeveloperSelect(event: { value: Person }) {
   newBox.value.scheme_developer_id = event.value.uuid;
   console.log('Selected developer:', event.value);
 }
 
-
-// Для выбора сборщика
-const selectedAssembler = ref(null);
-const filteredAssemblers = ref<Person[]>([]);
-
-// Функция для поиска сборщиков
 function searchAssemblers(event: { query: string }) {
   const query = event.query.toLowerCase();
   filteredAssemblers.value = assemblers.value.filter(assembler =>
-      assembler.name.toLowerCase().includes(query)
+      (assembler.name && assembler.name.toLowerCase().includes(query)) ||
+      (assembler.surname && assembler.surname.toLowerCase().includes(query))
   );
 }
-
-// Функция для обработки выбора сборщика
 function handleAssemblerSelect(event: { value: Person }) {
   newBox.value.assembler_id = event.value.uuid;
   console.log('Selected assembler:', event.value);
 }
 
-// Форматирование отображаемого имени
+function searchTesters(event: { query: string }) {
+  const query = event.query.toLowerCase();
+  filteredTesters.value = testers.value.filter(person =>
+      (person.name && person.name.toLowerCase().includes(query)) ||
+      (person.surname && person.surname.toLowerCase().includes(query))
+  );
+}
+function handleTesterSelect(event: { value: Person }) {
+  newBox.value.tester_id = event.value.uuid;
+  console.log('Selected tester:', event.value);
+}
+
+function searchProgrammers(event: { query: string }) {
+  const query = event.query.toLowerCase();
+  filteredProgrammers.value = programmers.value.filter(person =>
+      (person.name && person.name.toLowerCase().includes(query)) ||
+      (person.surname && person.surname.toLowerCase().includes(query))
+  );
+}
+function handleProgrammerSelect(event: { value: Person }) {
+  newBox.value.programmer_id = event.value.uuid;
+  console.log('Selected programmer:', event.value);
+}
+
 function formatPersonName(person: Person): string {
   if (!person) return '';
-  const s = person.surname;
+  const s = person.surname || '';
   const n = person.name?.[0] || '';
   const o = person.patronymic?.[0] || '';
-  return `${s} ${n}.${o}.`;
+  return `${s}${n ? ' ' + n + '.' : ''}${o ? o + '.' : ''}`.trim();
 }
+
 </script>
 
 <template>
-  <!-- Форма для добавления новой записи -->
   <div class="w-full bg-gray-700 p-4 rounded-lg mb-4">
     <h2 class="text-xl font-bold mb-4">Добавление новой записи</h2>
 
-    <!-- Показываем данные -->
-    <div v-if="!isLoading " class="w-full">
+    <div v-if="peopleStore.error" class="w-full bg-red-500 text-white p-4 rounded mb-4">
+      {{ peopleStore.error }}
+    </div>
+
+    <div v-if="ordersStore.error" class="w-full bg-red-500 text-white p-4 rounded mb-4">
+      {{ ordersStore.error }}
+    </div>
+
+    <div v-if="peopleStore.isLoading || ordersStore.isLoading" class="w-full flex justify-center my-4">
+      <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+
+    <div v-if="!peopleStore.isLoading && !ordersStore.isLoading && !peopleStore.error && !ordersStore.error" class="w-full">
       <div class="overflow-x-auto">
         <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
           <colgroup>
             <col style="width: 6%">  <!-- С/Н -->
             <col style="width: 15%"> <!-- Название -->
-            <col style="width: 15%"> <!-- Заказ -->
+            <col style="width: 18%"> <!-- Заказ -->
             <col style="width: 16%"> <!-- Разработчик схемы -->
             <col style="width: 16%"> <!-- Сборщик -->
             <col style="width: 16%"> <!-- Программист -->
@@ -188,14 +287,12 @@ function formatPersonName(person: Person): string {
           <tbody>
           <tr class="border-t border-gray-600">
 
-            <!-- Поле для серийного номера (только для чтения) -->
             <td class="px-4 py-2">
               <div class="bg-gray-600 px-2 py-1 rounded">
                 <p> {{ nextSerialNum }}</p>
               </div>
             </td>
 
-            <!-- Поле для названия шкафа -->
             <td class="px-4 py-2">
               <input
                   type="text"
@@ -205,7 +302,6 @@ function formatPersonName(person: Person): string {
               />
             </td>
 
-            <!-- Поле выбора заказа -->
             <td>
               <AutoComplete
                   v-model="selectedOrder"
@@ -213,13 +309,13 @@ function formatPersonName(person: Person): string {
                   :suggestions="filteredOrders"
                   :forceSelection="true"
                   @complete="searchOrder($event)"
+                  placeholder="Выберите номер заказа"
                   optionLabel="serial"
                   @item-select="handleOrderSelect"
                   size="small"
               />
             </td>
 
-            <!-- Поле выбора разработчика схемы -->
             <td>
               <AutoComplete
                   v-model="selectedShemDeveloper"
@@ -233,13 +329,12 @@ function formatPersonName(person: Person): string {
                   :optionLabel="formatPersonName"
               >
                 <template #option="slotProps">
-                  {{ slotProps.option.surname }} {{ slotProps.option.name[0] }}.{{ slotProps.option.patronymic[0] }}.
+                  {{ slotProps.option.surname }} {{ slotProps.option.name?.[0] || '' }}.{{ slotProps.option.patronymic?.[0] || '' }}.
                 </template>
               </AutoComplete>
             </td>
 
 
-            <!-- Поле выбора сборщика -->
             <td>
               <AutoComplete
                   v-model="selectedAssembler"
@@ -253,21 +348,52 @@ function formatPersonName(person: Person): string {
                   :optionLabel="formatPersonName"
               >
                 <template #option="slotProps">
-                  {{ slotProps.option.surname }} {{ slotProps.option.name[0] }}.{{ slotProps.option.patronymic[0] }}.
+                  {{ slotProps.option.surname }} {{ slotProps.option.name?.[0] || '' }}.{{ slotProps.option.patronymic?.[0] || '' }}.
                 </template>
               </AutoComplete>
             </td>
 
-            <td class="px-4 py-2">{{ }}</td>
-            <td class="px-4 py-2">{{ '' }}</td>
+            <td>
+              <AutoComplete
+                  v-model="selectedProgrammer"
+                  dropdown
+                  :suggestions="filteredProgrammers"
+                  @complete="searchProgrammers"
+                  :forceSelection="true"
+                  placeholder="Выберите программиста"
+                  @item-select="handleProgrammerSelect"
+                  size="small"
+                  :optionLabel="formatPersonName"
+              >
+                <template #option="slotProps">
+                  {{ slotProps.option.surname }} {{ slotProps.option.name?.[0] || '' }}.{{ slotProps.option.patronymic?.[0] || '' }}.
+                </template>
+              </AutoComplete>
+            </td>
+
+            <td>
+              <AutoComplete
+                  v-model="selectedTester"
+                  dropdown
+                  :suggestions="filteredTesters"
+                  @complete="searchTesters"
+                  :forceSelection="true"
+                  placeholder="Выберите тестировщика"
+                  @item-select="handleTesterSelect"
+                  size="small"
+                  :optionLabel="formatPersonName"
+              >
+                <template #option="slotProps">
+                  {{ slotProps.option.surname }} {{ slotProps.option.name?.[0] || '' }}.{{ slotProps.option.patronymic?.[0] || '' }}.
+                </template>
+              </AutoComplete>
+            </td>
           </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Контейнер для кнопок -->
       <div class="flex justify-end space-x-2">
-        <!-- Кнопка "Отмена" -->
         <button
             class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600
           to-gray-800 rounded min-w-[40px] md:min-w-[120px] transition-all duration-200"
@@ -280,7 +406,6 @@ function formatPersonName(person: Person): string {
           <span class="hidden md:inline">Отмена</span>
         </button>
 
-        <!-- Кнопка "Записать" -->
         <button
             class="flex items-center justify-center px-2 py-2 border-gray-300 bg-gradient-to-tr from-gray-600
            to-gray-800 rounded min-w-[40px] md:min-w-[120px] transition-all duration-200"
@@ -296,6 +421,10 @@ function formatPersonName(person: Person): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* ... ваши стили ... */
+</style>
 
 <style scoped>
 button {

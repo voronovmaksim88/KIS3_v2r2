@@ -51,13 +51,13 @@ function addNewRow() {
       <div class="overflow-x-auto">
         <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
           <colgroup>
-            <col style="width: 7%">  <!-- С/Н -->
+            <col style="width: 6%">  <!-- С/Н -->
             <col style="width: 15%"> <!-- Название -->
             <col style="width: 18%"> <!-- Заказ -->
-            <col style="width: 15%"> <!-- Разработчик схемы -->
-            <col style="width: 15%"> <!-- Сборщик -->
-            <col style="width: 15%"> <!-- Программист -->
-            <col style="width: 15%"> <!-- Тестировщик -->
+            <col style="width: 16%"> <!-- Разработчик схемы -->
+            <col style="width: 16%"> <!-- Сборщик -->
+            <col style="width: 16%"> <!-- Программист -->
+            <col style="width: 16%"> <!-- Тестировщик -->
           </colgroup>
           <thead>
           <tr>
