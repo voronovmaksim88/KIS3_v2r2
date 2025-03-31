@@ -13,6 +13,8 @@ import {BoxAccountingCreateRequest} from "@/types/typeBoxAccounting";
 import {useOrdersStore} from "@/stores/storeOrders";
 import AutoComplete from 'primevue/autocomplete';
 import {typeOrderSerial} from "@/types/typeOrder.ts";
+import {Person} from "@/types/typePerson.ts";
+
 
 const formsVisibilityStore = useFormsVisibilityStore();
 const peopleStore = usePeopleStore();
@@ -22,6 +24,11 @@ const {boxes} = storeToRefs(boxAccountingStore);
 const ordersStore = useOrdersStore();
 const {orderSerials} = storeToRefs(ordersStore);
 
+// 🧠 Добавляем переменные для хранения специалистов по ролям
+const schemDevelopers = ref<Person[]>([]);
+const assemblers = ref<Person[]>([]);
+const programmers = ref<Person[]>([]);
+const testers = ref<Person[]>([]);
 
 library.add(faCircleCheck, faCircleXmark) // Добавляем иконки в библиотеку
 const newRowOk = ref(false)
@@ -58,6 +65,16 @@ function addNewRow() {
 
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
+  // Загружаем список активных специалистов
+  try {
+    schemDevelopers.value = await peopleStore.fetchActiveSpecialists("developer") || []
+    assemblers.value = await peopleStore.fetchActiveSpecialists("assembler") || []
+    programmers.value = await peopleStore.fetchActiveSpecialists("programmer") || []
+    testers.value = await peopleStore.fetchActiveSpecialists("tester") || []
+    console.log('developers:', schemDevelopers.value);
+  } catch (error) {
+    console.error("Ошибка загрузки специалистов:", error);
+  }
   // Загружаем список людей
   try {
     await peopleStore.fetchPeople();
@@ -92,6 +109,51 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
   console.log('Selected order:', event.value);
 }
 
+// Для выбора разработчика схемы
+const selectedShemDeveloper = ref(null);
+const filteredShemDevelopers = ref<Person[]>([]);
+
+// Функция для поиска разработчиков
+function searchSchemDevelopers(event: { query: string }) {
+  const query = event.query.toLowerCase();
+  filteredShemDevelopers.value = schemDevelopers.value.filter(developer =>
+      developer.name.toLowerCase().includes(query)
+  );
+}
+
+// Функция для обработки выбора разработчика
+function handleSchemDeveloperSelect(event: { value: Person }) {
+  newBox.value.scheme_developer_id = event.value.uuid;
+  console.log('Selected developer:', event.value);
+}
+
+
+// Для выбора сборщика
+const selectedAssembler = ref(null);
+const filteredAssemblers = ref<Person[]>([]);
+
+// Функция для поиска сборщиков
+function searchAssemblers(event: { query: string }) {
+  const query = event.query.toLowerCase();
+  filteredAssemblers.value = assemblers.value.filter(assembler =>
+      assembler.name.toLowerCase().includes(query)
+  );
+}
+
+// Функция для обработки выбора сборщика
+function handleAssemblerSelect(event: { value: Person }) {
+  newBox.value.assembler_id = event.value.uuid;
+  console.log('Selected assembler:', event.value);
+}
+
+// Форматирование отображаемого имени
+function formatPersonName(person: Person): string {
+  if (!person) return '';
+  const s = person.surname;
+  const n = person.name?.[0] || '';
+  const o = person.patronymic?.[0] || '';
+  return `${s} ${n}.${o}.`;
+}
 </script>
 
 <template>
@@ -104,13 +166,13 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
       <div class="overflow-x-auto">
         <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
           <colgroup>
-            <col style="width: 7%">  <!-- С/Н -->
+            <col style="width: 6%">  <!-- С/Н -->
             <col style="width: 15%"> <!-- Название -->
-            <col style="width: 18%"> <!-- Заказ -->
-            <col style="width: 15%"> <!-- Разработчик схемы -->
-            <col style="width: 15%"> <!-- Сборщик -->
-            <col style="width: 15%"> <!-- Программист -->
-            <col style="width: 15%"> <!-- Тестировщик -->
+            <col style="width: 15%"> <!-- Заказ -->
+            <col style="width: 16%"> <!-- Разработчик схемы -->
+            <col style="width: 16%"> <!-- Сборщик -->
+            <col style="width: 16%"> <!-- Программист -->
+            <col style="width: 16%"> <!-- Тестировщик -->
           </colgroup>
           <thead>
           <tr>
@@ -149,6 +211,7 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
                   v-model="selectedOrder"
                   dropdown
                   :suggestions="filteredOrders"
+                  :forceSelection="true"
                   @complete="searchOrder($event)"
                   optionLabel="serial"
                   @item-select="handleOrderSelect"
@@ -156,9 +219,45 @@ function handleOrderSelect(event: { value: typeOrderSerial }) {
               />
             </td>
 
+            <!-- Поле выбора разработчика схемы -->
+            <td>
+              <AutoComplete
+                  v-model="selectedShemDeveloper"
+                  dropdown
+                  :suggestions="filteredShemDevelopers"
+                  @complete="searchSchemDevelopers"
+                  :forceSelection="true"
+                  placeholder="Выберите разработчика"
+                  @item-select="handleSchemDeveloperSelect"
+                  size="small"
+                  :optionLabel="formatPersonName"
+              >
+                <template #option="slotProps">
+                  {{ slotProps.option.surname }} {{ slotProps.option.name[0] }}.{{ slotProps.option.patronymic[0] }}.
+                </template>
+              </AutoComplete>
+            </td>
 
-            <td class="px-4 py-2">{{ ""}}</td>
-            <td class="px-4 py-2">{{ }}</td>
+
+            <!-- Поле выбора сборщика -->
+            <td>
+              <AutoComplete
+                  v-model="selectedAssembler"
+                  dropdown
+                  :suggestions="filteredAssemblers"
+                  @complete="searchAssemblers"
+                  :forceSelection="true"
+                  placeholder="Выберите сборщика"
+                  @item-select="handleAssemblerSelect"
+                  size="small"
+                  :optionLabel="formatPersonName"
+              >
+                <template #option="slotProps">
+                  {{ slotProps.option.surname }} {{ slotProps.option.name[0] }}.{{ slotProps.option.patronymic[0] }}.
+                </template>
+              </AutoComplete>
+            </td>
+
             <td class="px-4 py-2">{{ }}</td>
             <td class="px-4 py-2">{{ '' }}</td>
           </tr>

@@ -4,7 +4,8 @@
 - pinia
 - type script
 - axiox
-- tailwindcss
+- tailwindcss 
+- primevue v4
 
 
 Покажи только те строки, которые требуют изменений не переписывай весь код.

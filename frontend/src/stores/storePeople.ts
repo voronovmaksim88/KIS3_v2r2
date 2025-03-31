@@ -5,6 +5,17 @@ import axios from 'axios';
 import { Person } from '../types/typePerson';
 import { getApiUrl } from '../utils/apiUrlHelper';
 
+// Создайте тип для параметров фильтрации
+interface PeopleFilterParams {
+    can_be_any?: boolean;
+    can_be_scheme_developer?: boolean;
+    can_be_assembler?: boolean;
+    can_be_programmer?: boolean;
+    can_be_tester?: boolean;
+    active?: boolean;
+    counterparty_id?: number;
+}
+
 export const usePeopleStore = defineStore('people', () => {
     // Состояние
     const people = ref<Person[]>([]);
@@ -39,7 +50,7 @@ export const usePeopleStore = defineStore('people', () => {
         error.value = message;
     }
 
-    async function fetchPeople() {
+    async function fetchAllPeople() {
         clearError();
         isLoading.value = true;
 
@@ -64,6 +75,104 @@ export const usePeopleStore = defineStore('people', () => {
             isLoading.value = false;
         }
     }
+
+
+    async function fetchPeople(filters: PeopleFilterParams = {}) {
+        clearError();
+        isLoading.value = true;
+
+        try {
+            // Создаем параметры запроса на основе предоставленных фильтров
+            const params: Record<string, string | number | boolean> = {};
+
+            // Добавляем только определенные (не undefined) фильтры
+            if (filters.can_be_any !== undefined) params.can_be_any = filters.can_be_any;
+            if (filters.can_be_scheme_developer !== undefined) params.can_be_scheme_developer = filters.can_be_scheme_developer;
+            if (filters.can_be_assembler !== undefined) params.can_be_assembler = filters.can_be_assembler;
+            if (filters.can_be_programmer !== undefined) params.can_be_programmer = filters.can_be_programmer;
+            if (filters.can_be_tester !== undefined) params.can_be_tester = filters.can_be_tester;
+            if (filters.active !== undefined) params.active = filters.active;
+            if (filters.counterparty_id !== undefined) params.counterparty_id = filters.counterparty_id;
+
+            const response = await axios.get<Person[]>(
+                `${getApiUrl()}person/read`,
+                {
+                    params,
+                    withCredentials: true
+                }
+            );
+
+            people.value = response.data;
+            return response.data;
+        } catch (e) {
+            if (axios.isAxiosError(e)) {
+                console.error('Error fetching people:', e.response?.data || e.message);
+                setError(e.response?.data?.detail || 'Error fetching people');
+            } else {
+                console.error('Unexpected error:', e);
+                setError('Unknown error occurred');
+            }
+            return null;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    // Удобные предустановленные фильтры для частых сценариев
+    async function fetchActivePeople() {
+        return fetchPeople({ active: true });
+    }
+
+    async function fetchDevelopers() {
+        return fetchPeople({ can_be_scheme_developer: true });
+    }
+
+    async function fetchAssemblers() {
+        return fetchPeople({ can_be_assembler: true });
+    }
+
+    async function fetchProgrammers() {
+        return fetchPeople({ can_be_programmer: true });
+    }
+
+    async function fetchTesters() {
+        return fetchPeople({ can_be_tester: true });
+    }
+
+    async function fetchAnySpecialists() {
+        return fetchPeople({ can_be_any: true });
+    }
+
+    // Функция для фильтрации по компании
+    async function fetchPeopleByCounterparty(counterpartyId: number) {
+        return fetchPeople({ counterparty_id: counterpartyId });
+    }
+
+    // Функция для комбинированной фильтрации (по роли и активности)
+    async function fetchActiveSpecialists(specialistType: 'developer' | 'assembler' | 'programmer' | 'tester' | 'any') {
+        const filters: PeopleFilterParams = { active: true };
+
+        switch (specialistType) {
+            case 'developer':
+                filters.can_be_scheme_developer = true;
+                break;
+            case 'assembler':
+                filters.can_be_assembler = true;
+                break;
+            case 'programmer':
+                filters.can_be_programmer = true;
+                break;
+            case 'tester':
+                filters.can_be_tester = true;
+                break;
+            case 'any':
+                filters.can_be_any = true;
+                break;
+        }
+
+        return fetchPeople(filters);
+    }
+
 
     async function addPerson(
         name: string,
@@ -90,7 +199,7 @@ export const usePeopleStore = defineStore('people', () => {
             );
 
             // Обновляем список людей после успешного добавления
-            await fetchPeople();
+            await fetchAllPeople();
 
             return response.data;
         } catch (e) {
@@ -207,7 +316,16 @@ export const usePeopleStore = defineStore('people', () => {
         // Методы
         clearStore,
         clearError,
-        fetchPeople,
+        fetchPeople,         // Основная функция фильтрации
+        fetchAllPeople,      // Переименованная исходная функция
+        fetchActivePeople,   // Новые удобные функции
+        fetchDevelopers,
+        fetchAssemblers,
+        fetchProgrammers,
+        fetchTesters,
+        fetchAnySpecialists,
+        fetchPeopleByCounterparty,
+        fetchActiveSpecialists,
         addPerson,
         updatePerson,
         deletePerson,
