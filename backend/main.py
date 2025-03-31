@@ -14,6 +14,7 @@ from routers.import_router import router as import_router
 from routers.box_accountig_router import router as box_accountig_router
 from routers.get_all_router import router as get_all_router
 from routers.order_router import router as order_router
+from routers.people_router import router as people_router
 
 app = FastAPI(root_path="/api")
 
@@ -24,6 +25,7 @@ app.include_router(jwt_auth.router)
 app.include_router(box_accountig_router)
 app.include_router(get_all_router)
 app.include_router(order_router)
+app.include_router(people_router)
 
 # Настройка CORS
 app.add_middleware(
