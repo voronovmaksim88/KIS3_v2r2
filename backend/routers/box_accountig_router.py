@@ -76,7 +76,8 @@ async def read_box_accounting(
             joinedload(BoxAccountingModel.programmer),
             joinedload(BoxAccountingModel.tester),
             joinedload(BoxAccountingModel.order)
-        ).offset(offset).limit(size)  # Применяем пагинацию: пропускаем offset записей и выбираем size записей.
+        ).order_by(BoxAccountingModel.serial_num.desc()).offset(offset).limit(size)  # Добавлена сортировка
+        # Применяем пагинацию: пропускаем offset записей и выбираем size записей.
 
         result = await db.execute(stmt)
         boxes = result.scalars().unique().all()
