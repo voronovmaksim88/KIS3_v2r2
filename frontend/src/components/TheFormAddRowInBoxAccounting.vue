@@ -4,7 +4,7 @@ import {faCircleCheck, faCircleXmark} from '@fortawesome/free-regular-svg-icons'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import {library} from '@fortawesome/fontawesome-svg-core'
 // Добавляем импорт onUnmounted
-import {computed, onMounted, onUnmounted, ref} from "vue";
+import {onMounted, onUnmounted, ref} from "vue";
 import {useFormsVisibilityStore} from '../stores/storeVisibilityForms';
 import {usePeopleStore} from "@/stores/storePeople.ts";
 import {useBoxAccountingStore} from "@/stores/storeBoxAccounting";
@@ -19,7 +19,7 @@ const formsVisibilityStore = useFormsVisibilityStore();
 const peopleStore = usePeopleStore();
 const { error: peopleError } = storeToRefs(peopleStore);
 const boxAccountingStore = useBoxAccountingStore();
-const {boxes} = storeToRefs(boxAccountingStore);
+const {nextSerialNum} = storeToRefs(boxAccountingStore);
 const ordersStore = useOrdersStore();
 const {orderSerials} = storeToRefs(ordersStore);
 
@@ -59,14 +59,6 @@ const successMessage = ref<string>('');
 
 // Используем клон начального состояния
 const newBox = ref<BoxAccountingCreateRequest>({ ...initialNewBoxState });
-
-const nextSerialNum = computed(() => {
-  if (!boxes.value || boxes.value.length === 0) return 1;
-  // Находим максимальный серийный номер и добавляем 1
-  const maxSerialNum = Math.max(...boxes.value.map(box => box.serial_num));
-  return maxSerialNum + 1;
-});
-
 
 function cancel() {
   formsVisibilityStore.isFormAddRowInBoxAccountingVisible = false
@@ -180,7 +172,12 @@ onMounted(async () => {
   // --- Конец загрузки заказов ---
 
   console.log("Data loading finished.");
+
+  // --- Загрузка следующего серийного номера ----
+  await boxAccountingStore.fetchMaxSerialNum(); // Получаем maxSerialNum
+  console.log("Next serial number:", nextSerialNum.value);
 });
+
 
 // === ЛОГИКА ОЧИСТКИ при Размонтировании ===
 // Функция для очистки состояния компонента

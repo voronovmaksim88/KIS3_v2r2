@@ -228,3 +228,46 @@ async def create_box_accounting(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create box accounting record: {str(e)}",
         )
+
+
+@router.get("/max-serial-num/", response_model=int)
+async def get_max_serial_num(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_auth_user),
+):
+    """
+    Получение максимального серийного номера шкафа в базе данных.
+    Требует аутентификации пользователя.
+    """
+    try:
+        # Проверяем, что пользователь авторизован
+        if not current_user:
+            logger.warning("Unauthorized access attempt to get max serial number")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+            )
+
+        logger.debug(f"User {current_user.username} requesting max serial number")
+
+        # Запрос для получения максимального серийного номера
+        max_serial_query = select(func.max(BoxAccountingModel.serial_num))
+        result = await db.execute(max_serial_query)
+        max_serial = result.scalar()
+
+        # Если записей нет, возвращаем 0
+        if max_serial is None:
+            max_serial = 0
+
+        logger.info(f"Successfully retrieved max serial number: {max_serial}")
+
+        return max_serial
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching max serial number: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch max serial number",
+        )

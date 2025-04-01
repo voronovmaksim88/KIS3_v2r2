@@ -25,6 +25,39 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         );
     });
 
+    // Переменная для хранения максимального серийного номера
+    const maxSerialNum = ref<number>(0);
+
+    // Функция для получения максимального серийного номера
+    async function fetchMaxSerialNum(): Promise<number | null> {
+        clearError();
+        isLoading.value = true;
+
+        try {
+            const response = await axios.get<number>(
+                `${getApiUrl()}box-accounting/max-serial-num/`,
+                { withCredentials: true }
+            );
+
+            maxSerialNum.value = response.data;
+            return response.data;
+        } catch (e) {
+            if (axios.isAxiosError(e)) {
+                console.error('Error fetching max serial number:', e.response?.data || e.message);
+                setError(e.response?.data?.detail || 'Error fetching max serial number');
+            } else {
+                console.error('Unexpected error:', e);
+                setError('Unknown error occurred');
+            }
+            return null;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    // Геттер для получения следующего серийного номера (максимальный + 1)
+    const nextSerialNum = computed(() => maxSerialNum.value + 1);
+
     // Методы
     function clearStore() {
         boxes.value = [];
@@ -201,6 +234,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
 
         // Геттеры
         sortedBoxes,
+        nextSerialNum,
 
         // Методы
         clearStore,
@@ -211,6 +245,7 @@ export const useBoxAccountingStore = defineStore('boxAccounting', () => {
         changePage,
         changePageSize,
         getBoxBySerialNum,
-        setError
+        setError,
+        fetchMaxSerialNum
     };
 });
