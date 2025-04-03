@@ -88,6 +88,9 @@ class CounterpartyForm(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
+    # Добавляем обратную связь, если нужно будет получать всех контрагентов этой формы
+    counterparties: Mapped[List["Counterparty"]] = relationship(back_populates="form")
+
     def __repr__(self) -> str:
         return f"CounterpartyForm(id={self.id!r}, name={self.name!r})"
 
@@ -102,6 +105,10 @@ class Counterparty(Base):
     city_id: Mapped[int | None] = mapped_column(ForeignKey('cities.id'), nullable=True)
     form_id: Mapped[int] = mapped_column(ForeignKey('counterparty_form.id'), nullable=False)
     orders: Mapped[List["Order"]] = relationship(back_populates="customer")
+
+    form: Mapped["CounterpartyForm"] = relationship(back_populates="counterparties")
+    # Можно использовать lazy='joined' или lazy='selectin' здесь,
+    # но лучше управлять загрузкой в самом запросе через options()
 
     def __repr__(self) -> str:
         return f"Counterparty(id={self.id!r}, name={self.name!r})"
@@ -204,7 +211,7 @@ class Order(Base):
     # YYYY - год создания
     name: Mapped[str] = mapped_column(String(64), nullable=False)  # Название
     customer_id: Mapped[int] = mapped_column(ForeignKey('counterparty.id'), nullable=False)  # id заказчика
-    customer: Mapped["Counterparty"] = relationship(back_populates="orders")
+    customer: Mapped["Counterparty"] = relationship(back_populates="orders", foreign_keys=[customer_id])
     priority: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Приоритет от 1 до 10
     status_id: Mapped[int] = mapped_column(ForeignKey('order_statuses.id'), nullable=False)  # Статус заказа
     status: Mapped["OrderStatus"] = relationship(back_populates="orders")

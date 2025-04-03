@@ -3,9 +3,11 @@
 Схемы для заказов
 """
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, computed_field
 from typing import Optional
+from typing import List
 from datetime import datetime
+from pydantic import ConfigDict
 
 
 class OrderStatusSchema(BaseModel):
@@ -81,10 +83,39 @@ class OrderBase(BaseModel):
             raise ValueError("Status ID must be between 1 and 8")
         return v
 
+
 class OrderSerial(BaseModel):
     serial: str
 
 
+# Схема для одного заказа при чтении
+class OrderRead(BaseModel):
+    serial: str
+    name: str
+    customer: str  # Ожидаем строку
+    priority: Optional[int] = None
+    status_id: int
+    start_moment: Optional[datetime] = None
+    deadline_moment: Optional[datetime] = None
+    end_moment: Optional[datetime] = None
+    materials_cost: Optional[int] = None
+    materials_paid: bool
+    products_cost: Optional[int] = None
+    products_paid: bool
+    work_cost: Optional[int] = None
+    work_paid: bool
+    debt: Optional[int] = None
+    debt_paid: bool
+
+    # Оставляем from_attributes, тк другие поля могут мапиться
+    model_config = ConfigDict(from_attributes=True)
+
+# Схема для ответа с пагинацией
+class PaginatedOrderResponse(BaseModel):
+    total: int
+    limit: int
+    skip: int
+    data: List[OrderRead]
 
 # class OrderCreate(OrderBase):
 #     pass
