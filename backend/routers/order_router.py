@@ -1,7 +1,7 @@
 # routers/order_router.py
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, Integer
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
@@ -31,6 +31,7 @@ async def read_orders(
     """
     Получить список заказов с пагинацией, фильтрацией и поиском.
     Поле customer возвращает строку 'Форма Имя'.
+    Заказы отсортированы по дате (из serial) - от старых к новым.
     """
 
     # Запрос с жадной загрузкой связей
@@ -69,15 +70,22 @@ async def read_orders(
     total_result = await session.execute(count_query)
     total = total_result.scalar_one_or_none() or 0
 
-    # --- Применение сортировки и пагинации ---
-    query = query.order_by(Order.serial)
+    # --- Применение НОВОЙ сортировки и пагинации. ---
+    # Заменяем старую сортировку query = query.order_by(Order.serial)
+    # на сортировку по частям serial: Год (9-12), Месяц (5-6), Номер (1-3)
+    query = query.order_by(
+        cast(func.substring(Order.serial, 9, 4), Integer).asc(), # Сортировка по году (возрастание)
+        cast(func.substring(Order.serial, 5, 2), Integer).asc(), # Сортировка по месяцу (возрастание)
+        cast(func.substring(Order.serial, 1, 3), Integer).asc()  # Сортировка по номеру (возрастание)
+    )
+    # Применяем пагинацию
     query = query.offset(skip).limit(limit)
 
     # --- Выполнение основного запроса ---
     result = await session.execute(query)
     orders_orm = result.scalars().unique().all() # Получаем ORM объекты Order
 
-    # ---> НОВОЕ: Ручное формирование списка данных для ответа <---
+    # --- Ручное формирование списка данных для ответа ---
     orders_data_list = []
     for order in orders_orm:
         # Формируем строку customer с проверками

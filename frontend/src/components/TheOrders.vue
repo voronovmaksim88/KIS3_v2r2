@@ -27,7 +27,7 @@ const { fetchOrders, clearError } = ordersStore;
 onMounted(() => {
   // Загружаем первую страницу с параметрами по умолчанию (или задаем свои)
   // Например, fetchOrders({skip: 0, limit: 10});
-  fetchOrders();
+  fetchOrders({skip: 0, limit: 20});
 });
 
 // 4. Функции для пагинации (вызывают fetchOrders с новыми параметрами)
