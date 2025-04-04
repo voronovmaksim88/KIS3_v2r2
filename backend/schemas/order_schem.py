@@ -3,11 +3,12 @@
 Схемы для заказов
 """
 
-from pydantic import BaseModel, field_validator, computed_field
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from typing import List
 from datetime import datetime
 from pydantic import ConfigDict
+from schemas.work_schem import WorkSchema
 
 
 class OrderStatusSchema(BaseModel):
@@ -26,19 +27,6 @@ class CounterpartySchema(BaseModel):
     id: int
     name: str
     note: Optional[str] = None
-
-    class Config:
-        """
-        Конфигурация модели
-        """
-        from_attributes = True
-
-
-class WorkSchema(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    active: bool = True
 
     class Config:
         """
@@ -106,6 +94,7 @@ class OrderRead(BaseModel):
     work_paid: bool
     debt: Optional[int] = None
     debt_paid: bool
+    works: List[WorkSchema] = []  # Список работ, по умолчанию пустой
 
     # Оставляем from_attributes, тк другие поля могут мапиться
     model_config = ConfigDict(from_attributes=True)

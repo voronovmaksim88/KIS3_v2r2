@@ -58,8 +58,10 @@ async def read_orders(
 
     # Запрос с жадной загрузкой связей
     query = select(Order).options(
-        selectinload(Order.customer).selectinload(Counterparty.form)
+        selectinload(Order.customer).selectinload(Counterparty.form), # Загрузка контрагента и его формы
+        selectinload(Order.works)  # Загрузка списка связанных работ
     )
+
     # Запрос для подсчета
     count_query = select(func.count(Order.serial))
 
@@ -137,6 +139,9 @@ async def read_orders(
             "work_paid": order.work_paid,
             "debt": order.debt,
             "debt_paid": order.debt_paid,
+            # Передаем список ORM-объектов Work. Pydantic с `from_attributes=True`
+            # и схемой WorkSchema преобразует их в список WorkSchema.
+            "works": order.works,
         }
         # Добавляем валидированный Pydantic объект в список
         # Pydantic сам проверит типы остальных полей из словаря
