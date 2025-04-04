@@ -2,7 +2,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useOrdersStore } from '../stores/storeOrders'; // Убедитесь, что путь к стору правильный
+import { useOrdersStore } from '../stores/storeOrders';
+import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
@@ -45,6 +46,10 @@ const goToNextPage = () => {
   }
 };
 
+function addNewOrder() {
+
+}
+
 </script>
 
 <template>
@@ -67,7 +72,55 @@ const goToNextPage = () => {
     </div>
 
     <div v-if="!isLoading && !error" class="w-full max-w-4xl">
-      <h1 class="text-2xl font-semibold mb-4 text-center">Список заказов</h1>
+      <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
+        <colgroup>
+          <col style="width: 15%">  <!-- номер заказа -->
+          <col style="width: 15%"> <!-- Заказчик -->
+          <col style="width: 15%"> <!-- Приоритет -->
+          <col style="width: 25%"> <!-- Название -->
+          <col style="width: 15%"> <!-- Виды работ -->
+          <col style="width: 15%"> <!-- Статус -->
+        </colgroup>
+        <thead>
+        <tr>
+          <th colspan="7" class="px-2 py-2 text-center bg-gray-600 ">
+            <div  class="px-1 py-1 bg-gray-600 flex justify-end items-center">
+              <BaseButton
+                  :action="addNewOrder"
+                  :text="'Добавить'"
+                  :style="'Success'"
+              />
+            </div>
+          </th>
+        </tr>
+        <tr>
+          <th class="px-4 py-2 text-left">С/Н</th>
+          <th class="px-4 py-2 text-left">Название</th>
+          <th class="px-4 py-2 text-left">Заказ</th>
+          <th class="px-4 py-2 text-left">Разработчик схемы</th>
+          <th class="px-4 py-2 text-left">Сборщик</th>
+          <th class="px-4 py-2 text-left">Программист</th>
+          <th class="px-4 py-2 text-left">Тестировщик</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="order in orders" :key="order.serial" class="border-t border-gray-600">
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{}}</td>
+        </tr>
+        </tbody>
+      </table>
+
+
+
+
+
+
 
       <div v-if="orders.length > 0" class="space-y-3">
         <div v-for="order in orders" :key="order.serial" class="bg-gray-700 p-3 rounded shadow">
