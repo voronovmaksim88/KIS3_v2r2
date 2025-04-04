@@ -59,7 +59,7 @@ function addNewOrder() {
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <div v-if="!isLoading && error" class="w-full max-w-4xl bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center">
+    <div v-if="!isLoading && error" class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center">
       <span>Ошибка: {{ error }}</span>
       <div>
         <button @click="fetchOrders({ skip: currentSkip, limit: currentLimit })" class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs">
@@ -71,15 +71,15 @@ function addNewOrder() {
       </div>
     </div>
 
-    <div v-if="!isLoading && !error" class="w-full max-w-4xl">
+    <div v-if="!isLoading && !error" class="w-full">
       <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
         <colgroup>
-          <col style="width: 15%">  <!-- номер заказа -->
-          <col style="width: 15%"> <!-- Заказчик -->
-          <col style="width: 15%"> <!-- Приоритет -->
+          <col style="width: 8%"> <!-- номер заказа -->
+          <col style="width: 22%"> <!-- Заказчик -->
+          <col style="width: 10%"> <!-- Приоритет -->
           <col style="width: 25%"> <!-- Название -->
           <col style="width: 15%"> <!-- Виды работ -->
-          <col style="width: 15%"> <!-- Статус -->
+          <col style="width: 20%"> <!-- Статус -->
         </colgroup>
         <thead>
         <tr>
@@ -94,22 +94,20 @@ function addNewOrder() {
           </th>
         </tr>
         <tr>
-          <th class="px-4 py-2 text-left">С/Н</th>
+          <th class="px-4 py-2 text-left">Номер</th>
+          <th class="px-4 py-2 text-left">Заказчик</th>
+          <th class="px-4 py-2 text-left">Приоритет</th>
           <th class="px-4 py-2 text-left">Название</th>
-          <th class="px-4 py-2 text-left">Заказ</th>
-          <th class="px-4 py-2 text-left">Разработчик схемы</th>
-          <th class="px-4 py-2 text-left">Сборщик</th>
-          <th class="px-4 py-2 text-left">Программист</th>
-          <th class="px-4 py-2 text-left">Тестировщик</th>
+          <th class="px-4 py-2 text-left">Виды работ</th>
+          <th class="px-4 py-2 text-left">Статус</th>
         </tr>
         </thead>
         <tbody>
         <tr v-for="order in orders" :key="order.serial" class="border-t border-gray-600">
-          <td class="px-4 py-2">{{}}</td>
-          <td class="px-4 py-2">{{}}</td>
-          <td class="px-4 py-2">{{}}</td>
-          <td class="px-4 py-2">{{}}</td>
-          <td class="px-4 py-2">{{}}</td>
+          <td class="px-4 py-2">{{order.serial}}</td>
+          <td class="px-4 py-2">{{order.customer}}</td>
+          <td class="px-4 py-2">{{order.priority ?? '-' }}</td>
+          <td class="px-4 py-2">{{order.name}}</td>
           <td class="px-4 py-2">{{}}</td>
           <td class="px-4 py-2">{{}}</td>
         </tr>
