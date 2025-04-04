@@ -11,6 +11,7 @@ import {usePagesStore} from "./stores/storePages.ts";
 import {computed, onMounted, ref, watch} from 'vue';
 import {useAuthStore} from "./stores/storeAuth.ts";
 import TheLogin from "@/components/TheLogin.vue";
+import TheOrders from "@/components/TheOrders.vue";
 
 const apiUrl = ref<string>('');
 
@@ -83,12 +84,11 @@ const currentPageLabel = computed(() => {
         :PageName='currentPageLabel'
     />
 
-    <TheMain
-        v-if="pageStore.selectedPage == 'main'"
-    />
+    <TheMain v-if="pageStore.selectedPage == 'main'" />
     <BoxSerialNum v-if="pageStore.selectedPage == 'box-serial-num'"/>
     <TheTestFastAPI v-if="pageStore.selectedPage == 'test-fastapi'"/>
     <TheTestDataBase v-if="pageStore.selectedPage == 'test-db'"/>
+    <TheOrders v-if="pageStore.selectedPage == 'orders'"/>
     <!--  <CommercialOffer  v-if="" />-->
   </div>
 

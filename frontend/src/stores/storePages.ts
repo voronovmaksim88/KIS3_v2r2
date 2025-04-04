@@ -12,7 +12,7 @@ export const usePagesStore = defineStore('tabs', {
         tabs: [
             {id: 'main', label: 'Главная'},
             {id: 'task', label: 'Задачи'},
-            {id: 'order', label: 'Заказы'},
+            {id: 'orders', label: 'Заказы'},
             {id: 'timings', label: 'Тайминги'},
             {id: 'box-serial-num', label: 'Учёт с/н ША'},
             {id: 'test-fastapi', label: 'Тесты FastAPI'},
