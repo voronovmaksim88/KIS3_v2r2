@@ -10,7 +10,7 @@ from colorama import init
 import sqlite3
 from typing import Set, Dict
 from config import DB_PATH
-from DjangoRestAPI import get_order_status
+from kis2.DjangoRestAPI import get_order_status
 
 # Инициализация colorama
 init(autoreset=True)

@@ -44,7 +44,7 @@ import logging
 init(autoreset=True)
 
 # Загрузка конфигурации Alembic
-alembic_cfg = Config("../alembic.ini")
+alembic_cfg = Config("../../alembic.ini")
 
 # Объявляем переменные перед блоком try, чтобы к ним был доступ после выполнения try-except
 engine = None
@@ -375,7 +375,7 @@ def copy_table_people_from_sqlite_to_postgresql(list_dict_person, connection):
 
     # Получаем существующие записи о людях
     existing_people = connection.execute(
-        select(Person.id, Person.surname, Person.name, Person.patronymic)
+        select(Person.uuid, Person.surname, Person.name, Person.patronymic)
     ).fetchall()
     existing_keys = {
         f"{row.surname}{row.name}{row.patronymic}": row.id
@@ -543,7 +543,7 @@ def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders, connection):
             'serial': order_in_sqlite['serial'],
             'name': order_in_sqlite['name'],
             'customer_id': dict_counterparties_from_postgre_sql[order_in_sqlite['customer']],
-            'status_id': dict_order_status_from_postgre_sql[order_in_sqlite['status']],
+            'status_id': dict_order_status_from_postgre_sql[str(int(order_in_sqlite['status'])+1)],
         }
 
         if order_data['serial'] in existing_order_set:
@@ -576,7 +576,7 @@ def copy_table_orders_from_sqlite_to_postgresql(list_dict_orders, connection):
 def get_dict_people_from_postgre_sql():
     with Session(engine) as session:
         # Формируем запрос с использованием ORM
-        query = select(Person.id, Person.surname, Person.name, Person.patronymic)
+        query = select(Person.uuid, Person.surname, Person.name, Person.patronymic)
 
         # Выполняем запрос и формируем словарь
         result = session.execute(query)

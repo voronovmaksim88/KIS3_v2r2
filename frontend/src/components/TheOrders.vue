@@ -1,8 +1,8 @@
 // src/components/TheOrders.vue
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useOrdersStore } from '../stores/storeOrders';
+import {onMounted} from 'vue';
+import {storeToRefs} from 'pinia';
+import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
 
 // 1. Получаем экземпляр стора
@@ -22,7 +22,7 @@ const {
 } = storeToRefs(ordersStore);
 
 // Действия можно извлекать напрямую
-const { fetchOrders, clearError } = ordersStore;
+const {fetchOrders, clearError} = ordersStore;
 
 // 3. Вызываем действие fetchOrders при монтировании компонента
 onMounted(() => {
@@ -35,14 +35,14 @@ onMounted(() => {
 const goToPreviousPage = () => {
   if (currentPage.value > 0) {
     const newSkip = currentSkip.value - currentLimit.value;
-    fetchOrders({ skip: newSkip, limit: currentLimit.value });
+    fetchOrders({skip: newSkip, limit: currentLimit.value});
   }
 };
 
 const goToNextPage = () => {
   if (currentPage.value < totalPages.value - 1) {
     const newSkip = currentSkip.value + currentLimit.value;
-    fetchOrders({ skip: newSkip, limit: currentLimit.value });
+    fetchOrders({skip: newSkip, limit: currentLimit.value});
   }
 };
 
@@ -59,10 +59,12 @@ function addNewOrder() {
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <div v-if="!isLoading && error" class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center">
+    <div v-if="!isLoading && error"
+         class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center">
       <span>Ошибка: {{ error }}</span>
       <div>
-        <button @click="fetchOrders({ skip: currentSkip, limit: currentLimit })" class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs">
+        <button @click="fetchOrders({ skip: currentSkip, limit: currentLimit })"
+                class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs">
           Повторить
         </button>
         <button @click="clearError" class="ml-2 p-1 px-2 bg-gray-600 rounded hover:bg-gray-500 text-xs">
@@ -84,7 +86,7 @@ function addNewOrder() {
         <thead>
         <tr>
           <th colspan="7" class="px-2 py-2 text-center bg-gray-600 ">
-            <div  class="px-1 py-1 bg-gray-600 flex justify-end items-center">
+            <div class="px-1 py-1 bg-gray-600 flex justify-end items-center">
               <BaseButton
                   :action="addNewOrder"
                   :text="'Добавить'"
@@ -104,20 +106,25 @@ function addNewOrder() {
         </thead>
         <tbody>
         <tr v-for="order in orders" :key="order.serial" class="border-t border-gray-600">
-          <td class="px-4 py-2">{{order.serial}}</td>
-          <td class="px-4 py-2">{{order.customer}}</td>
-          <td class="px-4 py-2">{{order.priority ?? '-' }}</td>
-          <td class="px-4 py-2">{{order.name}}</td>
+          <td class="px-4 py-2">{{ order.serial }}</td>
+          <td class="px-4 py-2">{{ order.customer }}</td>
+          <td class="px-4 py-2">{{ order.priority ?? '-' }}</td>
+          <td class="px-4 py-2">{{ order.name }}</td>
           <td class="px-4 py-2">{{}}</td>
-          <td class="px-4 py-2">{{}}</td>
+          <td
+              class="px-4 py-2"
+              :class="{
+              'font-bold': [3, 4].includes(order.status_id),
+              'text-blue-400': order.status_id === 2,
+              'text-green-400': order.status_id === 3,
+              'text-red-400': order.status_id === 4
+              }"
+          >
+            {{ ordersStore.getStatusText(order.status_id) }}
+          </td>
         </tr>
         </tbody>
       </table>
-
-
-
-
-
 
 
       <div v-if="orders.length > 0" class="space-y-3">
@@ -128,7 +135,9 @@ function addNewOrder() {
           <p><strong>Приоритет:</strong> {{ order.priority ?? 'Н/Д' }}</p>
           <p><strong>Статус ID:</strong> {{ order.status_id }}</p>
           <p v-if="order.start_moment"><strong>Начало:</strong> {{ new Date(order.start_moment).toLocaleString() }}</p>
-          <p v-if="order.deadline_moment"><strong>Дедлайн:</strong> {{ new Date(order.deadline_moment).toLocaleString() }}</p>
+          <p v-if="order.deadline_moment"><strong>Дедлайн:</strong> {{
+              new Date(order.deadline_moment).toLocaleString()
+            }}</p>
         </div>
       </div>
       <div v-else class="text-center text-gray-400 mt-5">

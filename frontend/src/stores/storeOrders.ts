@@ -24,7 +24,27 @@ export const useOrdersStore = defineStore('orders', () => {
     const currentLimit = ref<number>(10); // Текущий лимит (сколько на странице)
     const currentSkip = ref<number>(0); // Текущий пропуск (сколько пропущено)
 
-    // === Существующие действия ===
+    // === Словарь статусов заказов ===
+    const orderStatuses = {
+        1: "Не определён",
+        2: "На согласовании",
+        3: "В работе",
+        4: "Просрочено",
+        5: "Выполнено в срок",
+        6: "Выполнено НЕ в срок",
+        7: "Не согласовано",
+        8: "На паузе"
+    };
+
+    // === Функция для преобразования ID статуса в текст ===
+    const getStatusText = (statusId: number | null): string => {
+        if (statusId === null || statusId === undefined) {
+            return "Неизвестный статус";
+        }
+
+        return orderStatuses[statusId as keyof typeof orderStatuses] || "Неизвестный статус";
+    };
+
     const fetchOrderSerials = async (statusId: number | null = null) => {
         loading.value = true;
         error.value = null;
@@ -55,7 +75,7 @@ export const useOrdersStore = defineStore('orders', () => {
         error.value = null;
     };
 
-    // === Новое действие для получения заказов с пагинацией ===
+    // === Действие для получения заказов с пагинацией ===
     const fetchOrders = async (params: typeFetchOrdersParams = {}) => {
         loading.value = true;
         error.value = null; // Сброс ошибки перед запросом
@@ -94,7 +114,7 @@ export const useOrdersStore = defineStore('orders', () => {
         }
     };
 
-    // === Новое действие для сброса состояния заказов ===
+    // === Действие для сброса состояния заказов ===
     const resetOrders = () => {
         orders.value = [];
         totalOrders.value = 0;
@@ -119,7 +139,7 @@ export const useOrdersStore = defineStore('orders', () => {
     const serialsCount = computed(() => orderSerials.value.length);
     const isLoading = computed(() => loading.value);
 
-    // Новые вычисляемые свойства для пагинации
+    // Вычисляемые свойства для пагинации
     const currentPage = computed(() => {
         // Рассчитываем номер текущей страницы (0-based)
         return currentLimit.value > 0 ? Math.floor(currentSkip.value / currentLimit.value) : 0;
@@ -133,19 +153,20 @@ export const useOrdersStore = defineStore('orders', () => {
     return {
         // Состояние
         orderSerials,
-        orders, // Новый список заказов
+        orders, //
         loading,
         error,
-        totalOrders, // Новое состояние
-        currentLimit, // Новое состояние
-        currentSkip,  // Новое состояние
+        totalOrders, //
+        currentLimit, //
+        currentSkip,  //
 
         // Действия
         fetchOrderSerials,
         resetOrderSerials,
-        fetchOrders, // Новое действие
-        resetOrders, // Новое действие
+        fetchOrders, //
+        resetOrders, //
         clearError,
+        getStatusText, // Новая функция для получения текста статуса
 
         // Вычисляемые свойства
         serialsCount,
