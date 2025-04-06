@@ -638,9 +638,9 @@ def get_order_status(status_id: Optional[int]) -> str:
     elif status_id == 1:
         return 'На согласовании'
     elif status_id == 2:
-        return 'На согласовании'
-    elif status_id == 3:
         return 'В работе'
+    elif status_id == 3:
+        return 'Просрочено'
     elif status_id == 4:
         return 'Выполнено в срок'
     elif status_id == 5:
@@ -713,11 +713,11 @@ def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
 
     # Создаем список словарей заказов
     orders_list = []
-    for order in orders_data:
+    for item in orders_data:
         # Проверяем наличие обязательного ключа
-        if "serial" not in order:
+        if "serial" not in item:
             if debug:
-                print(f"Пропущен заказ без серийного номера: {order}")
+                print(f"Пропущен заказ без серийного номера: {item}")
             continue
 
         # Получаем название компании-заказчика
@@ -1321,6 +1321,6 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
 
 if __name__ == "__main__":
-    boxes_list_dict_from_kis2 = create_boxes_list_dict_from_kis2()
-    for timing in boxes_list_dict_from_kis2:
-        print(timing)
+    orders_list_dict_from_kis2 = create_orders_list_dict_from_kis2()
+    for order in orders_list_dict_from_kis2:
+        print(order['works'])
