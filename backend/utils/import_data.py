@@ -5,7 +5,7 @@
 """
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from colorama import init, Fore
 from typing import Dict, Set, Any
@@ -578,11 +578,19 @@ def import_orders_from_kis2() -> Dict[str, any]:
                     status_id = status_dict.get(status_text, 1)  # По умолчанию 1 (Не определён)
 
                     # Конвертация строк дат и времени в объекты datetime
-                    start_moment = datetime.strptime(order_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
-                        'start_moment'] else None
-                    deadline_moment = datetime.strptime(order_data['dedline_moment'], "%Y-%m-%dT%H:%M:%SZ") if \
-                        order_data['dedline_moment'] else None
-                    end_moment = datetime.strptime(order_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
+                    # start_moment = datetime.strptime(order_data['start_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
+                    #     'start_moment'] else None
+                    # deadline_moment = datetime.strptime(order_data['dedline_moment'], "%Y-%m-%dT%H:%M:%SZ") if \
+                    #     order_data['dedline_moment'] else None
+                    # end_moment = datetime.strptime(order_data['end_moment'], "%Y-%m-%dT%H:%M:%SZ") if order_data[
+                    #     'end_moment'] else None
+
+                    # Конвертация строк дат и времени в объекты datetime
+                    start_moment = datetime.fromisoformat(order_data['start_moment'].replace('Z', '+00:00')) if \
+                    order_data['start_moment'] else None
+                    deadline_moment = datetime.fromisoformat(order_data['dedline_moment'].replace('Z', '+00:00')) if \
+                    order_data['dedline_moment'] else None
+                    end_moment = datetime.fromisoformat(order_data['end_moment'].replace('Z', '+00:00')) if order_data[
                         'end_moment'] else None
 
                     # Получаем customer_id
@@ -632,20 +640,56 @@ def import_orders_from_kis2() -> Dict[str, any]:
                             needs_update = True
                             update_details.append("статус")
 
-                        if order.start_moment != start_moment:
-                            order.start_moment = start_moment
-                            needs_update = True
-                            update_details.append("дата начала")
+                        # Определяем локальный часовой пояс (например, GMT+3 для Москвы и Питера,
+                        # наш сервер в Питере как раз !)
+                        LOCAL_TIMEZONE = timezone(timedelta(hours=3))
 
-                        if order.deadline_moment != deadline_moment:
-                            order.deadline_moment = deadline_moment
-                            needs_update = True
-                            update_details.append("дедлайн")
+                        # Функция для нормализации datetime объектов
+                        def normalize_datetime(dt):
+                            if dt is None:
+                                return None
+                            # Преобразуем к локальному часовому поясу если есть tzinfo
+                            if dt.tzinfo:
+                                return dt.astimezone(LOCAL_TIMEZONE)
+                            # Иначе предполагаем, что время в локальном часовом поясе
+                            return dt.replace(tzinfo=LOCAL_TIMEZONE)
 
-                        if order.end_moment != end_moment:
-                            order.end_moment = end_moment
-                            needs_update = True
-                            update_details.append("дата окончания")
+                        # Применяем для всех полей с датами
+                        for field_name in ['start_moment', 'deadline_moment', 'end_moment']:
+                            # Получаем текущее значение из БД
+                            current_value = getattr(order, field_name)
+                            # Получаем новое значение из КИС2
+                            new_value = locals().get(field_name)  # Получаем переменную по имени
+
+                            # Нормализуем оба значения
+                            normalized_current = normalize_datetime(current_value)
+                            normalized_new = normalize_datetime(new_value)
+
+                            # Если оба значения None, пропускаем
+                            if normalized_current is None and normalized_new is None:
+                                continue
+
+                            # Если одно из значений None, а другое нет - обновляем
+                            if normalized_current is None or normalized_new is None:
+                                setattr(order, field_name, new_value)
+                                needs_update = True
+                                update_details.append(f"{field_name.replace('_moment', '')}")
+                                continue
+
+                            # Сравниваем с точностью до минут
+                            current_str = normalized_current.strftime("%Y-%m-%d %H:%M")
+                            new_str = normalized_new.strftime("%Y-%m-%d %H:%M")
+
+                            if current_str != new_str:
+                                # Для отладки
+                                print(f"Разное время {field_name}: БД={current_str}, КИС2={new_str}")
+
+                                # Обновляем значение
+                                setattr(order, field_name, new_value)
+                                needs_update = True
+                                update_details.append(f"{field_name.replace('_moment', '')}")
+
+
 
                         # Проверяем изменения в финансовых данных
                         if order.materials_cost != materials_cost:
@@ -708,7 +752,7 @@ def import_orders_from_kis2() -> Dict[str, any]:
                                 for work_name in new_works:
                                     work_id = works_dict.get(work_name)
                                     if work_id:
-                                        work = session.query(Work).get(work_id)
+                                        work = session.get(Work, work_id)
                                         if work:
                                             order.works.append(work)
                                             update_details.append(f"добавлена работа '{work_name}'")
@@ -743,7 +787,7 @@ def import_orders_from_kis2() -> Dict[str, any]:
                         for work_name in order_works:
                             work_id = works_dict.get(work_name)
                             if work_id:
-                                work = session.query(Work).get(work_id)
+                                work = session.get(Work, work_id)
                                 if work:
                                     new_order.works.append(work)
 

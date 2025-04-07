@@ -713,17 +713,17 @@ def create_orders_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
 
     # Создаем список словарей заказов
     orders_list = []
-    for item in orders_data:
+    for order in orders_data:
         # Проверяем наличие обязательного ключа
-        if "serial" not in item:
+        if "serial" not in order:
             if debug:
-                print(f"Пропущен заказ без серийного номера: {item}")
+                print(f"Пропущен заказ без серийного номера: {order}")
             continue
 
         # Получаем название компании-заказчика
         customer_name = None
-        if "customer_id" in order and order["customer_id"] in companies_dict:
-            customer_name = companies_dict[order["customer_id"]]
+        if "customer" in order and order["customer"] in companies_dict:
+            customer_name = companies_dict[order["customer"]]
 
         # Получаем список названий работ
         works_list = []
@@ -1323,4 +1323,4 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 if __name__ == "__main__":
     orders_list_dict_from_kis2 = create_orders_list_dict_from_kis2()
     for order in orders_list_dict_from_kis2:
-        print(order['works'])
+        print(order)
