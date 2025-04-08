@@ -1326,6 +1326,11 @@ if __name__ == "__main__":
     #     print(dict_manufacturer)
 
 
-    list_dict_persons = create_person_list_dict_from_kis2()
-    for dict_persons in list_dict_persons:
-        print(dict_persons)
+    # list_dict_persons = create_person_list_dict_from_kis2()
+    # for dict_persons in list_dict_persons:
+    #     print(dict_persons)
+
+
+    order_comments_list_dict_from_kis2 = create_order_comments_list_dict_from_kis2()
+    for order_comments_dict_from_kis2 in order_comments_list_dict_from_kis2:
+        print(order_comments_dict_from_kis2)
