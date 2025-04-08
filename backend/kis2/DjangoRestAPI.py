@@ -323,8 +323,8 @@ def create_list_dict_manufacturers(debug: bool = True) -> List[Dict[str, str]]:
     manufacturers_list = []
     for manufacturer in manufacturers_data:
         # Проверяем наличие необходимых ключей
-        if "name" in manufacturer and "country_id" in manufacturer:
-            country_id = manufacturer["country_id"]
+        if "name" in manufacturer and "country" in manufacturer:
+            country_id = manufacturer["country"]
             country_name = countries_dict.get(country_id, "Неизвестная страна")
 
             manufacturers_list.append({
@@ -1321,6 +1321,6 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
 
 if __name__ == "__main__":
-    orders_list_dict_from_kis2 = create_orders_list_dict_from_kis2()
-    for order in orders_list_dict_from_kis2:
-        print(order)
+    list_dict_manufacturers = create_list_dict_manufacturers()
+    for dict_manufacturer in list_dict_manufacturers:
+        print(dict_manufacturer)
