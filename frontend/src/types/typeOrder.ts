@@ -3,7 +3,15 @@ export interface typeOrderSerial {
     serial: string;
 }
 
-// Новый тип для одного заказа (соответствует Pydantic OrderRead)
+// Определение интерфейса для типа работы
+export interface typeWork {
+    id: number;
+    name: string;
+    description: string;
+    active: boolean;
+}
+
+// Обновленный интерфейс с добавленным полем works
 export interface typeOrderRead {
     serial: string;
     name: string;
@@ -21,6 +29,7 @@ export interface typeOrderRead {
     work_paid: boolean;
     debt: number | null;
     debt_paid: boolean;
+    works: typeWork[]; // Добавленное поле для списка работ
 }
 
 // Новый тип для ответа API с пагинацией (соответствует Pydantic PaginatedOrderResponse)
