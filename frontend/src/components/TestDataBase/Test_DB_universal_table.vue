@@ -232,9 +232,12 @@ async function clearData(): Promise<void> {
     <div class="grid col-span-2" v-if="importName && importResult">
       <div class=" text-white bg-gray-700 px-2 rounded grid grid-cols-2 gap-0">
         <p>Статус:
-          <span :class="{'text-green-400 font-bold': importResult.status === 'success'}">
-            {{ importResult.status }}
-          </span>
+          <span :class="{
+            'text-green-400 font-bold': importResult.status === 'success',
+            'text-red-400 font-bold': importResult.status === 'error'
+             }">
+    {{ importResult.status }}
+</span>
         </p>
         <p>Добавлено: {{ importResult.added ?? 0 }}</p>
         <p>Обновлено: {{ importResult.updated ?? 0 }}</p>
