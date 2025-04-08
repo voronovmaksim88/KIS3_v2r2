@@ -431,7 +431,7 @@ def import_people_from_kis2() -> Dict[str, any]:
                             update_details.append(f"компания с '{old_company}' на '{new_company}'")
 
                         if needs_update:
-                            person = session.get(Person, existing['id'])
+                            person = session.get(Person, existing['uuid'])
                             person.phone = phone
                             person.email = email
                             person.counterparty_id = company_id

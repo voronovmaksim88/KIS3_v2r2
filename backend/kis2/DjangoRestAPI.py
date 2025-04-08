@@ -564,7 +564,7 @@ def create_person_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]
         # Проверяем наличие необходимых ключей
         if "name" in person and "surname" in person:
             # Получаем компанию, если указана
-            company_id = person.get("company_id")
+            company_id = person.get("company")
             company_name = companies_dict.get(company_id, None) if company_id else None
 
             # Собираем словарь человека
@@ -1321,6 +1321,11 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
 
 if __name__ == "__main__":
-    list_dict_manufacturers = create_list_dict_manufacturers()
-    for dict_manufacturer in list_dict_manufacturers:
-        print(dict_manufacturer)
+    # list_dict_manufacturers = create_list_dict_manufacturers()
+    # for dict_manufacturer in list_dict_manufacturers:
+    #     print(dict_manufacturer)
+
+
+    list_dict_persons = create_person_list_dict_from_kis2()
+    for dict_persons in list_dict_persons:
+        print(dict_persons)
