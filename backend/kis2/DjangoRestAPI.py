@@ -494,11 +494,11 @@ def create_companies_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, A
         # Проверяем наличие необходимых ключей
         if "name" in company:
             # Получаем форму компании если указана
-            form_id = company.get("form_id")
+            form_id = company.get("form")
             form_name = company_forms_dict.get(form_id, None) if form_id else None
 
             # Получаем город если указан
-            city_id = company.get("city_id")
+            city_id = company.get("city")
             city_name = cities_dict.get(city_id, None) if city_id else None
 
             # Собираем словарь компании
@@ -798,22 +798,22 @@ def create_box_accounting_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
         # Проверяем наличие необходимых ключей
         if "serial_num" in box and "name" in box:
             # Получаем информацию о заказе
-            order_serial = box.get("order_id")
+            order_serial = box.get("order")
 
             # Получаем информацию о разработчике схемы
-            scheme_developer_id = box.get("scheme_developer_id")
+            scheme_developer_id = box.get("scheme_developer")
             scheme_developer_name = persons_dict.get(scheme_developer_id, None) if scheme_developer_id else None
 
             # Получаем информацию о сборщике
-            assembler_id = box.get("assembler_id")
+            assembler_id = box.get("assembler")
             assembler_name = persons_dict.get(assembler_id, None) if assembler_id else None
 
             # Получаем информацию о программисте (может быть None)
-            programmer_id = box.get("programmer_id")
+            programmer_id = box.get("programmer")
             programmer_name = persons_dict.get(programmer_id, None) if programmer_id else None
 
             # Получаем информацию о тестировщике
-            tester_id = box.get("tester_id")
+            tester_id = box.get("tester")
             tester_name = persons_dict.get(tester_id, None) if tester_id else None
 
             # Собираем словарь шкафа
@@ -929,7 +929,7 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'id': task.get("id"),
                 'name': task["name"],
                 'executor': executor_name,  # Используем ФИО вместо ID исполнителя
-                'order_id': task.get("order_id"),  # Добавлено поле order_id
+                'order_id': task.get("order"),
                 'planned_duration': task.get("planned_duration"),
                 'actual_duration': task.get("actual_duration"),
                 'creation_moment': task.get("creation_moment"),
@@ -983,11 +983,11 @@ def create_order_comments_list_dict_from_kis2(debug: bool = True) -> List[Dict[s
         # Проверяем наличие необходимых ключей
         if "text" in comment:
             # Получаем информацию об авторе комментария
-            person_id = comment.get("person_id")
+            person_id = comment.get("person")
             person_name = persons_dict.get(person_id, None) if person_id else None
 
             # Получаем информацию о заказе
-            order_serial = comment.get("order_id")
+            order_serial = comment.get("order")
 
             # Собираем словарь комментария
             comment_dict = {
@@ -1036,24 +1036,22 @@ def create_timings_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any
     timings_list = []
     for timing in timings_data:
         # Проверяем наличие необходимых ключей
-        if "order_id" in timing and "task_id" in timing:
+        if "order" in timing and "task" in timing:
             # Получаем информацию о заказе
-            order_serial = timing["order_id"]
+            order_serial = timing["order"]
             # Вместо имени задачи используем только ID
-            task_id = timing.get("task_id")
+            task_id = timing.get("task")
             # Получаем информацию об исполнителе
-            executor_id = timing.get("executor_id")
+            executor_id = timing.get("executor")
             executor_name = persons_dict.get(executor_id, "Неизвестный исполнитель")  # Преобразуем ID в ФИО
             # Конвертируем время в формат ISO 8601
             time_spent = timing.get("time")
             if time_spent:
                 # Используем регулярное выражение для извлечения часов, минут и секунд
-                match = re.match(r"P(\d+)DT(\d+)H(\d+)M(\d+)S", time_spent)
+                match = re.match(r"(\d+):(\d+):(\d+)", time_spent)
                 if match:
-                    days, hours, minutes, seconds = map(int, match.groups())
-                    total_hours = days * 24 + hours  # Переводим дни в часы
-                    # Формируем строку в формате ISO 8601 для интервала времени
-                    time_iso = f"PT{total_hours}H{minutes}M"
+                    hours, minutes, seconds = map(int, match.groups())
+                    time_iso = f"PT{hours}H{minutes}M"
                 else:
                     # Если формат не соответствует ожидаемому, возвращаем нулевой интервал
                     print(f"Неподдерживаемый формат времени: {time_spent}")
@@ -1266,27 +1264,27 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
     boxes_list = []
     for box in boxes_data:
         # Проверяем наличие необходимого ключа equipment_id
-        if "equipment_id" in box:
-            equipment_id = box["equipment_id"]
+        if "equipment" in box:
+            equipment_id = box["equipment"]
 
             # Получаем данные об оборудовании, связанном с этим корпусом
             equipment = equipment_dict.get(equipment_id, {})
 
             # Получаем материал корпуса
-            material_id = box.get("material_id")
+            material_id = box.get("material")
             material_name = box_materials_dict.get(material_id, "Неизвестный материал") if material_id else None
 
             # Получаем степень защиты корпуса
-            ip_id = box.get("ip_id")
+            ip_id = box.get("ip")
             ip_name = box_ip_dict.get(ip_id, "Неизвестная степень защиты") if ip_id else None
 
             # Получаем производителя оборудования
-            manufacturer_id = equipment.get("manufacturer_id")
+            manufacturer_id = equipment.get("manufacturer")
             manufacturer_name = manufacturers_dict.get(manufacturer_id,
                                                        "Неизвестный производитель") if manufacturer_id else None
 
             # Получаем валюту
-            currency_id = equipment.get("currency_id")
+            currency_id = equipment.get("currency")
             currency_name = currencies_dict.get(currency_id, "Неизвестная валюта") if currency_id else None
 
             # Собираем словарь корпуса шкафа
@@ -1321,16 +1319,34 @@ def create_boxes_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
 
 
 if __name__ == "__main__":
+    # companies_list_dict_from_kis2 = create_companies_list_dict_from_kis2()
+    # for companies_dict_from_kis2 in companies_list_dict_from_kis2:
+    #     print(companies_dict_from_kis2)
+
     # list_dict_manufacturers = create_list_dict_manufacturers()
     # for dict_manufacturer in list_dict_manufacturers:
     #     print(dict_manufacturer)
-
 
     # list_dict_persons = create_person_list_dict_from_kis2()
     # for dict_persons in list_dict_persons:
     #     print(dict_persons)
 
+    # order_comments_list_dict_from_kis2 = create_order_comments_list_dict_from_kis2()
+    # for order_comments_dict_from_kis2 in order_comments_list_dict_from_kis2:
+    #     print(order_comments_dict_from_kis2)
 
-    order_comments_list_dict_from_kis2 = create_order_comments_list_dict_from_kis2()
-    for order_comments_dict_from_kis2 in order_comments_list_dict_from_kis2:
-        print(order_comments_dict_from_kis2)
+    # box_accounting_list_dict_from_kis2 = create_box_accounting_list_dict_from_kis2()
+    # for box_accounting_dict_from_kis2 in box_accounting_list_dict_from_kis2:
+    #     print(box_accounting_dict_from_kis2)
+
+    # tasks_list_dict_from_kis2 = create_tasks_list_dict_from_kis2()
+    # for tasks_dict_from_kis2 in tasks_list_dict_from_kis2:
+    #     print(tasks_dict_from_kis2)
+
+    # boxes_list_dict_from_kis2 = create_boxes_list_dict_from_kis2()
+    # for box in boxes_list_dict_from_kis2:
+    #     print(box)
+
+    timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
+    for timing in timings_list_dict_from_kis2:
+        print(timing)
