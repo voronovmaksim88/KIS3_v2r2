@@ -54,6 +54,10 @@ function findOrders() {
 
 }
 
+const showOrderNumber = (serial: string) => {
+  alert(`номер заказа ${serial}`);
+};
+
 </script>
 
 <template>
@@ -80,12 +84,12 @@ function findOrders() {
     <div v-if="!isLoading && !error" class="w-full">
       <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
         <colgroup>
-          <col style="width: 8%"> <!-- номер заказа -->
-          <col style="width: 22%"> <!-- Заказчик -->
-          <col style="width: 10%"> <!-- Приоритет -->
+          <col style="width: 7%"> <!-- номер заказа -->
+          <col style="width: 21%"> <!-- Заказчик -->
+          <col style="width: 7%"> <!-- Приоритет -->
           <col style="width: 25%"> <!-- Название -->
           <col style="width: 15%"> <!-- Виды работ -->
-          <col style="width: 20%"> <!-- Статус -->
+          <col style="width: 25%"> <!-- Статус -->
         </colgroup>
         <thead>
         <tr>
@@ -118,7 +122,8 @@ function findOrders() {
         </thead>
         <tbody>
         <tr v-for="order in orders" :key="order.serial" class="border-t border-gray-600">
-          <td class="px-4 py-2"
+          <td
+              class="px-4 py-2 cursor-pointer hover:bg-gray-600 transition duration-300"
               :class="{
               'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
               'text-yellow-400': order.status_id === 1,
@@ -126,6 +131,7 @@ function findOrders() {
               'text-green-400': order.status_id === 3,
               'text-red-400': order.status_id === 4
               }"
+              @click="showOrderNumber(order.serial)"
           >
             {{ order.serial }}
           </td>
@@ -134,7 +140,7 @@ function findOrders() {
           <td class="px-4 py-2">{{ order.name }}</td>
           <td class="px-4 py-2">
             <p v-for="work in order.works" :key="work.id">
-              {{ work.name }}
+              • {{ work.name }}
             </p>
           </td>
           <td
