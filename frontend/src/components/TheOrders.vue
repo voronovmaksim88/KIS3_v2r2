@@ -1,4 +1,5 @@
-// src/components/TheOrders.vue<script setup lang="ts">
+// src/components/TheOrders.vue
+<script setup lang="ts">
 import {onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
@@ -58,24 +59,15 @@ function findOrders() {
 
 // для хранения серийного номера заказа, чья дополнительная строка должна быть показана.
 const expandedOrderSerial = ref<string | null>(null);
-const orderDetailLoading = ref<boolean>(false);
-const orderDetail = ref<any>(null);
 
 const toggleOrderDetails = async (serial: string) => {
   if (expandedOrderSerial.value === serial) {
     expandedOrderSerial.value = null;
-    orderDetail.value = null;
+    resetOrderDetail(); // Сбрасываем детали заказа
   } else {
     expandedOrderSerial.value = serial;
-    // Запрашиваем подробные данные по заказу
-    orderDetailLoading.value = true;
-    try {
-      orderDetail.value = await fetchOrderDetail(serial);
-    } catch (e) {
-      console.error('Ошибка при загрузке данных заказа:', e);
-    } finally {
-      orderDetailLoading.value = false;
-    }
+    // Просто вызываем fetchOrderDetail, данные сохранятся в сторе
+    await fetchOrderDetail(serial);
   }
 };
 </script>
@@ -181,7 +173,7 @@ const toggleOrderDetails = async (serial: string) => {
           <tr v-if="expandedOrderSerial === order.serial" class="border-b border-gray-600">
             <td colspan="6" class="p-4 bg-gray-700 text-gray-300">
               <!-- Индикатор загрузки, когда данные загружаются -->
-              <div v-if="orderDetailLoading" class="flex justify-center items-center p-4">
+              <div v-if="isDetailLoading" class="flex justify-center items-center p-4">
                 <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
                 <span>Загрузка данных заказа...</span>
               </div>
@@ -195,11 +187,11 @@ const toggleOrderDetails = async (serial: string) => {
                   <!-- Колонка с комментариями -->
                   <div class="border rounded-md p-3 bg-gray-800">
                     <h4 class="font-semibold text-white mb-2">Комментарии</h4>
-                    <div v-if="!orderDetail?.comments || orderDetail.comments.length === 0" class="text-gray-400">
+                    <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0" class="text-gray-400">
                       Нет комментариев
                     </div>
                     <div v-else class="space-y-2 max-h-56 overflow-y-auto">
-                      <div v-for="(comment, index) in orderDetail.comments" :key="index" class="border-b border-gray-700 pb-2">
+                      <div v-for="(comment, index) in currentOrderDetail.comments" :key="index" class="border-b border-gray-700 pb-2">
                         <div class="text-xs text-gray-400">{{ comment.date || 'Дата не указана' }}</div>
                         <div class="mt-1">{{ comment.text }}</div>
                       </div>
@@ -210,11 +202,11 @@ const toggleOrderDetails = async (serial: string) => {
                   <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Затраченное время</h4>
-                      <div v-if="!orderDetail?.timings || orderDetail.timings.length === 0" class="text-gray-400">
+                      <div v-if="!currentOrderDetail?.timings || currentOrderDetail.timings.length === 0" class="text-gray-400">
                         Нет данных о затраченном времени
                       </div>
                       <div v-else class="space-y-1 max-h-28 overflow-y-auto">
-                        <div v-for="(timing, index) in orderDetail.timings" :key="index" class="text-sm">
+                        <div v-for="(timing, index) in currentOrderDetail.timings" :key="index" class="text-sm">
                           <div>{{ timing.description || 'Без описания' }}</div>
                           <div class="text-xs text-gray-400">
                             Дата: {{ timing.date || 'Не указана' }}
@@ -231,19 +223,19 @@ const toggleOrderDetails = async (serial: string) => {
                       <div class="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span>Бюджет:</span>
-                          <span class="font-medium">{{ orderDetail?.budget || '0' }} руб.</span>
+                          <span class="font-medium">{{ currentOrderDetail?.budget || '0' }} руб.</span>
                         </div>
                         <div>
                           <span>Затраты:</span>
-                          <span class="font-medium">{{ orderDetail?.expenses || '0' }} руб.</span>
+                          <span class="font-medium">{{ currentOrderDetail?.expenses || '0' }} руб.</span>
                         </div>
                         <div>
                           <span>Оплачено:</span>
-                          <span class="font-medium text-green-400">{{ orderDetail?.paid || '0' }} руб.</span>
+                          <span class="font-medium text-green-400">{{ currentOrderDetail?.paid || '0' }} руб.</span>
                         </div>
                         <div>
                           <span>Остаток:</span>
-                          <span class="font-medium text-yellow-400">{{ orderDetail?.remaining || '0' }} руб.</span>
+                          <span class="font-medium text-yellow-400">{{ currentOrderDetail?.remaining || '0' }} руб.</span>
                         </div>
                       </div>
                     </div>
@@ -252,11 +244,11 @@ const toggleOrderDetails = async (serial: string) => {
                   <!-- Колонка с задачами -->
                   <div class="border rounded-md p-3 bg-gray-800">
                     <h4 class="font-semibold text-white mb-2">Задачи</h4>
-                    <div v-if="!orderDetail?.tasks || orderDetail.tasks.length === 0" class="text-gray-400">
+                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">
                       Нет задач
                     </div>
                     <div v-else class="space-y-2 max-h-56 overflow-y-auto">
-                      <div v-for="(task, index) in orderDetail.tasks" :key="index"
+                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"
                            class="border-b border-gray-700 pb-2 flex items-center justify-between">
                         <div>
                           <div class="font-medium">{{ task.name }}</div>
