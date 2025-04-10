@@ -8,6 +8,7 @@ from typing import List, Optional
 from database import get_async_db
 from models import Order, Counterparty
 from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse
+from schemas.order_schem import OrderDetailResponse  # Импортируем новую схему
 
 router = APIRouter(
     prefix="/order",
@@ -154,3 +155,70 @@ async def read_orders(
         skip=skip,
         data=orders_data_list # Передаем сформированный список Pydantic объектов
     )
+
+
+
+@router.get("/detail/{serial}", response_model=OrderDetailResponse)
+async def get_order_detail(
+        serial: str,
+        session: AsyncSession = Depends(get_async_db)
+):
+    """
+    Получить подробную информацию о заказе, включая связанные комментарии, задачи и тайминги.
+
+    Параметры:
+    - serial: серийный номер заказа
+
+    Возвращает: детальную информацию о заказе со всеми связями
+    """
+    # Запрос с жадной загрузкой всех необходимых связей
+    query = select(Order).where(Order.serial == serial).options(
+        selectinload(Order.customer).selectinload(Counterparty.form),
+        selectinload(Order.works),
+        selectinload(Order.comments),
+        selectinload(Order.tasks),
+        selectinload(Order.timings)
+    )
+
+    # Выполняем запрос
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Заказ с номером {serial} не найден")
+
+    # Формируем customer_display_name
+    customer_display_name = "Контрагент не указан"
+    if order.customer:
+        if order.customer.form:
+            customer_display_name = f"{order.customer.form.name} {order.customer.name}"
+        else:
+            customer_display_name = order.customer.name
+
+    # Создаем данные для ответа
+    order_data = {
+        "serial": order.serial,
+        "name": order.name,
+        "customer": customer_display_name,
+        "priority": order.priority,
+        "status_id": order.status_id,
+        "start_moment": order.start_moment,
+        "deadline_moment": order.deadline_moment,
+        "end_moment": order.end_moment,
+        "materials_cost": order.materials_cost,
+        "materials_paid": order.materials_paid,
+        "products_cost": order.products_cost,
+        "products_paid": order.products_paid,
+        "work_cost": order.work_cost,
+        "work_paid": order.work_paid,
+        "debt": order.debt,
+        "debt_paid": order.debt_paid,
+        "works": order.works,
+        "comments": order.comments,
+        "tasks": order.tasks,
+        "timings": order.timings
+    }
+
+    # Создаем и возвращаем объект Pydantic
+    return OrderDetailResponse.model_validate(order_data)
