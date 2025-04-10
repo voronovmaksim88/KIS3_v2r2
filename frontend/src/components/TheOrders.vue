@@ -1,5 +1,4 @@
-// src/components/TheOrders.vue
-<script setup lang="ts">
+// src/components/TheOrders.vue<script setup lang="ts">
 import {onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
@@ -11,18 +10,21 @@ const ordersStore = useOrdersStore();
 // 2. Извлекаем реактивные переменные и действия из стора.
 // Используем storeToRefs для сохранения реактивности состояния и вычисляемых свойств
 const {
-  orders,      // Список заказов для текущей страницы
-  isLoading,   // Состояние загрузки (уже используется в шаблоне)
-  error,       // Состояние ошибки (уже используется в шаблоне)
-  totalOrders, // Общее количество заказов
-  currentPage, // Текущая страница (вычисляемое)
-  totalPages,  // Всего страниц (вычисляемое)
-  currentLimit,// Текущий лимит на странице
-  currentSkip // Текущий пропуск записей
+  orders,              // Список заказов для текущей страницы
+  isLoading,           // Состояние загрузки (уже используется в шаблоне)
+  error,               // Состояние ошибки (уже используется в шаблоне)
+  totalOrders,         // Общее количество заказов
+  currentPage,         // Текущая страница (вычисляемое)
+  totalPages,          // Всего страниц (вычисляемое)
+  currentLimit,        // Текущий лимит на странице
+  currentSkip,         // Текущий пропуск записей
+  currentOrderDetail,  // Данные о выбранном заказе
+  isDetailLoading,     // Состояние загрузки деталей заказа
+  hasOrderDetail       // Есть ли данные о заказе
 } = storeToRefs(ordersStore);
 
 // Действия можно извлекать напрямую
-const {fetchOrders, clearError} = ordersStore;
+const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail} = ordersStore;
 
 // 3. Вызываем действие fetchOrders при монтировании компонента
 onMounted(() => {
@@ -56,16 +58,29 @@ function findOrders() {
 
 // для хранения серийного номера заказа, чья дополнительная строка должна быть показана.
 const expandedOrderSerial = ref<string | null>(null);
+const orderDetailLoading = ref<boolean>(false);
+const orderDetail = ref<any>(null);
 
-
-const toggleOrderDetails = (serial: string) => {
+const toggleOrderDetails = async (serial: string) => {
   if (expandedOrderSerial.value === serial) {
     expandedOrderSerial.value = null;
+    orderDetail.value = null;
   } else {
     expandedOrderSerial.value = serial;
+    // Запрашиваем подробные данные по заказу
+    orderDetailLoading.value = true;
+    try {
+      orderDetail.value = await fetchOrderDetail(serial);
+    } catch (e) {
+      console.error('Ошибка при загрузке данных заказа:', e);
+    } finally {
+      orderDetailLoading.value = false;
+    }
   }
 };
 </script>
+
+
 <template>
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
 
@@ -165,24 +180,97 @@ const toggleOrderDetails = (serial: string) => {
           </tr>
           <tr v-if="expandedOrderSerial === order.serial" class="border-b border-gray-600">
             <td colspan="6" class="p-4 bg-gray-700 text-gray-300">
-              Дополнительная информация о заказе {{ order.serial }}.
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                <div class="border rounded-md px-1">
-                  <p>коменты</p>
-                </div>
+              <!-- Индикатор загрузки, когда данные загружаются -->
+              <div v-if="orderDetailLoading" class="flex justify-center items-center p-4">
+                <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                <span>Загрузка данных заказа...</span>
+              </div>
 
-                <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
-                  <div class="border rounded-md px-1">
-                    <p>время</p>
+              <!-- Отображение данных, когда они загружены -->
+              <div v-else>
+                <h3 class="text-xl font-semibold text-white mb-2">Детали заказа {{ order.serial }}</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+
+                  <!-- Колонка с комментариями -->
+                  <div class="border rounded-md p-3 bg-gray-800">
+                    <h4 class="font-semibold text-white mb-2">Комментарии</h4>
+                    <div v-if="!orderDetail?.comments || orderDetail.comments.length === 0" class="text-gray-400">
+                      Нет комментариев
+                    </div>
+                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
+                      <div v-for="(comment, index) in orderDetail.comments" :key="index" class="border-b border-gray-700 pb-2">
+                        <div class="text-xs text-gray-400">{{ comment.date || 'Дата не указана' }}</div>
+                        <div class="mt-1">{{ comment.text }}</div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div class="border rounded-md px-1">
-                    <p>деньги</p>
-                  </div>
-                </div>
+                  <!-- Колонка с временем и деньгами -->
+                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
+                    <div class="border rounded-md p-3 bg-gray-800">
+                      <h4 class="font-semibold text-white mb-2">Затраченное время</h4>
+                      <div v-if="!orderDetail?.timings || orderDetail.timings.length === 0" class="text-gray-400">
+                        Нет данных о затраченном времени
+                      </div>
+                      <div v-else class="space-y-1 max-h-28 overflow-y-auto">
+                        <div v-for="(timing, index) in orderDetail.timings" :key="index" class="text-sm">
+                          <div>{{ timing.description || 'Без описания' }}</div>
+                          <div class="text-xs text-gray-400">
+                            Дата: {{ timing.date || 'Не указана' }}
+                          </div>
+                          <div class="font-medium">
+                            Время: {{ timing.time || 'Не указано' }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                <div class="border rounded-md px-1">
-                  <p>задачи</p>
+                    <div class="border rounded-md p-3 bg-gray-800">
+                      <h4 class="font-semibold text-white mb-2">Финансы</h4>
+                      <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span>Бюджет:</span>
+                          <span class="font-medium">{{ orderDetail?.budget || '0' }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Затраты:</span>
+                          <span class="font-medium">{{ orderDetail?.expenses || '0' }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Оплачено:</span>
+                          <span class="font-medium text-green-400">{{ orderDetail?.paid || '0' }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Остаток:</span>
+                          <span class="font-medium text-yellow-400">{{ orderDetail?.remaining || '0' }} руб.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Колонка с задачами -->
+                  <div class="border rounded-md p-3 bg-gray-800">
+                    <h4 class="font-semibold text-white mb-2">Задачи</h4>
+                    <div v-if="!orderDetail?.tasks || orderDetail.tasks.length === 0" class="text-gray-400">
+                      Нет задач
+                    </div>
+                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
+                      <div v-for="(task, index) in orderDetail.tasks" :key="index"
+                           class="border-b border-gray-700 pb-2 flex items-center justify-between">
+                        <div>
+                          <div class="font-medium">{{ task.name }}</div>
+                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>
+                        </div>
+                        <div :class="{
+                          'text-green-400': task.completed,
+                          'text-yellow-400': !task.completed
+                        }">
+                          {{ task.completed ? 'Завершено' : 'В процессе' }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </td>

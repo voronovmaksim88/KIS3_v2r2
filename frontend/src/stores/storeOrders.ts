@@ -7,7 +7,8 @@ import {
     typeOrderSerial,
     typeOrderRead,
     typePaginatedOrderResponse,
-    typeFetchOrdersParams
+    typeFetchOrdersParams,
+    typeOrderDetail  // Добавляем тип для детальной информации заказа
 } from "../types/typeOrder"; // Убедитесь, что путь к файлу типов верный
 import { getApiUrl } from '../utils/apiUrlHelper';
 
@@ -23,6 +24,10 @@ export const useOrdersStore = defineStore('orders', () => {
     const totalOrders = ref<number>(0); // Общее количество заказов (для пагинации)
     const currentLimit = ref<number>(10); // Текущий лимит (сколько на странице)
     const currentSkip = ref<number>(0); // Текущий пропуск (сколько пропущено)
+
+    // === Новое состояние для детальной информации о заказе ===
+    const currentOrderDetail = ref<typeOrderDetail | null>(null);
+    const detailLoading = ref(false); // Отдельный индикатор загрузки для деталей заказа
 
     // === Словарь статусов заказов ===
     const orderStatuses = {
@@ -114,6 +119,32 @@ export const useOrdersStore = defineStore('orders', () => {
         }
     };
 
+    // === Новое действие для получения детальной информации о заказе ===
+    const fetchOrderDetail = async (serial: string) => {
+        detailLoading.value = true;
+        error.value = null; // Сброс ошибки перед запросом
+
+        try {
+            const response = await axios.get<typeOrderDetail>(`${getApiUrl()}order/detail/${serial}`, {
+                withCredentials: true
+            });
+
+            // Обновляем состояние с полученными данными
+            currentOrderDetail.value = response.data;
+        } catch (err) {
+            console.error('Error fetching order details:', err);
+            currentOrderDetail.value = null; // Сбрасываем данные в случае ошибки
+            handleAxiosError(err, 'Failed to fetch order details');
+        } finally {
+            detailLoading.value = false;
+        }
+    };
+
+    // === Действие для сброса детальной информации о заказе ===
+    const resetOrderDetail = () => {
+        currentOrderDetail.value = null;
+    };
+
     // === Действие для сброса состояния заказов ===
     const resetOrders = () => {
         orders.value = [];
@@ -138,6 +169,8 @@ export const useOrdersStore = defineStore('orders', () => {
     // === Вычисляемые свойства ===
     const serialsCount = computed(() => orderSerials.value.length);
     const isLoading = computed(() => loading.value);
+    const isDetailLoading = computed(() => detailLoading.value);
+    const hasOrderDetail = computed(() => currentOrderDetail.value !== null);
 
     // Вычисляемые свойства для пагинации
     const currentPage = computed(() => {
@@ -153,25 +186,31 @@ export const useOrdersStore = defineStore('orders', () => {
     return {
         // Состояние
         orderSerials,
-        orders, //
+        orders,
         loading,
         error,
-        totalOrders, //
-        currentLimit, //
-        currentSkip,  //
+        totalOrders,
+        currentLimit,
+        currentSkip,
+        currentOrderDetail, // Новое состояние для детальной информации
+        detailLoading,      // Индикатор загрузки для деталей
 
         // Действия
         fetchOrderSerials,
         resetOrderSerials,
-        fetchOrders, //
-        resetOrders, //
+        fetchOrders,
+        resetOrders,
         clearError,
-        getStatusText, // Новая функция для получения текста статуса
+        getStatusText,
+        fetchOrderDetail,  // Новое действие для получения деталей заказа
+        resetOrderDetail,  // Новое действие для сброса деталей заказа
 
         // Вычисляемые свойства
         serialsCount,
         isLoading,
-        currentPage, // Новое свойство
-        totalPages,  // Новое свойство
+        isDetailLoading,   // Новое свойство для проверки загрузки деталей
+        hasOrderDetail,    // Новое свойство для проверки наличия деталей
+        currentPage,
+        totalPages,
     };
 });

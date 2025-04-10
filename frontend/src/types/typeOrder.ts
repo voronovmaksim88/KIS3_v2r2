@@ -49,3 +49,66 @@ export interface typeFetchOrdersParams {
     searchCustomer?: string | null;
     searchPriority?: number | null;
 }
+
+// Типы для вложенных структур
+export interface typeOrderComment {
+    id: number;
+    moment_of_creation: string;
+    text: string;
+    person_uuid: string;
+}
+
+export interface typeOrderWork {
+    id: number;
+    name: string;
+    description: string;
+    active: boolean;
+}
+
+export interface typeOrderTask {
+    id: number;
+    name: string;
+    description: string;
+    status_id: number;
+    payment_status_id: number;
+    executor_id: string | null;
+    planned_duration: string | null;
+    actual_duration: string | null;
+    creation_moment: string;
+    start_moment: string;
+    deadline_moment: string;
+    end_moment: string | null;
+    price: number | null;
+}
+
+export interface typeOrderTiming {
+    id: number;
+    task_id: number;
+    executor_id: string;
+    time: string;
+    timing_date: string;
+}
+
+// Тип для детальной информации о заказе
+export interface typeOrderDetail {
+    serial: string;
+    name: string;
+    customer: string;
+    priority: number;
+    status_id: number;
+    start_moment: string | null;
+    deadline_moment: string | null;
+    end_moment: string | null;
+    materials_cost: number | null;
+    materials_paid: boolean;
+    products_cost: number | null;
+    products_paid: boolean;
+    work_cost: number | null;
+    work_paid: boolean;
+    debt: number | null;
+    debt_paid: boolean;
+    works: typeOrderWork[];
+    comments: typeOrderComment[];
+    tasks: typeOrderTask[];
+    timings: typeOrderTiming[];
+}
