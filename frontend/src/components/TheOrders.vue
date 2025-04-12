@@ -21,7 +21,6 @@ const {
   currentSkip,         // Текущий пропуск записей
   currentOrderDetail,  // Данные о выбранном заказе
   isDetailLoading,     // Состояние загрузки деталей заказа
-  hasOrderDetail       // Есть ли данные о заказе
 } = storeToRefs(ordersStore);
 
 // Действия можно извлекать напрямую
@@ -192,77 +191,78 @@ const toggleOrderDetails = async (serial: string) => {
                     </div>
                     <div v-else class="space-y-2 max-h-56 overflow-y-auto">
                       <div v-for="(comment, index) in currentOrderDetail.comments" :key="index" class="border-b border-gray-700 pb-2">
-                        <div class="text-xs text-gray-400">{{ comment.date || 'Дата не указана' }}</div>
+                        <div class="text-xs text-gray-400">{{ comment.moment_of_creation || 'Дата не указана' }}</div>
                         <div class="mt-1">{{ comment.text }}</div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Колонка с временем и деньгами -->
-                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
-                    <div class="border rounded-md p-3 bg-gray-800">
-                      <h4 class="font-semibold text-white mb-2">Затраченное время</h4>
-                      <div v-if="!currentOrderDetail?.timings || currentOrderDetail.timings.length === 0" class="text-gray-400">
-                        Нет данных о затраченном времени
-                      </div>
-                      <div v-else class="space-y-1 max-h-28 overflow-y-auto">
-                        <div v-for="(timing, index) in currentOrderDetail.timings" :key="index" class="text-sm">
-                          <div>{{ timing.description || 'Без описания' }}</div>
-                          <div class="text-xs text-gray-400">
-                            Дата: {{ timing.date || 'Не указана' }}
-                          </div>
-                          <div class="font-medium">
-                            Время: {{ timing.time || 'Не указано' }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+<!--                  &lt;!&ndash; Колонка с временем и деньгами &ndash;&gt;-->
+<!--                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">-->
+<!--                    <div class="border rounded-md p-3 bg-gray-800">-->
+<!--                      <h4 class="font-semibold text-white mb-2">Затраченное время</h4>-->
+<!--                      <div v-if="!currentOrderDetail?.timings || currentOrderDetail.timings.length === 0" class="text-gray-400">-->
+<!--                        Нет данных о затраченном времени-->
+<!--                      </div>-->
+<!--                      <div v-else class="space-y-1 max-h-28 overflow-y-auto">-->
+<!--                        <div v-for="(timing, index) in currentOrderDetail.timings" :key="index" class="text-sm">-->
+<!--                          <div>{{ timing.description || 'Без описания' }}</div>-->
+<!--                          <div class="text-xs text-gray-400">-->
+<!--                            Дата: {{ timing.date || 'Не указана' }}-->
+<!--                          </div>-->
+<!--                          <div class="font-medium">-->
+<!--                            Время: {{ timing.time || 'Не указано' }}-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                      </div>-->
+<!--                    </div>-->
 
-                    <div class="border rounded-md p-3 bg-gray-800">
-                      <h4 class="font-semibold text-white mb-2">Финансы</h4>
-                      <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span>Бюджет:</span>
-                          <span class="font-medium">{{ currentOrderDetail?.budget || '0' }} руб.</span>
-                        </div>
-                        <div>
-                          <span>Затраты:</span>
-                          <span class="font-medium">{{ currentOrderDetail?.expenses || '0' }} руб.</span>
-                        </div>
-                        <div>
-                          <span>Оплачено:</span>
-                          <span class="font-medium text-green-400">{{ currentOrderDetail?.paid || '0' }} руб.</span>
-                        </div>
-                        <div>
-                          <span>Остаток:</span>
-                          <span class="font-medium text-yellow-400">{{ currentOrderDetail?.remaining || '0' }} руб.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+<!--                    <div class="border rounded-md p-3 bg-gray-800">-->
+<!--                      <h4 class="font-semibold text-white mb-2">Финансы</h4>-->
+<!--                      <div class="grid grid-cols-2 gap-2 text-sm">-->
+<!--                        <div>-->
+<!--                          <span>Бюджет:</span>-->
+<!--                          <span class="font-medium">{{ currentOrderDetail?.budget || '0' }} руб.</span>-->
+<!--                        </div>-->
+<!--                        <div>-->
+<!--                          <span>Затраты:</span>-->
+<!--                          <span class="font-medium">{{ currentOrderDetail?.expenses || '0' }} руб.</span>-->
+<!--                        </div>-->
+<!--                        <div>-->
+<!--                          <span>Оплачено:</span>-->
+<!--                          <span class="font-medium text-green-400">{{ currentOrderDetail?.paid || '0' }} руб.</span>-->
+<!--                        </div>-->
+<!--                        <div>-->
+<!--                          <span>Остаток:</span>-->
+<!--                          <span class="font-medium text-yellow-400">{{ currentOrderDetail?.remaining || '0' }} руб.</span>-->
+<!--                        </div>-->
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                  </div>-->
 
-                  <!-- Колонка с задачами -->
-                  <div class="border rounded-md p-3 bg-gray-800">
-                    <h4 class="font-semibold text-white mb-2">Задачи</h4>
-                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">
-                      Нет задач
-                    </div>
-                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
-                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"
-                           class="border-b border-gray-700 pb-2 flex items-center justify-between">
-                        <div>
-                          <div class="font-medium">{{ task.name }}</div>
-                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>
-                        </div>
-                        <div :class="{
-                          'text-green-400': task.completed,
-                          'text-yellow-400': !task.completed
-                        }">
-                          {{ task.completed ? 'Завершено' : 'В процессе' }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+<!--                  &lt;!&ndash; Колонка с задачами &ndash;&gt;-->
+<!--                  <div class="border rounded-md p-3 bg-gray-800">-->
+<!--                    <h4 class="font-semibold text-white mb-2">Задачи</h4>-->
+<!--                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">-->
+<!--                      Нет задач-->
+<!--                    </div>-->
+<!--                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">-->
+<!--                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"-->
+<!--                           class="border-b border-gray-700 pb-2 flex items-center justify-between">-->
+<!--                        <div>-->
+<!--                          <div class="font-medium">{{ task.name }}</div>-->
+<!--                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>-->
+<!--                        </div>-->
+<!--                        <div :class="{-->
+<!--                          'text-green-400': task.completed,-->
+<!--                          'text-yellow-400': !task.completed-->
+<!--                        }">-->
+<!--                          {{ task.completed ? 'Завершено' : 'В процессе' }}-->
+<!--                        </div>-->
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                  </div>-->
+
                 </div>
               </div>
             </td>
