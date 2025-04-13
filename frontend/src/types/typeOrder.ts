@@ -55,7 +55,7 @@ export interface typeOrderComment {
     id: number;
     moment_of_creation: string;
     text: string;
-    person_uuid: string;
+    person: string;
 }
 
 export interface typeOrderWork {

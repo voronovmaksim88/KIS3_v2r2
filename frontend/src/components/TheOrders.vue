@@ -69,6 +69,19 @@ const toggleOrderDetails = async (serial: string) => {
     await fetchOrderDetail(serial);
   }
 };
+
+function formatName(fullName: string): string {
+  const parts = fullName.split(' ');
+
+  if (parts.length !== 3) {
+    return fullName; // Если формат неправильный, возвращаем оригинальную строку
+  }
+
+  const surname = parts[0];
+  const initials = `${parts[1][0]}.${parts[2][0]}.`;
+
+  return `${surname} ${initials}`;
+}
 </script>
 
 
@@ -179,8 +192,6 @@ const toggleOrderDetails = async (serial: string) => {
 
               <!-- Отображение данных, когда они загружены -->
               <div v-else>
-                <h3 class="text-xl font-semibold text-white mb-2">Детали заказа {{ order.serial }}</h3>
-
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
 
                   <!-- Колонка с комментариями -->
@@ -189,9 +200,16 @@ const toggleOrderDetails = async (serial: string) => {
                     <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0" class="text-gray-400">
                       Нет комментариев
                     </div>
-                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
-                      <div v-for="(comment, index) in currentOrderDetail.comments" :key="index" class="border-b border-gray-700 pb-2">
-                        <div class="text-xs text-gray-400">{{ comment.moment_of_creation || 'Дата не указана' }}</div>
+                    <div v-else class="space-y-2 max-h-56 overflow-y-auto ">
+                      <div
+                          v-for="(comment, index) in currentOrderDetail.comments"
+                          :key="index"
+                          class="border  rounded-md border-gray-700 p-1 ">
+                        <div class="flex justify-between items-center">
+                          <div class="text-xs text-gray-400">{{ comment.moment_of_creation || 'Дата не указана' }}</div>
+                          <div class="text-xs text-gray-400">{{ formatName(comment.person) || 'Автор не указан' }}</div>
+                        </div>
+
                         <div class="mt-1">{{ comment.text }}</div>
                       </div>
                     </div>
