@@ -8,8 +8,9 @@ from typing import Optional
 from typing import List
 from pydantic import ConfigDict
 from schemas.work_schem import WorkSchema
-from datetime import datetime, timedelta
-import uuid
+from datetime import datetime
+from schemas.task_schem import TaskSchema
+from schemas.timing_schem import TimingSchema
 
 
 class OrderStatusSchema(BaseModel):
@@ -55,7 +56,7 @@ class OrderBase(BaseModel):
     debt_paid: bool = False
 
     @field_validator('priority')
-    def validate_priority(cls, v): # noqa
+    def validate_priority(cls, v):  # noqa
         """
         проверка валидности приоритета
         """
@@ -64,7 +65,7 @@ class OrderBase(BaseModel):
         return v
 
     @field_validator('status_id')
-    def validate_status_id(cls, v): # noqa
+    def validate_status_id(cls, v):  # noqa
         """
         проверка валидности статуса
         """
@@ -114,52 +115,18 @@ class OrderCommentSchema(BaseModel):
     id: int
     moment_of_creation: Optional[datetime] = None
     text: str
-    person_uuid: uuid.UUID
-
-    class Config:
-        from_attributes = True
-
-
-# Схема для задачи
-class TaskSchema(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    status_id: Optional[int] = None
-    payment_status_id: Optional[int] = None
-    executor_id: Optional[uuid.UUID] = None
-    planned_duration: Optional[timedelta] = None
-    actual_duration: Optional[timedelta] = None
-    creation_moment: Optional[datetime] = None
-    start_moment: Optional[datetime] = None
-    deadline_moment: Optional[datetime] = None
-    end_moment: Optional[datetime] = None
-    price: Optional[int] = None
-
-    class Config:
-        from_attributes = True
-
-
-# Схема для тайминга
-class TimingSchema(BaseModel):
-    id: int
-    task_id: int
-    executor_id: Optional[uuid.UUID] = None
-    time: timedelta
-    timing_date: Optional[datetime] = None
+    person: str  # Заменено person_uuid на person (строка с ФИО)
 
     class Config:
         from_attributes = True
 
 
 # Схема для детального ответа
+# Схема для детального ответа (ИЗМЕНЕННАЯ)
 class OrderDetailResponse(OrderRead):
-    comments: List[OrderCommentSchema] = []
-    tasks: List[TaskSchema] = []
-    timings: List[TimingSchema] = []
-
-    class Config:
-        from_attributes = True
+    comments: List[OrderCommentSchema] = []  # Указываем тип явно
+    tasks: List[TaskSchema] = []  # Указываем тип явно
+    timings: List[TimingSchema] = []  # Указываем тип явно
 
 # class OrderCreate(OrderBase):
 #     pass

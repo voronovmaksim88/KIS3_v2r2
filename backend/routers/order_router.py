@@ -1,14 +1,23 @@
 # routers/order_router.py
 from fastapi import APIRouter, Depends, Query
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, cast, Integer
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
 from database import get_async_db
-from models import Order, Counterparty
-from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse
+
+# Импортируем модели SQLAlchemy
+from models import Order, Counterparty, Person
+
+from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse, OrderCommentSchema
 from schemas.order_schem import OrderDetailResponse  # Импортируем новую схему
+
+# Импортируем другие необходимые схемы, если они используются в OrderDetailResponse
+from schemas.work_schem import WorkSchema
+from schemas.task_schem import TaskSchema
+from schemas.timing_schem import TimingSchema
 
 router = APIRouter(
     prefix="/order",
@@ -165,17 +174,19 @@ async def get_order_detail(
 ):
     """
     Получить подробную информацию о заказе, включая связанные комментарии, задачи и тайминги.
+    Для комментариев возвращает ФИО автора.
 
     Параметры:
     - serial: серийный номер заказа
 
     Возвращает: детальную информацию о заказе со всеми связями
     """
-    # Запрос с жадной загрузкой всех необходимых связей
+    # Запрос с жадной загрузкой всех необходимых связей, КРОМЕ Person для комментариев
+    # Мы загрузим Person для комментариев отдельным запросом после получения заказа
     query = select(Order).where(Order.serial == serial).options(
         selectinload(Order.customer).selectinload(Counterparty.form),
         selectinload(Order.works),
-        selectinload(Order.comments),
+        selectinload(Order.comments), # Загружаем комментарии как есть
         selectinload(Order.tasks),
         selectinload(Order.timings)
     )
@@ -185,10 +196,11 @@ async def get_order_detail(
     order = result.scalar_one_or_none()
 
     if not order:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail=f"Заказ с номером {serial} не найден")
 
-    # Формируем customer_display_name
+    # --- Формирование данных для ответа ---
+
+    # 1. Формируем customer_display_name
     customer_display_name = "Контрагент не указан"
     if order.customer:
         if order.customer.form:
@@ -196,7 +208,44 @@ async def get_order_detail(
         else:
             customer_display_name = order.customer.name
 
-    # Создаем данные для ответа
+    # 2. Обработка комментариев для получения ФИО автора
+    formatted_comments = []
+    if order.comments:
+        # Собираем уникальные UUID авторов комментариев
+        author_uuids = {comment.person_uuid for comment in order.comments if comment.person_uuid}
+
+        authors_map = {}
+        if author_uuids:
+            # Загружаем данные авторов одним запросом
+            person_query = select(Person).where(Person.uuid.in_(author_uuids))
+            person_results = await session.execute(person_query)
+            # Создаем словарь {uuid: "Фамилия Имя Отчество"}
+            for person in person_results.scalars():
+                fio = f"{person.surname} {person.name}"
+                if person.patronymic:
+                    fio += f" {person.patronymic}"
+                authors_map[person.uuid] = fio
+
+        # Формируем список комментариев с ФИО автора
+        for comment in order.comments:
+            author_name = authors_map.get(comment.person_uuid, "Автор не найден") # Имя по умолчанию
+            formatted_comments.append(
+                OrderCommentSchema(
+                    id=comment.id,
+                    moment_of_creation=comment.moment_of_creation,
+                    text=comment.text,
+                    person=author_name # Подставляем ФИО
+                )
+            )
+
+    # 3. Подготовка остальных данных (используем Pydantic для маппинга, где возможно)
+    # Преобразуем связанные объекты в их Pydantic схемы перед созданием финального словаря
+    works_data = [WorkSchema.model_validate(w) for w in order.works]
+    tasks_data = [TaskSchema.model_validate(t) for t in order.tasks]
+    timings_data = [TimingSchema.model_validate(ti) for ti in order.timings]
+
+
+    # 4. Создаем словарь данных для основного ответа
     order_data = {
         "serial": order.serial,
         "name": order.name,
@@ -214,11 +263,13 @@ async def get_order_detail(
         "work_paid": order.work_paid,
         "debt": order.debt,
         "debt_paid": order.debt_paid,
-        "works": order.works,
-        "comments": order.comments,
-        "tasks": order.tasks,
-        "timings": order.timings
+        # Используем уже преобразованные данные
+        "works": works_data,
+        "comments": formatted_comments, # Используем отформатированные комментарии
+        "tasks": tasks_data,
+        "timings": timings_data
     }
 
-    # Создаем и возвращаем объект Pydantic
+    # 5. Создаем и возвращаем объект Pydantic response_model
+    # Pydantic сам проверит соответствие словаря order_data схеме OrderDetailResponse
     return OrderDetailResponse.model_validate(order_data)
