@@ -83,7 +83,7 @@ function formatName(fullName: string): string {
   return `${surname} ${initials}`;
 }
 
-function formatLocalDateTime(isoDateString: string, includeSeconds: boolean = false): string {
+function formatLocalDateTime(isoDateString: string | null | undefined, includeSeconds: boolean = false): string {
   // Проверка на пустую строку или null/undefined
   if (!isoDateString) {
     return '';
@@ -246,7 +246,8 @@ function formatLocalDateTime(isoDateString: string, includeSeconds: boolean = fa
                   <!-- Колонка с комментариями -->
                   <div class="border rounded-md p-3 bg-gray-800">
                     <h4 class="font-semibold text-white mb-2">Комментарии</h4>
-                    <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0" class="text-gray-400">
+                    <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
+                         class="text-gray-400">
                       Нет комментариев
                     </div>
                     <div v-else class="space-y-2 max-h-56 overflow-y-auto ">
@@ -255,7 +256,9 @@ function formatLocalDateTime(isoDateString: string, includeSeconds: boolean = fa
                           :key="index"
                           class="border  rounded-md border-gray-700 p-1 ">
                         <div class="flex justify-between items-center">
-                          <div class="text-xs text-gray-400">{{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}</div>
+                          <div class="text-xs text-gray-400">
+                            {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
+                          </div>
                           <div class="text-xs text-gray-400">{{ formatName(comment.person) || 'Автор не указан' }}</div>
                         </div>
 
@@ -264,74 +267,64 @@ function formatLocalDateTime(isoDateString: string, includeSeconds: boolean = fa
                     </div>
                   </div>
 
-<!--                  &lt;!&ndash; Колонка с временем и деньгами &ndash;&gt;-->
-<!--                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">-->
-<!--                    <div class="border rounded-md p-3 bg-gray-800">-->
-<!--                      <h4 class="font-semibold text-white mb-2">Затраченное время</h4>-->
-<!--                      <div v-if="!currentOrderDetail?.timings || currentOrderDetail.timings.length === 0" class="text-gray-400">-->
-<!--                        Нет данных о затраченном времени-->
-<!--                      </div>-->
-<!--                      <div v-else class="space-y-1 max-h-28 overflow-y-auto">-->
-<!--                        <div v-for="(timing, index) in currentOrderDetail.timings" :key="index" class="text-sm">-->
-<!--                          <div>{{ timing.description || 'Без описания' }}</div>-->
-<!--                          <div class="text-xs text-gray-400">-->
-<!--                            Дата: {{ timing.date || 'Не указана' }}-->
-<!--                          </div>-->
-<!--                          <div class="font-medium">-->
-<!--                            Время: {{ timing.time || 'Не указано' }}-->
-<!--                          </div>-->
-<!--                        </div>-->
-<!--                      </div>-->
-<!--                    </div>-->
+                  <!-- Колонка с временем и деньгами -->
+                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
 
-<!--                    <div class="border rounded-md p-3 bg-gray-800">-->
-<!--                      <h4 class="font-semibold text-white mb-2">Финансы</h4>-->
-<!--                      <div class="grid grid-cols-2 gap-2 text-sm">-->
-<!--                        <div>-->
-<!--                          <span>Бюджет:</span>-->
-<!--                          <span class="font-medium">{{ currentOrderDetail?.budget || '0' }} руб.</span>-->
-<!--                        </div>-->
-<!--                        <div>-->
-<!--                          <span>Затраты:</span>-->
-<!--                          <span class="font-medium">{{ currentOrderDetail?.expenses || '0' }} руб.</span>-->
-<!--                        </div>-->
-<!--                        <div>-->
-<!--                          <span>Оплачено:</span>-->
-<!--                          <span class="font-medium text-green-400">{{ currentOrderDetail?.paid || '0' }} руб.</span>-->
-<!--                        </div>-->
-<!--                        <div>-->
-<!--                          <span>Остаток:</span>-->
-<!--                          <span class="font-medium text-yellow-400">{{ currentOrderDetail?.remaining || '0' }} руб.</span>-->
-<!--                        </div>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                  </div>-->
+                    <div class="border rounded-md p-3 bg-gray-800">
+                      <h4 class="font-semibold text-white mb-2">Даты</h4>
+                      <p>создан: {{formatLocalDateTime(currentOrderDetail?.start_moment)  || 'не определено'	}}</p>
+                      <p>дедлайн: {{formatLocalDateTime(currentOrderDetail?.deadline_moment)  || 'не определено'}}</p>
+                      <p>завершен: {{formatLocalDateTime(currentOrderDetail?.end_moment) || 'не определено'}}</p>
+                    </div>
 
-<!--                  &lt;!&ndash; Колонка с задачами &ndash;&gt;-->
-<!--                  <div class="border rounded-md p-3 bg-gray-800">-->
-<!--                    <h4 class="font-semibold text-white mb-2">Задачи</h4>-->
-<!--                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">-->
-<!--                      Нет задач-->
-<!--                    </div>-->
-<!--                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">-->
-<!--                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"-->
-<!--                           class="border-b border-gray-700 pb-2 flex items-center justify-between">-->
-<!--                        <div>-->
-<!--                          <div class="font-medium">{{ task.name }}</div>-->
-<!--                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>-->
-<!--                        </div>-->
-<!--                        <div :class="{-->
-<!--                          'text-green-400': task.completed,-->
-<!--                          'text-yellow-400': !task.completed-->
-<!--                        }">-->
-<!--                          {{ task.completed ? 'Завершено' : 'В процессе' }}-->
-<!--                        </div>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                  </div>-->
-
+                    <div class="border rounded-md p-3 bg-gray-800">
+                      <h4 class="font-semibold text-white mb-2">Финансы</h4>
+                      <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span>Бюджет:</span>
+                          <span class="font-medium">{{  }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Затраты:</span>
+                          <span class="font-medium">{{ }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Оплачено:</span>
+                          <span class="font-medium text-green-400">{{ }} руб.</span>
+                        </div>
+                        <div>
+                          <span>Остаток:</span>
+                          <span class="font-medium text-yellow-400">{{ }} руб.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+                <!--                  &lt;!&ndash; Колонка с задачами &ndash;&gt;-->
+                <!--                  <div class="border rounded-md p-3 bg-gray-800">-->
+                <!--                    <h4 class="font-semibold text-white mb-2">Задачи</h4>-->
+                <!--                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">-->
+                <!--                      Нет задач-->
+                <!--                    </div>-->
+                <!--                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">-->
+                <!--                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"-->
+                <!--                           class="border-b border-gray-700 pb-2 flex items-center justify-between">-->
+                <!--                        <div>-->
+                <!--                          <div class="font-medium">{{ task.name }}</div>-->
+                <!--                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>-->
+                <!--                        </div>-->
+                <!--                        <div :class="{-->
+                <!--                          'text-green-400': task.completed,-->
+                <!--                          'text-yellow-400': !task.completed-->
+                <!--                        }">-->
+                <!--                          {{ task.completed ? 'Завершено' : 'В процессе' }}-->
+                <!--                        </div>-->
+                <!--                      </div>-->
+                <!--                    </div>-->
+                <!--                  </div>-->
+
             </td>
           </tr>
         </template>
