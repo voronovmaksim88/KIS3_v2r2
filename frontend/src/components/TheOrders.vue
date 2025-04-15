@@ -83,7 +83,18 @@ function formatName(fullName: string): string {
   return `${surname} ${initials}`;
 }
 
-function formatLocalDateTime(isoDateString: string | null | undefined, includeSeconds: boolean = false): string {
+/**
+ * Преобразует строку даты в формате ISO 8601 в локальную дату и время
+ * @param isoDateString - Строка даты в формате ISO 8601 или null/undefined
+ * @param includeHourAndMinute - Включать ли часы и минуты в результат (по умолчанию: true)
+ * @param includeSeconds - Включать ли секунды в результат (по умолчанию: false)
+ * @returns Отформатированная строка с локальными датой и временем
+ */
+function formatLocalDateTime(
+    isoDateString: string | null | undefined,
+    includeHourAndMinute: boolean = true,
+    includeSeconds: boolean = false
+): string {
   // Проверка на пустую строку или null/undefined
   if (!isoDateString) {
     return '';
@@ -112,16 +123,21 @@ function formatLocalDateTime(isoDateString: string | null | undefined, includeSe
     const year = adjustedDate.getFullYear();
     const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
     const day = String(adjustedDate.getDate()).padStart(2, '0');
-    const hours = String(adjustedDate.getHours()).padStart(2, '0');
-    const minutes = String(adjustedDate.getMinutes()).padStart(2, '0');
 
-    // Формируем строку даты и времени
-    let formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+    // Формируем строку с датой
+    let formattedDate = `${year}-${month}-${day}`;
 
-    // Добавляем секунды, если они нужны
-    if (includeSeconds) {
-      const seconds = String(adjustedDate.getSeconds()).padStart(2, '0');
-      formattedDate += `:${seconds}`;
+    // Добавляем часы и минуты, если необходимо
+    if (includeHourAndMinute) {
+      const hours = String(adjustedDate.getHours()).padStart(2, '0');
+      const minutes = String(adjustedDate.getMinutes()).padStart(2, '0');
+      formattedDate += ` ${hours}:${minutes}`;
+
+      // Добавляем секунды, если они нужны и если включены часы/минуты
+      if (includeSeconds) {
+        const seconds = String(adjustedDate.getSeconds()).padStart(2, '0');
+        formattedDate += `:${seconds}`;
+      }
     }
 
     return formattedDate;
@@ -272,29 +288,31 @@ function formatLocalDateTime(isoDateString: string | null | undefined, includeSe
 
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Даты</h4>
-                      <p>создан: {{formatLocalDateTime(currentOrderDetail?.start_moment)  || 'не определено'	}}</p>
-                      <p>дедлайн: {{formatLocalDateTime(currentOrderDetail?.deadline_moment)  || 'не определено'}}</p>
-                      <p>завершен: {{formatLocalDateTime(currentOrderDetail?.end_moment) || 'не определено'}}</p>
+                      <p>создан: {{formatLocalDateTime(currentOrderDetail?.start_moment, false)  || 'не определено'	}}</p>
+                      <p>дедлайн: {{formatLocalDateTime(currentOrderDetail?.deadline_moment, false)  || 'не определено'}}</p>
+                      <p v-if="currentOrderDetail?.end_moment">
+                        завершен: {{formatLocalDateTime(currentOrderDetail?.end_moment, false) || 'не определено'}}
+                      </p>
                     </div>
 
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Финансы</h4>
                       <div class="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span>Бюджет:</span>
-                          <span class="font-medium">{{  }} руб.</span>
+                          <span>Материалы: </span>
+                          <span class="font-medium text-red-300">{{currentOrderDetail?.materials_cost}} руб.</span>
                         </div>
                         <div>
-                          <span>Затраты:</span>
-                          <span class="font-medium">{{ }} руб.</span>
+                          <span>Товары: </span>
+                          <span class="font-medium text-red-300">{{currentOrderDetail?.products_cost}} руб.</span>
                         </div>
                         <div>
-                          <span>Оплачено:</span>
-                          <span class="font-medium text-green-400">{{ }} руб.</span>
+                          <span>Работы: </span>
+                          <span class="font-medium text-red-300">{{currentOrderDetail?.work_cost}} руб.</span>
                         </div>
                         <div>
-                          <span>Остаток:</span>
-                          <span class="font-medium text-yellow-400">{{ }} руб.</span>
+                          <span>Нам должны: </span>
+                          <span class="font-medium text-green-400">{{currentOrderDetail?.debt}} руб.</span>
                         </div>
                       </div>
                     </div>
