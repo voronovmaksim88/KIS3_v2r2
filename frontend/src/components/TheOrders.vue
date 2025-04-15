@@ -82,6 +82,55 @@ function formatName(fullName: string): string {
 
   return `${surname} ${initials}`;
 }
+
+function formatLocalDateTime(isoDateString: string, includeSeconds: boolean = false): string {
+  // Проверка на пустую строку или null/undefined
+  if (!isoDateString) {
+    return '';
+  }
+
+  try {
+    // Создаем объект Date из строки ISO
+    const date = new Date(isoDateString);
+
+    // Проверяем, является ли дата валидной
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date string:', isoDateString);
+      return isoDateString; // Возвращаем исходную строку в случае ошибки
+    }
+
+    // Получаем разницу с UTC в часах для отображения
+    const timezoneOffsetHours = -date.getTimezoneOffset() / 60;
+    console.log(`Применено смещение часового пояса: UTC${timezoneOffsetHours >= 0 ? '+' : ''}${timezoneOffsetHours} часов`);
+
+    // Прямое прибавление смещения часового пояса к времени
+    // getTimezoneOffset возвращает смещение в минутах, отрицательное для восточных зон
+    // поэтому мы вычитаем его, что эквивалентно прибавлению часов для восточных зон
+    const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
+    // Извлекаем компоненты даты напрямую (без toISOString)
+    const year = adjustedDate.getFullYear();
+    const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(adjustedDate.getDate()).padStart(2, '0');
+    const hours = String(adjustedDate.getHours()).padStart(2, '0');
+    const minutes = String(adjustedDate.getMinutes()).padStart(2, '0');
+
+    // Формируем строку даты и времени
+    let formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+    // Добавляем секунды, если они нужны
+    if (includeSeconds) {
+      const seconds = String(adjustedDate.getSeconds()).padStart(2, '0');
+      formattedDate += `:${seconds}`;
+    }
+
+    return formattedDate;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return isoDateString; // Возвращаем исходную строку в случае ошибки
+  }
+}
+
 </script>
 
 
@@ -206,7 +255,7 @@ function formatName(fullName: string): string {
                           :key="index"
                           class="border  rounded-md border-gray-700 p-1 ">
                         <div class="flex justify-between items-center">
-                          <div class="text-xs text-gray-400">{{ comment.moment_of_creation || 'Дата не указана' }}</div>
+                          <div class="text-xs text-gray-400">{{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}</div>
                           <div class="text-xs text-gray-400">{{ formatName(comment.person) || 'Автор не указан' }}</div>
                         </div>
 
