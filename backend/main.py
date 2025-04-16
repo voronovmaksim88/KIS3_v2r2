@@ -31,7 +31,7 @@ app.include_router(people_router)
 app.add_middleware(
     CORSMiddleware,  # type: ignore
     allow_origins=["https://sibplc-kis3.ru", "http://localhost:3000", "http://localhost:80", "http://localhost",
-                   'http://localhost:8000', 'http://localhost:5173', 'http://localhost:5174'],
+                   'http://localhost:8000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
     allow_credentials=True,
     allow_methods=["*"],  # Разрешить все методы
     allow_headers=["*"],  # Разрешить все заголовки
