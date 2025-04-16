@@ -533,7 +533,7 @@ async def get_all_tasks(
         logger.debug(f"User {current_user.username} requesting all tasks")
 
         # Выполняем запрос для получения всех задач
-        query = select(Task)
+        query = select(Task).order_by(Task.id.desc())
         result = await db.execute(query)
 
         # Получаем все записи

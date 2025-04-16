@@ -370,7 +370,7 @@ class Task(Base):
     # Фактическая дата и время завершения выполнения задачи
     end_moment: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    # Стоимость выполнения задачи, т.е. сколько денег надо заплатить исполнителю, руб
+    # Стоимость выполнения задачи, сколько денег надо заплатить исполнителю, руб
     price: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Добавляем связи с другими таблицами

@@ -118,7 +118,7 @@ def _make_api_request(session: requests.Session, api_url: str, debug: bool = Fal
 
         if debug:
             pretty_json = json.dumps(data, ensure_ascii=False, indent=2)
-            print(f"Читаемый ответ API: {pretty_json[:500]}...")
+            print(f"Читаемый ответ API: {pretty_json[:2000]}...")
 
         return data
 
@@ -919,10 +919,10 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
             payment_status_name = payment_statuses_dict.get(payment_status_id, None) if payment_status_id else None
 
             # Получаем информацию о корневой задаче
-            root_task_id = task.get("root_task_id")
+            root_task_id = task.get("root_task")
 
             # Получаем информацию о родительской задаче
-            parent_task_id = task.get("parent_task_id")
+            parent_task_id = task.get("parent_task")
 
             # Собираем словарь задачи
             task_dict = {
@@ -1339,14 +1339,14 @@ if __name__ == "__main__":
     # for box_accounting_dict_from_kis2 in box_accounting_list_dict_from_kis2:
     #     print(box_accounting_dict_from_kis2)
 
-    # tasks_list_dict_from_kis2 = create_tasks_list_dict_from_kis2()
-    # for tasks_dict_from_kis2 in tasks_list_dict_from_kis2:
-    #     print(tasks_dict_from_kis2)
+    tasks_list_dict_from_kis2 = create_tasks_list_dict_from_kis2()
+    for tasks_dict_from_kis2 in tasks_list_dict_from_kis2:
+        print(tasks_dict_from_kis2)
 
     # boxes_list_dict_from_kis2 = create_boxes_list_dict_from_kis2()
     # for box in boxes_list_dict_from_kis2:
     #     print(box)
 
-    timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
-    for timing in timings_list_dict_from_kis2:
-        print(timing)
+    # timings_list_dict_from_kis2 = create_timings_list_dict_from_kis2()
+    # for timing in timings_list_dict_from_kis2:
+    #     print(timing)

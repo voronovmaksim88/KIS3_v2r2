@@ -24,6 +24,8 @@ class TaskSchema(BaseModel):
     deadline_moment: Optional[datetime] = None
     end_moment: Optional[datetime] = None
     price: Optional[int] = None
+    parent_task_id : Optional[int] = None
+    root_task_id : Optional[int] = None
 
     class Config:
         from_attributes = True
