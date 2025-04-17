@@ -14,7 +14,8 @@
     "@primeuix/themes": "^1.0.0",
     "axios": "^1.8.4",
     "pinia": "^3.0.1",
-    "primevue": "^4.3.3",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.0.0",
     "vue": "^3.5.10"
   },
   "devDependencies": {

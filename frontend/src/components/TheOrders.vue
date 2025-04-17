@@ -355,9 +355,7 @@ function formatLocalDateTime(
                   <div>
                     <TaskList
                         :tasks="currentOrderDetail?.tasks || []"
-                    >
-
-                    </TaskList>
+                    />
                   </div>
 
                 </div>
