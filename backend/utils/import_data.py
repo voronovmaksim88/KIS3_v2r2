@@ -1036,8 +1036,8 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                     # Получаем ID исполнителя
                     executor_id = None
                     if task_data['executor']:
-                        executor_id = persons_by_name.get(task_data['executor'])
-                        if not executor_id:
+                        executor_uuid = persons_by_name.get(task_data['executor'])
+                        if not executor_uuid:
                             print(Fore.YELLOW + f"Не найден исполнитель '{task_data['executor']}' для задачи '{name}'.")
 
                     # Получаем ID статуса задачи
@@ -1085,8 +1085,8 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                             task.description = description
                             needs_update = True
                             update_details.append("описание")
-                        if task.executor_id != executor_id:
-                            task.executor_id = executor_id
+                        if task.executor_uuid != executor_uuid:
+                            task.executor_uuid = executor_uuid
                             needs_update = True
                             update_details.append("исполнитель")
                         if task.status_id != status_id:

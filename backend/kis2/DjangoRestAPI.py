@@ -907,7 +907,7 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
         # Проверяем наличие необходимого ключа name
         if "name" in task:
             # Получаем информацию об исполнителе
-            executor_id = task.get("executor_id")
+            executor_id = task.get("executor")
             executor_name = persons_dict.get(executor_id, None) if executor_id else None
 
             # Получаем информацию о статусе задачи
