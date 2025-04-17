@@ -16,7 +16,7 @@ class TaskSchema(BaseModel):
     description: Optional[str] = None
     status_id: Optional[int] = None
     payment_status_id: Optional[int] = None
-    executor_id: Optional[uuid.UUID] = None
+    executor: str = None
     planned_duration: Optional[timedelta] = None
     actual_duration: Optional[timedelta] = None
     creation_moment: Optional[datetime] = None
