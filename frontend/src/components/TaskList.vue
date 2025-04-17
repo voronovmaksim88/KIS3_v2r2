@@ -40,7 +40,7 @@ const rootTasks = computed(() => {
     <div v-if="!tasks || tasks.length === 0" class="text-gray-400">
       Нет задач
     </div>
-    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
+    <div v-else class="space-y-2">
       <!-- Отображаем только корневые задачи (задачи без родителей или с root_task_id = null) -->
       <div v-for="task in rootTasks" :key="task.id" class="mt-2">
         <TaskNode :task="task" :all-tasks="tasks" :status-map="statusMap" :payment-status-map="paymentStatusMap" />
