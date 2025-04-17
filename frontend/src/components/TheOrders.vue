@@ -1,9 +1,10 @@
-// src/components/TheOrders.vue
+<!-- src/components/TheOrders.vue -->
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
+import TaskList from "@/components/TaskList.vue";
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
@@ -345,32 +346,24 @@ function formatLocalDateTime(
                       </div>
 
                     </div>
+                    <!-- конец Колонка с временем и деньгами  -->
+
+
                   </div>
+
+                  <!--отображение списка задач по заказу-->
+                  <div>
+                    <TaskList
+                        :tasks="currentOrderDetail?.tasks || []"
+                    >
+
+                    </TaskList>
+                  </div>
+
                 </div>
               </div>
 
-              <!--                  &lt;!&ndash; Колонка с задачами &ndash;&gt;-->
-              <!--                  <div class="border rounded-md p-3 bg-gray-800">-->
-              <!--                    <h4 class="font-semibold text-white mb-2">Задачи</h4>-->
-              <!--                    <div v-if="!currentOrderDetail?.tasks || currentOrderDetail.tasks.length === 0" class="text-gray-400">-->
-              <!--                      Нет задач-->
-              <!--                    </div>-->
-              <!--                    <div v-else class="space-y-2 max-h-56 overflow-y-auto">-->
-              <!--                      <div v-for="(task, index) in currentOrderDetail.tasks" :key="index"-->
-              <!--                           class="border-b border-gray-700 pb-2 flex items-center justify-between">-->
-              <!--                        <div>-->
-              <!--                          <div class="font-medium">{{ task.name }}</div>-->
-              <!--                          <div class="text-xs text-gray-400">{{ task.status || 'Статус не указан' }}</div>-->
-              <!--                        </div>-->
-              <!--                        <div :class="{-->
-              <!--                          'text-green-400': task.completed,-->
-              <!--                          'text-yellow-400': !task.completed-->
-              <!--                        }">-->
-              <!--                          {{ task.completed ? 'Завершено' : 'В процессе' }}-->
-              <!--                        </div>-->
-              <!--                      </div>-->
-              <!--                    </div>-->
-              <!--                  </div>-->
+
 
             </td>
           </tr>
