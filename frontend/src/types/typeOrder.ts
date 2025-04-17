@@ -1,4 +1,6 @@
 // src/type/typeOrder.ts
+import { typeTask} from "@/types/typeTask.ts";
+
 export interface typeOrderSerial {
     serial: string;
 }
@@ -65,22 +67,6 @@ export interface typeOrderWork {
     active: boolean;
 }
 
-export interface typeOrderTask {
-    id: number;
-    name: string;
-    description: string;
-    status_id: number;
-    payment_status_id: number;
-    executor_id: string | null;
-    planned_duration: string | null;
-    actual_duration: string | null;
-    creation_moment: string;
-    start_moment: string;
-    deadline_moment: string;
-    end_moment: string | null;
-    price: number | null;
-}
-
 export interface typeOrderTiming {
     id: number;
     task_id: number;
@@ -109,6 +95,6 @@ export interface typeOrderDetail {
     debt_paid: boolean;
     works: typeOrderWork[];
     comments: typeOrderComment[];
-    tasks: typeOrderTask[];
+    tasks: typeTask[];
     timings: typeOrderTiming[];
 }
