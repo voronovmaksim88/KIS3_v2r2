@@ -5,6 +5,7 @@ import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
 import TaskList from "@/components/TaskList.vue";
+import {formatFIO} from "@/utils/formatFIO.ts";
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
@@ -71,18 +72,6 @@ const toggleOrderDetails = async (serial: string) => {
   }
 };
 
-function formatName(fullName: string): string {
-  const parts = fullName.split(' ');
-
-  if (parts.length !== 3) {
-    return fullName; // Если формат неправильный, возвращаем оригинальную строку
-  }
-
-  const surname = parts[0];
-  const initials = `${parts[1][0]}.${parts[2][0]}.`;
-
-  return `${surname} ${initials}`;
-}
 
 /**
  * Преобразует строку даты в формате ISO 8601 в локальную дату и время
@@ -277,7 +266,7 @@ function formatLocalDateTime(
                           <div class="text-xs text-gray-400">
                             {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
                           </div>
-                          <div class="text-xs text-gray-400">{{ formatName(comment.person) || 'Автор не указан' }}</div>
+                          <div class="text-xs text-gray-400">{{ formatFIO(comment.person) || 'Автор не указан' }}</div>
                         </div>
 
                         <div class="mt-1">{{ comment.text }}</div>

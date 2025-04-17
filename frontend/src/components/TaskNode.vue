@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { typeTask} from "@/types/typeTask.ts";
 // Импорт стилей PrimeIcons
 import 'primeicons/primeicons.css';
+import {formatFIO} from "@/utils/formatFIO.ts";
 
 
 interface Props {
@@ -78,34 +79,60 @@ const toggleExpand = () => {
 //     return dateString;
 //   }
 // };
+
+function getStatusBackgroundClass(statusId:number) {
+  // Возвращаем CSS класс в зависимости от статуса задачи
+  switch (statusId) {
+    case 1: // "Не начата"
+      return 'bg-opacity-30 bg-gray-500'
+    case 2: // "В работе"
+      return 'bg-opacity-30 bg-green-500'
+    case 3: // "На паузе"
+      return 'bg-opacity-30 bg-white'
+    case 4: // "Завершена"
+      return 'bg-opacity-30 bg-blue-500'
+    case 5: // "Отменена"
+      return 'bg-opacity-30 bg-red-500'
+    default:
+      return 'bg-opacity-30 bg-gray-900' // По умолчанию серый, если статус неизвестен
+  }
+}
 </script>
 
 
 <template>
-  <div class="task-node border rounded-md p-2" :class="{'bg-gray-700': isExpanded, 'hover:bg-gray-700': !isExpanded}">
+  <div class="task-node border rounded-md p-2"
+       :class="[
+           getStatusBackgroundClass(task.status_id),
+         {'hover:border-2': !isExpanded},
+       ]">
     <!-- Заголовок задачи (кликабельный для разворачивания) -->
     <div @click="toggleExpand" class="flex items-center justify-between cursor-pointer px-2 py-1">
+      <!-- Левая часть - стрелка и название задачи -->
       <div class="flex items-center">
+        <!-- Стрелка для разворачивания/сворачивания (если есть дочерние задачи) -->
         <span v-if="hasChildren" class="mr-2 text-gray-300">
           <i :class="isExpanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
         </span>
-        <div>
-          <div class="font-medium text-white">{{ task.name }}</div>
-          <div class="flex text-xs text-gray-400 space-x-2">
-            <span v-if="task.executor_id">| Исполнитель: {{ task.executor_id }}</span>
-          </div>
-        </div>
+
+        <!-- Название задачи -->
+        <div class="font-medium text-white">{{ task.name }}</div>
+      </div>
+
+      <!-- Правая часть - исполнитель -->
+      <div v-if="task.executor" class="text-xs text-gray-300">
+        {{ formatFIO(task.executor) }}
       </div>
     </div>
 
     <!-- Раскрывающаяся информация о задаче -->
     <div v-if="isExpanded" class="pl-4 mt-2">
-      <div v-if="task.description" class="text-sm text-gray-300 mb-2 p-2 bg-gray-800 rounded">
+      <div v-if="task.description" class="text-sm text-gray-300 mb-2 p-2 bg-gray-100 rounded">
         {{ task.description }}
       </div>
 
       <!-- Подзадачи (если есть) -->
-      <div v-if="childTasks.length > 0" class="mt-2 space-y-2 border-l-2 border-gray-600 pl-3">
+      <div v-if="childTasks.length > 0" class="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
         <div v-for="childTask in childTasks" :key="childTask.id" class="mt-1">
           <TaskNode
               :task="childTask"

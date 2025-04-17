@@ -166,7 +166,6 @@ async def read_orders(
     )
 
 
-
 @router.get("/detail/{serial}", response_model=OrderDetailResponse)
 async def get_order_detail(
         serial: str,
@@ -175,18 +174,19 @@ async def get_order_detail(
     """
     Получить подробную информацию о заказе, включая связанные комментарии, задачи и тайминги.
     Для комментариев возвращает ФИО автора.
+    Для задач возвращает ФИО исполнителя.
 
     Параметры:
     - serial: серийный номер заказа
 
     Возвращает: детальную информацию о заказе со всеми связями
     """
-    # Запрос с жадной загрузкой всех необходимых связей, КРОМЕ Person для комментариев
-    # Мы загрузим Person для комментариев отдельным запросом после получения заказа
+    # Запрос с жадной загрузкой всех необходимых связей, КРОМЕ Person для комментариев и исполнителей задач
+    # Мы загрузим Person для комментариев и исполнителей задач отдельными запросами после получения заказа
     query = select(Order).where(Order.serial == serial).options(
         selectinload(Order.customer).selectinload(Counterparty.form),
         selectinload(Order.works),
-        selectinload(Order.comments), # Загружаем комментарии как есть
+        selectinload(Order.comments),  # Загружаем комментарии как есть
         selectinload(Order.tasks),
         selectinload(Order.timings)
     )
@@ -228,24 +228,66 @@ async def get_order_detail(
 
         # Формируем список комментариев с ФИО автора
         for comment in order.comments:
-            author_name = authors_map.get(comment.person_uuid, "Автор не найден") # Имя по умолчанию
+            author_name = authors_map.get(comment.person_uuid, "Автор не найден")  # Имя по умолчанию
             formatted_comments.append(
                 OrderCommentSchema(
                     id=comment.id,
                     moment_of_creation=comment.moment_of_creation,
                     text=comment.text,
-                    person=author_name # Подставляем ФИО
+                    person=author_name  # Подставляем ФИО
                 )
             )
 
-    # 3. Подготовка остальных данных (используем Pydantic для маппинга, где возможно)
-    # Преобразуем связанные объекты в их Pydantic схемы перед созданием финального словаря
+    # 3. Обработка задач для получения ФИО исполнителя
+    formatted_tasks = []
+    if order.tasks:
+        # Собираем уникальные UUID исполнителей задач
+        executor_uuids = {task.executor_uuid for task in order.tasks if task.executor_uuid}
+
+        executors_map = {}
+        if executor_uuids:
+            # Загружаем данные исполнителей одним запросом
+            person_query = select(Person).where(Person.uuid.in_(executor_uuids))
+            person_results = await session.execute(person_query)
+            # Создаем словарь {uuid: "Фамилия Имя Отчество"}
+            for person in person_results.scalars():
+                fio = f"{person.surname} {person.name}"
+                if person.patronymic:
+                    fio += f" {person.patronymic}"
+                executors_map[person.uuid] = fio
+
+        # Формируем список задач с ФИО исполнителя
+        for task in order.tasks:
+            executor_name = executors_map.get(task.executor_uuid,
+                                              "Исполнитель не назначен") if task.executor_uuid else "Исполнитель не назначен"
+
+            # Создаем словарь с данными задачи, включая ФИО исполнителя
+            task_dict = {
+                "id": task.id,
+                "name": task.name,
+                "description": task.description,
+                "status_id": task.status_id,
+                "payment_status_id": task.payment_status_id,
+                "executor": executor_name,  # Подставляем ФИО исполнителя
+                "planned_duration": task.planned_duration,
+                "actual_duration": task.actual_duration,
+                "creation_moment": task.creation_moment,
+                "start_moment": task.start_moment,
+                "deadline_moment": task.deadline_moment,
+                "end_moment": task.end_moment,
+                "price": task.price,
+                "parent_task_id": task.parent_task_id,
+                "root_task_id": task.root_task_id
+            }
+
+            # Добавляем задачу в список
+            formatted_tasks.append(TaskSchema.model_validate(task_dict))
+
+    # 4. Подготовка остальных данных
     works_data = [WorkSchema.model_validate(w) for w in order.works]
-    tasks_data = [TaskSchema.model_validate(t) for t in order.tasks]
     timings_data = [TimingSchema.model_validate(ti) for ti in order.timings]
 
-
-    # 4. Создаем словарь данных для основного ответа
+    # 5. Создаем словарь данных для основного ответа
     order_data = {
         "serial": order.serial,
         "name": order.name,
@@ -263,13 +305,12 @@ async def get_order_detail(
         "work_paid": order.work_paid,
         "debt": order.debt,
         "debt_paid": order.debt_paid,
-        # Используем уже преобразованные данные
         "works": works_data,
-        "comments": formatted_comments, # Используем отформатированные комментарии
-        "tasks": tasks_data,
+        "comments": formatted_comments,  # Используем отформатированные комментарии
+        "tasks": formatted_tasks,  # Используем отформатированные задачи
         "timings": timings_data
     }
 
-    # 5. Создаем и возвращаем объект Pydantic response_model
+    # 6. Создаем и возвращаем объект Pydantic response_model
     # Pydantic сам проверит соответствие словаря order_data схеме OrderDetailResponse
     return OrderDetailResponse.model_validate(order_data)

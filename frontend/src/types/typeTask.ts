@@ -6,7 +6,7 @@ export interface typeTask {
     description: string;
     status_id: number;
     payment_status_id: number;
-    executor_id: string | null;
+    executor: string | null;
     planned_duration: string | null;
     actual_duration: string | null;
     creation_moment: string;
