@@ -350,7 +350,7 @@ class Task(Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
     payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
-    executor_id: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=True)
+    executor_uuid: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=True)
 
     # Запланированное время на выполнение задачи
     planned_duration: Mapped[Optional[timedelta]] = mapped_column(Interval, nullable=True)
