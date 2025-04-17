@@ -1,19 +1,4 @@
 <!-- TaskList.vue -->
-<template>
-  <div class="border rounded-md p-3 bg-gray-800">
-    <h4 class="font-semibold text-white mb-2">Задачи</h4>
-    <div v-if="!tasks || tasks.length === 0" class="text-gray-400">
-      Нет задач
-    </div>
-    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
-      <!-- Отображаем только корневые задачи (задачи без родителей или с root_task_id = null) -->
-      <div v-for="task in rootTasks" :key="task.id" class="mt-2">
-        <TaskNode :task="task" :all-tasks="tasks" :status-map="statusMap" :payment-status-map="paymentStatusMap" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import { typeTask } from '@/types/typeTask';
@@ -48,3 +33,18 @@ const rootTasks = computed(() => {
   );
 });
 </script>
+
+<template>
+  <div class="border rounded-md p-3 bg-gray-800">
+    <h4 class="font-semibold text-white mb-2">Задачи</h4>
+    <div v-if="!tasks || tasks.length === 0" class="text-gray-400">
+      Нет задач
+    </div>
+    <div v-else class="space-y-2 max-h-56 overflow-y-auto">
+      <!-- Отображаем только корневые задачи (задачи без родителей или с root_task_id = null) -->
+      <div v-for="task in rootTasks" :key="task.id" class="mt-2">
+        <TaskNode :task="task" :all-tasks="tasks" :status-map="statusMap" :payment-status-map="paymentStatusMap" />
+      </div>
+    </div>
+  </div>
+</template>
