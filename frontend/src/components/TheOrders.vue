@@ -258,20 +258,21 @@ function formatLocalDateTime(
 
               <!-- Отображение данных, когда они загружены -->
               <div v-else>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-
-                  <!-- Колонка с комментариями -->
-                  <div class="border rounded-md p-3 bg-gray-800">
+                <div class="grid grid-cols-3 gap-4">
+                  <!-- Колонка с комментариями - убран скролл и фиксированная высота -->
+                  <div class="border rounded-md p-3 bg-gray-800 h-full">
                     <h4 class="font-semibold text-white mb-2">Комментарии</h4>
                     <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
                          class="text-gray-400">
                       Нет комментариев
                     </div>
-                    <div v-else class="space-y-2 max-h-56 overflow-y-auto ">
+                    <!-- Убрана фиксированная высота и скролл -->
+                    <div v-else class="space-y-2">
                       <div
                           v-for="(comment, index) in currentOrderDetail.comments"
                           :key="index"
-                          class="border  rounded-md border-gray-700 p-1 ">
+                          class="border rounded-md border-gray-700 p-2 mb-2"
+                      >
                         <div class="flex justify-between items-center">
                           <div class="text-xs text-gray-400">
                             {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
@@ -285,8 +286,7 @@ function formatLocalDateTime(
                   </div>
 
                   <!-- Колонка с временем и деньгами -->
-                  <div style="display: grid; grid-template-rows: repeat(2, auto); gap: 10px;">
-
+                  <div class="flex flex-col gap-4">
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Даты</h4>
                       <p>создан: {{
@@ -339,30 +339,20 @@ function formatLocalDateTime(
                               :class="{ 'line-through opacity-60': currentOrderDetail?.debt_paid }"
                           >
                           {{currentOrderDetail?.debt}} руб.
-
                           </span>
                         </div>
-
                       </div>
-
                     </div>
-                    <!-- конец Колонка с временем и деньгами  -->
-
-
                   </div>
 
                   <!--отображение списка задач по заказу-->
-                  <div>
+                  <div class="h-full">
                     <TaskList
                         :tasks="currentOrderDetail?.tasks || []"
                     />
                   </div>
-
                 </div>
               </div>
-
-
-
             </td>
           </tr>
         </template>
@@ -391,9 +381,7 @@ function formatLocalDateTime(
       <div v-if="!isLoading && orders.length > 0" class="text-center text-gray-400 mt-2 text-sm">
         Показано {{ orders.length }} из {{ totalOrders }} заказов.
       </div>
-
     </div>
-
   </div>
 </template>
 
