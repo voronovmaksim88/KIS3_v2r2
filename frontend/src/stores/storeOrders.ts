@@ -7,8 +7,8 @@ import {
     typeOrderSerial,
     typeOrderRead,
     typePaginatedOrderResponse,
-    typeFetchOrdersParams,
-    typeOrderDetail  // Добавляем тип для детальной информации заказа
+    typeFetchOrdersParams, // Убедитесь, что вы обновили этот тип в файле типов
+    typeOrderDetail
 } from "../types/typeOrder"; // Убедитесь, что путь к файлу типов верный
 import { getApiUrl } from '../utils/apiUrlHelper';
 
@@ -80,7 +80,7 @@ export const useOrdersStore = defineStore('orders', () => {
         error.value = null;
     };
 
-    // === Действие для получения заказов с пагинацией ===
+    // === Действие для получения заказов с пагинацией, обновленное с параметром showEnded ===
     const fetchOrders = async (params: typeFetchOrdersParams = {}) => {
         loading.value = true;
         error.value = null; // Сброс ошибки перед запросом
@@ -94,6 +94,8 @@ export const useOrdersStore = defineStore('orders', () => {
         if (params.searchCustomer !== undefined && params.searchCustomer !== null) queryParams.search_customer = params.searchCustomer;
         if (params.searchPriority !== undefined && params.searchPriority !== null) queryParams.search_priority = params.searchPriority;
 
+        // Добавляем параметр showEnded, только если он явно определен
+        if (params.showEnded !== undefined) queryParams.show_ended = params.showEnded;
 
         try {
             const response = await axios.get<typePaginatedOrderResponse>(`${getApiUrl()}order/read`, {

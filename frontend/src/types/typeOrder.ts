@@ -50,6 +50,7 @@ export interface typeFetchOrdersParams {
     searchSerial?: string | null;
     searchCustomer?: string | null;
     searchPriority?: number | null;
+    showEnded?: boolean; // параметр для фильтрации завершенных заказов
 }
 
 // Типы для вложенных структур

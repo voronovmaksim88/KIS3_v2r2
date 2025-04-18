@@ -28,27 +28,6 @@ const {
 // Действия можно извлекать напрямую
 const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail} = ordersStore;
 
-// 3. Вызываем действие fetchOrders при монтировании компонента
-onMounted(() => {
-  // Загружаем первую страницу с параметрами по умолчанию (или задаем свои)
-  // Например, fetchOrders({skip: 0, limit: 10});
-  fetchOrders({skip: 0, limit: 20});
-});
-
-// 4. Функции для пагинации (вызывают fetchOrders с новыми параметрами)
-const goToPreviousPage = () => {
-  if (currentPage.value > 0) {
-    const newSkip = currentSkip.value - currentLimit.value;
-    fetchOrders({skip: newSkip, limit: currentLimit.value});
-  }
-};
-
-const goToNextPage = () => {
-  if (currentPage.value < totalPages.value - 1) {
-    const newSkip = currentSkip.value + currentLimit.value;
-    fetchOrders({skip: newSkip, limit: currentLimit.value});
-  }
-};
 
 function addNewOrder() {
 
@@ -137,57 +116,135 @@ function formatLocalDateTime(
   }
 }
 
+
+// Состояние для отображения завершенных заказов
+const showEndedOrders = ref(true); // По умолчанию показываем все заказы
+
+// Функция для переключения видимости завершенных заказов
+const toggleEndedOrders = () => {
+  // Вызов API с обновленным значением параметра showEnded
+  fetchOrders({
+    skip: 0, // Сбрасываем на первую страницу при смене фильтра
+    limit: currentLimit.value,
+    showEnded: showEndedOrders.value // Используем актуальное значение переключателя
+  });
+};
+
+
+// Вызываем действие fetchOrders при монтировании компонента
+onMounted(() => {
+  // Загружаем первую страницу с учетом параметра showEndedOrders
+  fetchOrders({skip: 0, limit: 20, showEnded: showEndedOrders.value});
+});
+
+
+// Функции для пагинации (вызывают fetchOrders с новыми параметрами)
+const goToPreviousPage = () => {
+  if (currentPage.value > 0) {
+    const newSkip = currentSkip.value - currentLimit.value;
+    fetchOrders({
+      skip: newSkip,
+      limit: currentLimit.value,
+      showEnded: showEndedOrders.value // Добавляем параметр
+    });
+  }
+};
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPages.value - 1) {
+    const newSkip = currentSkip.value + currentLimit.value;
+    fetchOrders({
+      skip: newSkip,
+      limit: currentLimit.value,
+      showEnded: showEndedOrders.value // Добавляем параметр
+    });
+  }
+};
+
 </script>
 
 
 <template>
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
-
+    <!-- Индикатор загрузки -->
     <div v-if="isLoading" class="w-full flex justify-center my-4">
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <div v-if="!isLoading && error"
-         class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center">
+    <!-- Отображение ошибки -->
+    <div
+        v-if="!isLoading && error"
+        class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center"
+    >
       <span>Ошибка: {{ error }}</span>
       <div>
-        <button @click="fetchOrders({ skip: currentSkip, limit: currentLimit })"
-                class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs">
+        <button
+            @click="fetchOrders({ skip: currentSkip, limit: currentLimit, showEnded: showEndedOrders })"
+            class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs"
+        >
           Повторить
         </button>
-        <button @click="clearError" class="ml-2 p-1 px-2 bg-gray-600 rounded hover:bg-gray-500 text-xs">
+        <button
+            @click="clearError"
+            class="ml-2 p-1 px-2 bg-gray-600 rounded hover:bg-gray-500 text-xs"
+        >
           Скрыть
         </button>
       </div>
     </div>
 
+    <!-- Основной контент -->
     <div v-if="!isLoading && !error" class="w-full">
       <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
         <colgroup>
-          <col style="width: 7%"> <!-- номер заказа -->
+          <col style="width: 7%">  <!-- номер заказа -->
           <col style="width: 21%"> <!-- Заказчик -->
-          <col style="width: 7%"> <!-- Приоритет -->
+          <col style="width: 7%">  <!-- Приоритет -->
           <col style="width: 25%"> <!-- Название -->
           <col style="width: 15%"> <!-- Виды работ -->
           <col style="width: 25%"> <!-- Статус -->
         </colgroup>
         <thead>
         <tr>
-          <th colspan="6" class="px-2 py-2 text-center bg-gray-600 ">
-            <div class="px-1 py-1 bg-gray-600 flex justify-end items-center">
-              <BaseButton
-                  :action="addNewOrder"
-                  :text="'Поиск'"
-                  :style="'Primary'"
-                  class="px-1"
-              />
+          <th colspan="6" class="px-2 py-2 text-center bg-gray-600">
+            <div class="px-1 py-1 bg-gray-600 flex justify-between items-center">
+              <!-- Переключатель слева -->
+              <span class="flex items-center">
+                  <label for="toggle-ended-orders" class="flex items-center cursor-pointer">
+                    <span class="relative">
+                      <input
+                          id="toggle-ended-orders"
+                          type="checkbox"
+                          v-model="showEndedOrders"
+                          @change="toggleEndedOrders"
+                          class="sr-only"
+                      />
+                      <span class="block bg-gray-700 w-10 h-6 rounded-full border border-gray-400"></span>
+                      <span
+                          class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
+                          :class="{ 'transform translate-x-4': showEndedOrders }"
+                      ></span>
+                    </span>
+                    <span class="ml-3 text-gray-200 text-sm">
+                      {{ showEndedOrders ? 'Скрыть завершённые' : 'Показать завершённые' }}
+                    </span>
+                  </label>
+                </span>
 
-              <BaseButton
-                  :action="findOrders"
-                  :text="'Добавить'"
-                  :style="'Success'"
-                  class="px-1"
-              />
+              <!-- Кнопки справа -->
+              <span class="flex">
+                  <BaseButton
+                      :action="addNewOrder"
+                      :text="'Поиск'"
+                      :style="'Primary'"
+                      class="mr-2"
+                  />
+                  <BaseButton
+                      :action="findOrders"
+                      :text="'Добавить'"
+                      :style="'Success'"
+                  />
+                </span>
             </div>
           </th>
         </tr>
@@ -202,15 +259,16 @@ function formatLocalDateTime(
         </thead>
         <tbody>
         <template v-for="order in orders" :key="order.serial">
+          <!-- Строка заказа -->
           <tr class="border-t border-gray-600">
             <td
                 class="px-4 py-2 cursor-pointer hover:bg-gray-600 transition duration-300"
                 :class="{
-                'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
-                'text-yellow-400': order.status_id === 1,
-                'text-blue-400': order.status_id === 2,
-                'text-green-400': order.status_id === 3,
-                'text-red-400': order.status_id === 4
+                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
+                  'text-yellow-400': order.status_id === 1,
+                  'text-blue-400': order.status_id === 2,
+                  'text-green-400': order.status_id === 3,
+                  'text-red-400': order.status_id === 4
                 }"
                 @click="toggleOrderDetails(order.serial)"
             >
@@ -227,35 +285,38 @@ function formatLocalDateTime(
             <td
                 class="px-4 py-2"
                 :class="{
-                'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
-                'text-yellow-400': order.status_id === 1,
-                'text-blue-400': order.status_id === 2,
-                'text-green-400': order.status_id === 3,
-                'text-red-400': order.status_id === 4
+                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
+                  'text-yellow-400': order.status_id === 1,
+                  'text-blue-400': order.status_id === 2,
+                  'text-green-400': order.status_id === 3,
+                  'text-red-400': order.status_id === 4
                 }"
             >
               {{ ordersStore.getStatusText(order.status_id) }}
             </td>
           </tr>
+
+          <!-- Детали заказа -->
           <tr v-if="expandedOrderSerial === order.serial" class="border-b border-gray-600">
             <td colspan="6" class="p-4 bg-gray-700 text-gray-300">
-              <!-- Индикатор загрузки, когда данные загружаются -->
+              <!-- Индикатор загрузки деталей -->
               <div v-if="isDetailLoading" class="flex justify-center items-center p-4">
                 <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
                 <span>Загрузка данных заказа...</span>
               </div>
 
-              <!-- Отображение данных, когда они загружены -->
+              <!-- Отображение деталей заказа -->
               <div v-else>
                 <div class="grid grid-cols-3 gap-4">
-                  <!-- Колонка с комментариями - убран скролл и фиксированная высота -->
+                  <!-- Комментарии -->
                   <div class="border rounded-md p-3 bg-gray-800 h-full">
                     <h4 class="font-semibold text-white mb-2">Комментарии</h4>
-                    <div v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
-                         class="text-gray-400">
+                    <div
+                        v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
+                        class="text-gray-400"
+                    >
                       Нет комментариев
                     </div>
-                    <!-- Убрана фиксированная высота и скролл -->
                     <div v-else class="space-y-2">
                       <div
                           v-for="(comment, index) in currentOrderDetail.comments"
@@ -266,28 +327,32 @@ function formatLocalDateTime(
                           <div class="text-xs text-gray-400">
                             {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
                           </div>
-                          <div class="text-xs text-gray-400">{{ formatFIO(comment.person) || 'Автор не указан' }}</div>
+                          <div class="text-xs text-gray-400">
+                            {{ formatFIO(comment.person) || 'Автор не указан' }}
+                          </div>
                         </div>
-
                         <div class="mt-1">{{ comment.text }}</div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Колонка с временем и деньгами -->
+                  <!-- Даты и финансы -->
                   <div class="flex flex-col gap-4">
+                    <!-- Даты -->
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Даты</h4>
-                      <p>создан: {{
-                          formatLocalDateTime(currentOrderDetail?.start_moment, false) || 'не определено'
-                        }}</p>
-                      <p>дедлайн:
-                        {{ formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено' }}</p>
+                      <p>
+                        создан: {{ formatLocalDateTime(currentOrderDetail?.start_moment, false) || 'не определено' }}
+                      </p>
+                      <p>
+                        дедлайн: {{ formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено' }}
+                      </p>
                       <p v-if="currentOrderDetail?.end_moment">
                         завершен: {{ formatLocalDateTime(currentOrderDetail?.end_moment, false) || 'не определено' }}
                       </p>
                     </div>
 
+                    <!-- Финансы -->
                     <div class="border rounded-md p-3 bg-gray-800">
                       <h4 class="font-semibold text-white mb-2">Финансы</h4>
                       <div class="grid grid-cols-2 gap-2 text-sm">
@@ -297,48 +362,43 @@ function formatLocalDateTime(
                               class="font-medium text-red-300"
                               :class="{ 'line-through opacity-60': currentOrderDetail?.materials_paid }"
                           >
-                          {{ currentOrderDetail?.materials_cost }} руб.
-                          </span>
+                              {{ currentOrderDetail?.materials_cost }} руб.
+                            </span>
                         </div>
-
                         <div>
                           <span>Товары: </span>
                           <span
                               class="font-medium text-red-300"
                               :class="{ 'line-through opacity-60': currentOrderDetail?.products_paid }"
                           >
-                          {{currentOrderDetail?.products_cost}} руб.
-                          </span>
+                              {{ currentOrderDetail?.products_cost }} руб.
+                            </span>
                         </div>
-
                         <div>
                           <span>Работы: </span>
                           <span
                               class="font-medium text-red-300"
                               :class="{ 'line-through opacity-60': currentOrderDetail?.work_paid }"
                           >
-                          {{currentOrderDetail?.work_cost}} руб.
-                          </span>
+                              {{ currentOrderDetail?.work_cost }} руб.
+                            </span>
                         </div>
-
                         <div>
                           <span>Нам должны: </span>
                           <span
                               class="font-medium text-green-400"
                               :class="{ 'line-through opacity-60': currentOrderDetail?.debt_paid }"
                           >
-                          {{currentOrderDetail?.debt}} руб.
-                          </span>
+                              {{ currentOrderDetail?.debt }} руб.
+                            </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <!--отображение списка задач по заказу-->
+                  <!-- Список задач -->
                   <div class="h-full">
-                    <TaskList
-                        :tasks="currentOrderDetail?.tasks || []"
-                    />
+                    <TaskList :tasks="currentOrderDetail?.tasks || []" />
                   </div>
                 </div>
               </div>
@@ -348,6 +408,7 @@ function formatLocalDateTime(
         </tbody>
       </table>
 
+      <!-- Пагинация -->
       <div v-if="totalPages > 1" class="mt-6 flex justify-center items-center space-x-3">
         <button
             @click="goToPreviousPage"
@@ -367,13 +428,14 @@ function formatLocalDateTime(
           Вперед
         </button>
       </div>
+
+      <!-- Информация о количестве заказов -->
       <div v-if="!isLoading && orders.length > 0" class="text-center text-gray-400 mt-2 text-sm">
         Показано {{ orders.length }} из {{ totalOrders }} заказов.
       </div>
     </div>
   </div>
 </template>
-
 <style scoped>
 /* Можно добавить специфичные стили, если нужно */
 </style>
