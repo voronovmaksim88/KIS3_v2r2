@@ -78,24 +78,62 @@ function getStatusBackgroundClass(statusId:number) {
       </div>
     </div>
 
-    <!-- Раскрывающаяся информация о задаче - отображаем только если есть дочерние задачи -->
-    <div v-if="isExpanded && hasChildren" class="pl-4 mt-2">
-      <!-- Подзадачи -->
-      <div class="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
-        <div v-for="childTask in childTasks" :key="childTask.id" class="mt-1">
-          <TaskNode
-              :task="childTask"
-              :all-tasks="allTasks"
-              :status-map="statusMap"
-          />
+    <!-- Используем компонент transition для анимации раскрытия/сворачивания -->
+    <transition name="expand">
+      <div v-if="isExpanded && hasChildren" class="content-wrapper pl-4 mt-2">
+        <!-- Подзадачи -->
+        <div class="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
+          <div v-for="childTask in childTasks" :key="childTask.id" class="mt-1">
+            <TaskNode
+                :task="childTask"
+                :all-tasks="allTasks"
+                :status-map="statusMap"
+            />
+          </div>
         </div>
       </div>
+    </transition>
+
+    <!-- Скрытый блок для формального использования классов (не отображается) -->
+    <div class="hidden" aria-hidden="true">
+      <div class="expand-enter-active"></div>
+      <div class="expand-leave-active"></div>
+      <div class="expand-enter-from"></div>
+      <div class="expand-leave-to"></div>
+      <div class="expand-enter-to"></div>
+      <div class="expand-leave-from"></div>
     </div>
+
   </div>
 </template>
 
 <style scoped>
 .task-node {
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
+
+
+/* Анимация раскрытия/сворачивания */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  max-height: 300px; /* Достаточно большое значение для содержимого */
+  overflow: hidden;
+}
+
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: 0.5rem;
+}
+
 </style>
