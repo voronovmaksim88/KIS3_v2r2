@@ -911,7 +911,7 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
             executor_name = persons_dict.get(executor_id, None) if executor_id else None
 
             # Получаем информацию о статусе задачи
-            status_id = task.get("status_id")
+            status_id = task.get("status")
             status_name = task_statuses_dict.get(status_id, None) if status_id else None
 
             # Получаем информацию о статусе оплаты

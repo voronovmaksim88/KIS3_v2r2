@@ -1145,7 +1145,7 @@ def import_tasks_from_kis2() -> Dict[str, any]:
                             id=kis2_id,  # Используем ID из КИС2
                             name=name,
                             description=description,
-                            executor_id=executor_id,
+                            executor_uuid=executor_uuid,
                             status_id=status_id,
                             payment_status_id=payment_status_id,
                             planned_duration=planned_duration,
