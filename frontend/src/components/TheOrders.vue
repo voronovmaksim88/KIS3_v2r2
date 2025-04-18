@@ -118,7 +118,7 @@ function formatLocalDateTime(
 
 
 // Состояние для отображения завершенных заказов
-const showEndedOrders = ref(false); // По умолчанию показываем все заказы
+const showEndedOrders = ref(false); // По умолчанию скрываем завершённые заказы
 
 // Функция для переключения видимости завершенных заказов
 const toggleEndedOrders = () => {
