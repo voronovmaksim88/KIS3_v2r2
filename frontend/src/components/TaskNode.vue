@@ -7,12 +7,10 @@ import { typeTask} from "@/types/typeTask.ts";
 import 'primeicons/primeicons.css';
 import {formatFIO} from "@/utils/formatFIO.ts";
 
-
 interface Props {
   task: typeTask;
   allTasks: typeTask[];
   statusMap: Record<number, string>;
-  paymentStatusMap: Record<number, string>;
 }
 
 const props = defineProps<Props>();
@@ -26,59 +24,12 @@ const childTasks = computed(() => {
 // Проверяем, есть ли у задачи дочерние элементы
 const hasChildren = computed(() => childTasks.value.length > 0);
 
-// Переключение состояния развернутости
+// Переключение состояния развернутости только если есть дочерние задачи
 const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value;
+  if (hasChildren.value) {
+    isExpanded.value = !isExpanded.value;
+  }
 };
-
-// Получение цвета для статуса оплаты
-// const getPaymentStatusSeverity = (statusId: number): string => {
-//   const map: Record<number, string> = {
-//     1: 'secondary', // Нет оплаты
-//     2: 'info',      // Возможна
-//     3: 'warning',   // Начислена
-//     4: 'success'    // Оплачена
-//   };
-//   return map[statusId] || 'secondary';
-// };
-
-// // Форматирование длительности из строки ISO 8601 в читаемый формат
-// const formatDuration = (duration: string): string => {
-//   try {
-//     // Предполагается, что duration в формате ISO 8601 (например, "PT2H30M")
-//     const matches = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-//     if (!matches) return duration;
-//
-//     const hours = matches[1] ? parseInt(matches[1]) : 0;
-//     const minutes = matches[2] ? parseInt(matches[2]) : 0;
-//     const seconds = matches[3] ? parseInt(matches[3]) : 0;
-//
-//     let result = '';
-//     if (hours) result += `${hours}ч `;
-//     if (minutes) result += `${minutes}м `;
-//     if (seconds && !hours) result += `${seconds}с`;
-//
-//     return result.trim();
-//   } catch (e) {
-//     return duration;
-//   }
-// };
-//
-// // Форматирование даты в читаемый формат
-// const formatDate = (dateString: string): string => {
-//   try {
-//     const date = new Date(dateString);
-//     return new Intl.DateTimeFormat('ru-RU', {
-//       day: '2-digit',
-//       month: '2-digit',
-//       year: 'numeric',
-//       hour: '2-digit',
-//       minute: '2-digit'
-//     }).format(date);
-//   } catch (e) {
-//     return dateString;
-//   }
-// };
 
 function getStatusBackgroundClass(statusId:number) {
   // Возвращаем CSS класс в зависимости от статуса задачи
@@ -99,21 +50,23 @@ function getStatusBackgroundClass(statusId:number) {
 }
 </script>
 
-
 <template>
   <div class="task-node border rounded-md p-2"
        :class="[
-           getStatusBackgroundClass(task.status_id),
-         {'hover:border-2': !isExpanded},
+         getStatusBackgroundClass(task.status_id),
+         {'hover:bg-opacity-50': !isExpanded},
        ]">
-    <!-- Заголовок задачи (кликабельный для разворачивания) -->
-    <div @click="toggleExpand" class="flex items-center justify-between cursor-pointer px-2 py-1">
+    <!-- Заголовок задачи (кликабельный для разворачивания, только если есть дочерние задачи) -->
+    <div @click="toggleExpand"
+         class="flex items-center justify-between px-2 py-1"
+         :class="{'cursor-pointer': hasChildren}">
       <!-- Левая часть - стрелка и название задачи -->
       <div class="flex items-center">
         <!-- Стрелка для разворачивания/сворачивания (если есть дочерние задачи) -->
         <span v-if="hasChildren" class="mr-2 text-gray-300">
           <i :class="isExpanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
         </span>
+        <span v-else class="mr-2 w-4"></span> <!-- Пустое пространство для выравнивания -->
 
         <!-- Название задачи -->
         <div class="font-medium text-white">{{ task.name }}</div>
@@ -125,27 +78,21 @@ function getStatusBackgroundClass(statusId:number) {
       </div>
     </div>
 
-    <!-- Раскрывающаяся информация о задаче -->
-    <div v-if="isExpanded" class="pl-4 mt-2">
-      <div v-if="task.description" class="text-sm text-gray-300 mb-2 p-2 bg-gray-100 rounded">
-        {{ task.description }}
-      </div>
-
-      <!-- Подзадачи (если есть) -->
-      <div v-if="childTasks.length > 0" class="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
+    <!-- Раскрывающаяся информация о задаче - отображаем только если есть дочерние задачи -->
+    <div v-if="isExpanded && hasChildren" class="pl-4 mt-2">
+      <!-- Подзадачи -->
+      <div class="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
         <div v-for="childTask in childTasks" :key="childTask.id" class="mt-1">
           <TaskNode
               :task="childTask"
               :all-tasks="allTasks"
               :status-map="statusMap"
-              :payment-status-map="paymentStatusMap"
           />
         </div>
       </div>
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .task-node {
