@@ -50,25 +50,34 @@ async def get_order_serials(
     # Преобразуем результаты в нужный формат
     return [OrderSerial(serial=serial[0]) for serial in serials]
 
+
 @router.get("/read", response_model=PaginatedOrderResponse)
 async def read_orders(
-    skip: int = Query(0, ge=0, description="Number of items to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Number of items to return per page"),
-    status_id: Optional[int] = Query(None, description="Filter by status ID"),
-    search_serial: Optional[str] = Query(None, description="Search by order serial (case-insensitive, partial match)"),
-    search_customer: Optional[str] = Query(None, description="Search by customer name (case-insensitive, partial match)"),
-    search_priority: Optional[int] = Query(None, description="Search by exact priority value"),
-    session: AsyncSession = Depends(get_async_db)
+        skip: int = Query(0, ge=0, description="Number of items to skip"),
+        limit: int = Query(10, ge=1, le=100, description="Number of items to return per page"),
+        show_ended: bool = Query(True, description="Show completed orders (status 5, 6, 7)"),
+        # По умолчанию True, чтобы показывать все заказы
+        status_id: Optional[int] = Query(None, description="Filter by status ID"),
+        search_serial: Optional[str] = Query(None,
+                                             description="Search by order serial (case-insensitive, partial match)"),
+        search_customer: Optional[str] = Query(None,
+                                               description="Search by customer name (case-insensitive, partial match)"),
+        search_priority: Optional[int] = Query(None, description="Search by exact priority value"),
+        session: AsyncSession = Depends(get_async_db)
 ):
     """
     Получить список заказов с пагинацией, фильтрацией и поиском.
-    Поле customer возвращает строку 'Форма Имя'.
+    Поле customer возвращает строку 'Форма Название'.
     Заказы отсортированы по дате (из serial) - от старых к новым.
+
+    Параметр show_ended:
+    - Если True (по умолчанию), показывает все заказы
+    - Если False, исключает заказы со статусами 5, 6, 7 (завершенные)
     """
 
     # Запрос с жадной загрузкой связей
     query = select(Order).options(
-        selectinload(Order.customer).selectinload(Counterparty.form), # Загрузка контрагента и его формы
+        selectinload(Order.customer).selectinload(Counterparty.form),  # Загрузка контрагента и его формы
         selectinload(Order.works)  # Загрузка списка связанных работ
     )
 
@@ -81,24 +90,34 @@ async def read_orders(
         count_query = count_query.join(Order.customer)
 
     # --- Применение фильтров и поиска ---
-    # ... (код фильтров status_id, search_serial, search_customer, search_priority) ...
+
+    # Фильтрация завершенных заказов (новый функционал)
+    if show_ended is False:  # Проверяем именно на False, чтобы None не вызывал фильтрацию
+        # Исключаем заказы со статусами 5, 6, 7 (завершенные)
+        completed_statuses = [5, 6, 7]  # "Выполнено в срок", "Выполнено НЕ в срок", "Не согласовано"
+        query = query.where(~Order.status_id.in_(completed_statuses))
+        count_query = count_query.where(~Order.status_id.in_(completed_statuses))
+
+    # Применение остальных фильтров
     if status_id is not None:
         # ... validation and where clause ...
         query = query.where(Order.status_id == status_id)
         count_query = count_query.where(Order.status_id == status_id)
+
     if search_serial:
         # ... where clause ...
         query = query.where(Order.serial.ilike(f"%{search_serial}%"))
         count_query = count_query.where(Order.serial.ilike(f"%{search_serial}%"))
+
     if search_customer:
         # ... where clause on Counterparty.name ...
         query = query.where(Counterparty.name.ilike(f"%{search_customer}%"))
         count_query = count_query.where(Counterparty.name.ilike(f"%{search_customer}%"))
+
     if search_priority is not None:
         # ... validation and where clause ...
         query = query.where(Order.priority == search_priority)
         count_query = count_query.where(Order.priority == search_priority)
-
 
     # --- Выполнение запроса на подсчет общего количества ---
     total_result = await session.execute(count_query)
@@ -108,8 +127,8 @@ async def read_orders(
     # Заменяем старую сортировку query = query.order_by(Order.serial)
     # на сортировку по частям serial: Год (9-12), Месяц (5-6), Номер (1-3)
     query = query.order_by(
-        cast(func.substring(Order.serial, 9, 4), Integer).asc(), # Сортировка по году (возрастание)
-        cast(func.substring(Order.serial, 5, 2), Integer).asc(), # Сортировка по месяцу (возрастание)
+        cast(func.substring(Order.serial, 9, 4), Integer).asc(),  # Сортировка по году (возрастание)
+        cast(func.substring(Order.serial, 5, 2), Integer).asc(),  # Сортировка по месяцу (возрастание)
         cast(func.substring(Order.serial, 1, 3), Integer).asc()  # Сортировка по номеру (возрастание)
     )
     # Применяем пагинацию
@@ -117,15 +136,15 @@ async def read_orders(
 
     # --- Выполнение основного запроса ---
     result = await session.execute(query)
-    orders_orm = result.scalars().unique().all() # Получаем ORM объекты Order
+    orders_orm = result.scalars().unique().all()  # Получаем ORM объекты Order
 
     # --- Ручное формирование списка данных для ответа ---
     orders_data_list = []
     for order in orders_orm:
         # Формируем строку customer с проверками
-        customer_display_name = "Контрагент не указан" # Значение по умолчанию
-        if order.customer: # Проверяем, что связь customer загружена и не None
-            if order.customer.form: # Проверяем, что связь form у customer загружена и не None
+        customer_display_name = "Контрагент не указан"  # Значение по умолчанию
+        if order.customer:  # Проверяем, что связь customer загружена и не None
+            if order.customer.form:  # Проверяем, что связь form у customer загружена и не None
                 customer_display_name = f"{order.customer.form.name} {order.customer.name}"
             else:
                 # Если формы нет, используем только имя контрагента
@@ -135,7 +154,7 @@ async def read_orders(
         order_data = {
             "serial": order.serial,
             "name": order.name,
-            "customer": customer_display_name, # Подставляем сформированную строку
+            "customer": customer_display_name,  # Подставляем сформированную строку
             "priority": order.priority,
             "status_id": order.status_id,
             "start_moment": order.start_moment,
@@ -162,7 +181,7 @@ async def read_orders(
         total=total,
         limit=limit,
         skip=skip,
-        data=orders_data_list # Передаем сформированный список Pydantic объектов
+        data=orders_data_list  # Передаем сформированный список Pydantic объектов
     )
 
 
