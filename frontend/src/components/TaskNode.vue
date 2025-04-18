@@ -94,7 +94,7 @@ function getStatusBackgroundClass(statusId:number) {
       </div>
     </transition>
 
-    <!-- Скрытый блок для формального использования классов (не отображается) -->
+    <!-- Скрытый блок для формального использования классов (не отображается) чтоб успокоить линтер -->
     <div class="hidden" aria-hidden="true">
       <div class="expand-enter-active"></div>
       <div class="expand-leave-active"></div>
