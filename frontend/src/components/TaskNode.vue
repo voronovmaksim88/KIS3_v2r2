@@ -51,19 +51,22 @@ function getStatusBackgroundClass(statusId:number) {
 </script>
 
 <template>
-  <div class="task-node border rounded-md p-2"
+  <div class="task-node border rounded-md p-1"
        :class="[
          getStatusBackgroundClass(task.status_id),
          {'hover:bg-opacity-50': !isExpanded},
        ]">
     <!-- Заголовок задачи (кликабельный для разворачивания, только если есть дочерние задачи) -->
-    <div @click="toggleExpand"
-         class="flex items-center justify-between px-2 py-1"
+    <div
+         class="flex items-center justify-between pr-2 py-1"
          :class="{'cursor-pointer': hasChildren}">
       <!-- Левая часть - стрелка и название задачи -->
       <div class="flex items-center">
         <!-- Стрелка для разворачивания/сворачивания (если есть дочерние задачи) -->
-        <span v-if="hasChildren" class="mr-2 text-gray-300">
+        <span v-if="hasChildren"
+              class="mr-1 text-gray-300 border rounded-md px-2 py-1"
+              @click="toggleExpand"
+        >
           <i :class="isExpanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
         </span>
         <span v-else class="mr-2 w-4"></span> <!-- Пустое пространство для выравнивания -->
