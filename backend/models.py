@@ -129,7 +129,7 @@ class Person(Base):
     # Человек может не иметь принадлежности ни к одной компании
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
-    # Активен, т.е. если это сотрудник, то с ним можно работать в настоящий момент,
+    # Активен, если это сотрудник, то с ним можно работать в настоящий момент,
     # если это представитель заказчика, то он жив и ещё работает в нашей сфере
     note: Mapped[str | None] = mapped_column(Text, nullable=True)  # Примечание
     can_be_scheme_developer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -349,7 +349,7 @@ class Task(Base):
     #  Имя не уникально, поскольку в разных заказах может быть задача с одним именем например "протестировать"
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     status_id: Mapped[int] = mapped_column(ForeignKey('task_statuses.id'), nullable=True)
-    payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True)
+    payment_status_id: Mapped[int] = mapped_column(ForeignKey('payment_statuses.id'), nullable=True) #  Пока не отслеживаем
     executor_uuid: Mapped[int] = mapped_column(ForeignKey('people.uuid'), nullable=True)
 
     # Запланированное время на выполнение задачи
