@@ -6,6 +6,7 @@ import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
 import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
+import {TaskDetailView} from "@/components/TaskDetailView.vue";
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
