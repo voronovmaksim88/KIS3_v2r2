@@ -27,19 +27,60 @@ const formatDateTime = (dateString: string | null): string => {
   }).format(date);
 };
 
-// Для форматирования длительности
+// Для форматирования длительности в ISO 8601 формате
 const formatDuration = (durationString: string | null): string => {
   if (!durationString) return 'Не указано';
 
-  // Предполагаем, что длительность в формате ISO или в часах
-  // Можно адаптировать под ваш формат данных
+  // Проверяем, что строка в формате ISO 8601 для длительности
+  if (durationString.startsWith('P')) {
+    try {
+      // Регулярные выражения для извлечения компонентов длительности
+      const dayMatch = durationString.match(/(\d+)D/);
+      const hourMatch = durationString.match(/(\d+)H/);
+      const minuteMatch = durationString.match(/(\d+)M/);
+
+      const days = dayMatch ? parseInt(dayMatch[1]) : 0;
+      const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+      const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
+
+      // Создаем понятную текстовую репрезентацию
+      let result = '';
+
+      if (days > 0) {
+        result += `${days} д. `;
+      }
+
+      if (hours > 0 || days > 0) {
+        result += `${hours} ч. `;
+      }
+
+      if (minutes > 0 || hours > 0 || days > 0) {
+        result += `${minutes} м. `;
+      }
+
+      if (result === '') {
+        return '0 м.';
+      }
+
+      return result.trim();
+    } catch (error) {
+      console.error('Ошибка при парсинге длительности:', error);
+      return 'Ошибка формата';
+    }
+  }
+
+  // Пытаемся обработать как число часов для обратной совместимости
   try {
     const hours = parseFloat(durationString);
-    return `${hours} ч.`;
+    if (!isNaN(hours)) {
+      return `${hours} ч.`;
+    }
+    return durationString;
   } catch {
     return durationString;
   }
 };
+
 
 // Вычисляемое свойство для определения цвета индикатора статуса
 const statusColor = computed(() => {

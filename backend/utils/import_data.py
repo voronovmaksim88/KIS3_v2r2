@@ -1064,6 +1064,7 @@ def import_tasks_from_kis2() -> Dict[str, any]:
 
                     # Преобразование длительностей из строки в timedelta
                     planned_duration = parse_iso_duration(task_data.get('planned_duration'))
+                    print(task_data.get('planned_duration'), planned_duration)
                     actual_duration = parse_iso_duration(task_data.get('actual_duration'))
 
                     # Получаем ссылки на родительскую и корневую задачи

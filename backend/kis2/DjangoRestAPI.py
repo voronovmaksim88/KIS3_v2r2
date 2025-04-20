@@ -4,10 +4,53 @@
 """
 
 import requests
-import re
 import json
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Any
+from typing import Optional
+import re
 
+
+def convert_duration_to_iso8601(duration_str: Optional[str]) -> Optional[str]:
+    """
+    Преобразует строку длительности в формате '1 01:03:00' или '00:00:00' в ISO 8601 формат.
+
+    ISO 8601 формат для длительности начинается с 'P' и включает:
+    - 'nD' для дней
+    - 'T' разделитель для времени
+    - 'nH' для часов
+    - 'nM' для минут
+    - 'nS' для секунд
+
+    Например: 'P1DT1H3M0S' для '1 01:03:00' и 'PT0H0M0S' для '00:00:00'
+
+    Args:
+        duration_str: Строка длительности в формате '1 01:03:00' (дни часы:минуты:секунды)
+                      или '00:00:00' (часы:минуты:секунды)
+
+    Returns:
+        Строка длительности в формате ISO 8601 или None, если входная строка None или неверного формата
+    """
+    if not duration_str:
+        return None
+
+    # Проверяем формат с днями: '1 01:03:00'
+    day_time_pattern = re.compile(r'^(\d+)\s+(\d{2}):(\d{2}):(\d{2})$')
+    day_time_match = day_time_pattern.match(duration_str)
+
+    if day_time_match:
+        days, hours, minutes, seconds = map(int, day_time_match.groups())
+        return f"P{days}DT{hours}H{minutes}M{seconds}S"
+
+    # Проверяем формат без дней: '00:00:00'
+    time_pattern = re.compile(r'^(\d{2}):(\d{2}):(\d{2})$')
+    time_match = time_pattern.match(duration_str)
+
+    if time_match:
+        hours, minutes, seconds = map(int, time_match.groups())
+        return f"PT{hours}H{minutes}M{seconds}S"
+
+    # Если формат не соответствует ожидаемым шаблонам, возвращаем None
+    return None
 
 def _create_authenticated_session(
         base_url: str,
@@ -930,8 +973,8 @@ def create_tasks_list_dict_from_kis2(debug: bool = True) -> List[Dict[str, Any]]
                 'name': task["name"],
                 'executor': executor_name,  # Используем ФИО вместо ID исполнителя
                 'order_id': task.get("order"),
-                'planned_duration': task.get("planned_duration"),
-                'actual_duration': task.get("actual_duration"),
+                'planned_duration': convert_duration_to_iso8601(task.get("planned_duration")),
+                'actual_duration': convert_duration_to_iso8601(task.get("actual_duration")),
                 'creation_moment': task.get("creation_moment"),
                 'start_moment': task.get("start_moment"),
                 'end_moment': task.get("end_moment"),
