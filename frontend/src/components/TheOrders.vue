@@ -3,38 +3,57 @@
 import {onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
-import BaseButton from "@/components/Buttons/BaseButton.vue"; // Убедитесь, что путь к стору правильный
+import BaseButton from "@/components/Buttons/BaseButton.vue";
 import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
+import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
+import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
 
 // 2. Извлекаем реактивные переменные и действия из стора.
-// Используем storeToRefs для сохранения реактивности состояния и вычисляемых свойств
 const {
-  orders,              // Список заказов для текущей страницы
-  isLoading,           // Состояние загрузки (уже используется в шаблоне)
-  error,               // Состояние ошибки (уже используется в шаблоне)
-  totalOrders,         // Общее количество заказов
-  currentPage,         // Текущая страница (вычисляемое)
-  totalPages,          // Всего страниц (вычисляемое)
-  currentLimit,        // Текущий лимит на странице
-  currentSkip,         // Текущий пропуск записей
-  currentOrderDetail,  // Данные о выбранном заказе
-  isDetailLoading,     // Состояние загрузки деталей заказа
+  orders,
+  isLoading,
+  error,
+  totalOrders,
+  currentPage,
+  totalPages,
+  currentLimit,
+  currentSkip,
+  currentOrderDetail,
+  isDetailLoading,
 } = storeToRefs(ordersStore);
 
 // Действия можно извлекать напрямую
 const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail} = ordersStore;
 
+// Состояние для модального окна создания заказа
+const showCreateDialog = ref(false);
 
 function addNewOrder() {
+  showCreateDialog.value = true;
+}
 
+// Обработчик успешного создания заказа
+const handleOrderCreated = () => {
+  showCreateDialog.value = false;
+  // Обновляем список заказов после успешного создания
+  fetchOrders({
+    skip: currentSkip.value,
+    limit: currentLimit.value,
+    showEnded: showEndedOrders.value
+  });
+}
+
+// Обработчик отмены создания заказа
+const handleCreateCancel = () => {
+  showCreateDialog.value = false;
 }
 
 function findOrders() {
-
+  // Функциональность поиска может быть добавлена позже
 }
 
 // для хранения серийного номера заказа, чья дополнительная строка должна быть показана.
@@ -83,7 +102,7 @@ function formatLocalDateTime(
     const timezoneOffsetHours = -date.getTimezoneOffset() / 60;
     console.log(`Применено смещение часового пояса: UTC${timezoneOffsetHours >= 0 ? '+' : ''}${timezoneOffsetHours} часов`);
 
-    // Прямое прибавление смещения часового пояса к времени
+        // Прямое прибавление смещения часового пояса к времени
     // getTimezoneOffset возвращает смещение в минутах, отрицательное для восточных зон
     // поэтому мы вычитаем его, что эквивалентно прибавлению часов для восточных зон
     const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -116,7 +135,6 @@ function formatLocalDateTime(
   }
 }
 
-
 // Состояние для отображения завершенных заказов
 const showEndedOrders = ref(false); // По умолчанию скрываем завершённые заказы
 
@@ -130,13 +148,11 @@ const toggleEndedOrders = () => {
   });
 };
 
-
 // Вызываем действие fetchOrders при монтировании компонента
 onMounted(() => {
   // Загружаем первую страницу с учетом параметра showEndedOrders
-  fetchOrders({skip: 0, limit: 20, showEnded: showEndedOrders.value});
+  fetchOrders({skip: 0, limit: 50, showEnded: showEndedOrders.value});
 });
-
 
 // Функции для пагинации (вызывают fetchOrders с новыми параметрами)
 const goToPreviousPage = () => {
@@ -160,12 +176,24 @@ const goToNextPage = () => {
     });
   }
 };
-
 </script>
-
 
 <template>
   <div class="w-full min-h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
+    <!-- Модальное окно для создания заказа -->
+    <Dialog
+        v-model:visible="showCreateDialog"
+        modal
+        :style="{width: '500px'}"
+        :closable="false"
+        class="p-0"
+    >
+      <OrderCreateForm
+          @success="handleOrderCreated"
+          @cancel="handleCreateCancel"
+      />
+    </Dialog>
+
     <!-- Индикатор загрузки -->
     <div v-if="isLoading" class="w-full flex justify-center my-4">
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -234,13 +262,13 @@ const goToNextPage = () => {
               <!-- Кнопки справа -->
               <span class="flex">
                   <BaseButton
-                      :action="addNewOrder"
+                      :action="findOrders"
                       :text="'Поиск'"
                       :style="'Primary'"
                       class="mr-2"
                   />
                   <BaseButton
-                      :action="findOrders"
+                      :action="addNewOrder"
                       :text="'Добавить'"
                       :style="'Success'"
                   />
@@ -308,6 +336,7 @@ const goToNextPage = () => {
               <!-- Отображение деталей заказа -->
               <div v-else>
                 <div class="grid grid-cols-3 gap-4">
+                  <!-- Комментарии -->
                   <!-- Комментарии -->
                   <div class="border rounded-md p-3 bg-gray-800 h-full">
                     <h4 class="font-semibold text-white mb-2">Комментарии</h4>
@@ -435,7 +464,40 @@ const goToNextPage = () => {
       </div>
     </div>
   </div>
+
+  <!-- Элемент, который формально использует классы для успокоения линтера.
+     Он не отображается, так как имеет display: none; -->
+  <div
+      v-if="false"
+      class="p-dialog p-dialog-header p-dialog-content p-dialog-header-close"
+      style="display: none;"
+  ></div>
 </template>
+
 <style scoped>
-/* Можно добавить специфичные стили, если нужно */
+/* Стили для переключателя */
+input:checked ~ .dot {
+  transform: translateX(100%);
+  background-color: white;
+}
+
+/* Добавляем стили для модального окна */
+:deep(.p-dialog) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.p-dialog-header) {
+  padding: 0;
+}
+
+:deep(.p-dialog-content) {
+  padding: 0;
+  background-color: #2d3748; /* bg-gray-800 */
+  color: white;
+}
+
+:deep(.p-dialog-header-close) {
+  display: none;
+}
 </style>

@@ -7,9 +7,10 @@ import {
     typeOrderSerial,
     typeOrderRead,
     typePaginatedOrderResponse,
-    typeFetchOrdersParams, // Убедитесь, что вы обновили этот тип в файле типов
-    typeOrderDetail
-} from "../types/typeOrder"; // Убедитесь, что путь к файлу типов верный
+    typeFetchOrdersParams,
+    typeOrderDetail,
+    typeOrderCreate
+} from "../types/typeOrder";
 import { getApiUrl } from '../utils/apiUrlHelper';
 
 
@@ -22,7 +23,7 @@ export const useOrdersStore = defineStore('orders', () => {
     // === Новое состояние для полного списка заказов и пагинации ===
     const orders = ref<typeOrderRead[]>([]); // Список заказов текущей страницы
     const totalOrders = ref<number>(0); // Общее количество заказов (для пагинации)
-    const currentLimit = ref<number>(10); // Текущий лимит (сколько на странице)
+    const currentLimit = ref<number>(50); // Текущий лимит (сколько на странице)
     const currentSkip = ref<number>(0); // Текущий пропуск (сколько пропущено)
 
     // === Новое состояние для детальной информации о заказе ===
@@ -184,9 +185,38 @@ export const useOrdersStore = defineStore('orders', () => {
         return currentLimit.value > 0 ? Math.ceil(totalOrders.value / currentLimit.value) : 0;
     });
 
+
+    // Добавьте эту функцию в store после других функций
+    const createOrder = async (orderData: typeOrderCreate) => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const response = await axios.post<typeOrderRead>(
+                `${getApiUrl()}order/create`,
+                orderData,
+                { withCredentials: true }
+            );
+
+            // Обновляем список заказов после успешного создания
+            await fetchOrders();
+
+            // Возвращаем созданный заказ
+            return response.data;
+        } catch (err) {
+            console.error('Error creating order:', err);
+            handleAxiosError(err, 'Failed to create order');
+            throw err; // Пробрасываем ошибку дальше для обработки в компоненте
+        } finally {
+            loading.value = false;
+        }
+    };
+
+
+
     // === Возвращаем все элементы стора ===
     return {
-        // Состояние
+        // Состояния
         orderSerials,
         orders,
         loading,
@@ -194,7 +224,7 @@ export const useOrdersStore = defineStore('orders', () => {
         totalOrders,
         currentLimit,
         currentSkip,
-        currentOrderDetail, // Новое состояние для детальной информации
+        currentOrderDetail, // Состояние для детальной информации
         detailLoading,      // Индикатор загрузки для деталей
 
         // Действия
@@ -204,14 +234,15 @@ export const useOrdersStore = defineStore('orders', () => {
         resetOrders,
         clearError,
         getStatusText,
-        fetchOrderDetail,  // Новое действие для получения деталей заказа
-        resetOrderDetail,  // Новое действие для сброса деталей заказа
+        fetchOrderDetail,  // Действие для получения деталей заказа
+        resetOrderDetail,  // Действие для сброса деталей заказа
+        createOrder, // Действие для создания заказа
 
         // Вычисляемые свойства
         serialsCount,
         isLoading,
-        isDetailLoading,   // Новое свойство для проверки загрузки деталей
-        hasOrderDetail,    // Новое свойство для проверки наличия деталей
+        isDetailLoading,   // Свойство для проверки загрузки деталей
+        hasOrderDetail,    // Свойство для проверки наличия деталей
         currentPage,
         totalPages,
     };

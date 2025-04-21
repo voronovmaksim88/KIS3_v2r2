@@ -13,7 +13,7 @@ export interface typeWork {
     active: boolean;
 }
 
-// Обновленный интерфейс с добавленным полем works
+//
 export interface typeOrderRead {
     serial: string;
     name: string;
@@ -98,4 +98,24 @@ export interface typeOrderDetail {
     comments: typeOrderComment[];
     tasks: typeTask[];
     timings: typeOrderTiming[];
+}
+
+// Тип для создания нового заказа
+export interface typeOrderCreate {
+    name: string;
+    customer_id: number;
+    priority?: number | null;
+    status_id: number;
+    start_moment?: string | null;
+    deadline_moment?: string | null;
+    end_moment?: string | null;
+    materials_cost?: number | null;
+    materials_paid?: boolean;
+    products_cost?: number | null;
+    products_paid?: boolean;
+    work_cost?: number | null;
+    work_paid?: boolean;
+    debt?: number | null;
+    debt_paid?: boolean;
+    work_ids?: number[];
 }
