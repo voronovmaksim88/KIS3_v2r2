@@ -9,15 +9,19 @@ from typing import List, Optional
 from database import get_async_db
 
 # Импортируем модели SQLAlchemy
-from models import Order, Counterparty, Person
+from models import Order, Counterparty, Person, OrderStatus, Work
 
-from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse, OrderCommentSchema
+from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse, OrderCommentSchema, OrderResponse, \
+    OrderCreate
 from schemas.order_schem import OrderDetailResponse  # Импортируем новую схему
 
 # Импортируем другие необходимые схемы, если они используются в OrderDetailResponse
 from schemas.work_schem import WorkSchema
 from schemas.task_schem import TaskSchema
 from schemas.timing_schem import TimingSchema
+from datetime import datetime
+
+from fastapi import status
 
 router = APIRouter(
     prefix="/order",
@@ -333,3 +337,142 @@ async def get_order_detail(
     # 6. Создаем и возвращаем объект Pydantic response_model
     # Pydantic сам проверит соответствие словаря order_data схеме OrderDetailResponse
     return OrderDetailResponse.model_validate(order_data)
+
+
+@router.post("/create", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_order(
+        order_data: OrderCreate,
+        session: AsyncSession = Depends(get_async_db)
+):
+    """
+    Создает новый заказ (Order).
+
+    Параметры:
+    - order_data: данные для создания заказа
+
+    Возвращает: созданный заказ с полной информацией
+    """
+    # Проверяем существование контрагента
+    counterparty_query = select(Counterparty).where(Counterparty.id == order_data.customer_id)
+    result = await session.execute(counterparty_query)
+    customer = result.scalar_one_or_none()
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Контрагент с ID {order_data.customer_id} не найден"
+        )
+
+    # Проверяем существование статуса заказа
+    status_query = select(OrderStatus).where(OrderStatus.id == order_data.status_id)
+    result = await session.execute(status_query)
+    order_status = result.scalar_one_or_none()
+    if not order_status:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Статус заказа с ID {order_data.status_id} не найден"
+        )
+
+    # Генерируем серийный номер заказа в формате NNN-MM-YYYY
+    current_date = datetime.now()
+    current_month = current_date.month
+    current_year = current_date.year
+
+    # Находим максимальный порядковый номер для текущего года
+    max_serial_query = select(
+        func.max(func.substring(Order.serial, 1, 3).cast(Integer))
+    ).where(
+        func.substring(Order.serial, 8, 4) == str(current_year)
+    )
+
+    result = await session.execute(max_serial_query)
+    max_serial = result.scalar_one_or_none()
+
+    # Если заказов в этом году еще не было, начинаем с 1
+    order_number = (max_serial or 0) + 1
+
+    # Форматируем номер заказа
+    serial = f"{order_number:03d}-{current_month:02d}-{current_year}"
+
+    # Создаем новый объект Order
+    new_order = Order(
+        serial=serial,
+        name=order_data.name,
+        customer_id=order_data.customer_id,
+        priority=order_data.priority,
+        status_id=order_data.status_id,
+        start_moment=order_data.start_moment or datetime.now(),
+        deadline_moment=order_data.deadline_moment,
+        end_moment=order_data.end_moment,
+        materials_cost=order_data.materials_cost,
+        materials_paid=order_data.materials_paid or False,
+        products_cost=order_data.products_cost,
+        products_paid=order_data.products_paid or False,
+        work_cost=order_data.work_cost,
+        work_paid=order_data.work_paid or False,
+        debt=order_data.debt,
+        debt_paid=order_data.debt_paid or False
+    )
+
+    # Добавляем связанные работы, если они указаны
+    if order_data.work_ids:
+        # Проверяем существование всех работ
+        works_query = select(Work).where(Work.id.in_(order_data.work_ids))
+        result = await session.execute(works_query)
+        works = result.scalars().all()
+
+        # Проверяем, что все запрошенные работы существуют
+        found_work_ids = {work.id for work in works}
+        missing_work_ids = set(order_data.work_ids) - found_work_ids
+        if missing_work_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Работы с ID {missing_work_ids} не найдены"
+            )
+
+        # Связываем работы с заказом
+        new_order.works = works
+
+    # Сохраняем новый заказ
+    session.add(new_order)
+    await session.flush()  # Сохраняем заказ, но не коммитим транзакцию
+
+    await session.commit()
+
+    # Явно обновляем объект заказа и загружаем необходимые для ответа связи
+    # attribute_names гарантирует, что эти связи будут загружены одним запросом (или несколькими эффективными)
+    await session.refresh(new_order, attribute_names=["customer", "works"])
+
+    # Если customer был загружен (т.е. он существует), то явно загружаем его связь 'form'
+    if new_order.customer:
+        await session.refresh(new_order.customer, attribute_names=["form"])
+
+    # Теперь формирование имени безопасно, так как данные уже загружены
+    customer_display_name = "Контрагент не указан"
+    if new_order.customer:
+        if new_order.customer.form:  # Доступ к .form теперь безопасен
+            customer_display_name = f"{new_order.customer.form.name} {new_order.customer.name}"
+        else:
+            customer_display_name = new_order.customer.name
+
+    # Создаем ответ с полной информацией о созданном заказе
+    # Доступ к new_order.works также безопасен
+    return OrderResponse(
+        serial=new_order.serial,
+        name=new_order.name,
+        customer=customer_display_name,  # Передаем строку, как ожидает OrderResponse -> OrderRead
+        priority=new_order.priority,
+        status_id=new_order.status_id,
+        start_moment=new_order.start_moment,
+        deadline_moment=new_order.deadline_moment,
+        end_moment=new_order.end_moment,
+        materials_cost=new_order.materials_cost,
+        materials_paid=new_order.materials_paid,
+        products_cost=new_order.products_cost,
+        products_paid=new_order.products_paid,
+        work_cost=new_order.work_cost,
+        work_paid=new_order.work_paid,
+        debt=new_order.debt,
+        debt_paid=new_order.debt_paid,
+        # Используем model_validate (Pydantic V2) / from_orm (Pydantic V1)
+        works=[WorkSchema.model_validate(work) for work in new_order.works],
+    )

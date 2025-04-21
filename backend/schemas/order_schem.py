@@ -4,6 +4,7 @@
 """
 
 from pydantic import BaseModel, field_validator
+from pydantic import Field
 from typing import Optional
 from typing import List
 from pydantic import ConfigDict
@@ -128,10 +129,31 @@ class OrderDetailResponse(OrderRead):
     tasks: List[TaskSchema] = []  # Указываем тип явно
     timings: List[TimingSchema] = []  # Указываем тип явно
 
-# class OrderCreate(OrderBase):
-#     pass
-#
-#
+
+class OrderCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=64, description="Название заказа")
+    customer_id: int = Field(..., description="ID заказчика")
+    priority: Optional[int] = Field(None, ge=1, le=10, description="Приоритет от 1 до 10")
+    status_id: int = Field(..., ge=1, le=8, description="ID статуса заказа")
+    start_moment: Optional[datetime] = Field(None, description="Дата и время начала")
+    deadline_moment: Optional[datetime] = Field(None, description="Дата и время дедлайна")
+    end_moment: Optional[datetime] = Field(None, description="Дата и время завершения")
+    materials_cost: Optional[int] = Field(None, description="Стоимость материалов")
+    materials_paid: Optional[bool] = Field(False, description="Материалы оплачены")
+    products_cost: Optional[int] = Field(None, description="Стоимость товаров")
+    products_paid: Optional[bool] = Field(False, description="Товары оплачены")
+    work_cost: Optional[int] = Field(None, description="Стоимость работ")
+    work_paid: Optional[bool] = Field(False, description="Работы оплачены")
+    debt: Optional[int] = Field(None, description="Задолженность")
+    debt_paid: Optional[bool] = Field(False, description="Задолженность оплачена")
+    work_ids: Optional[List[int]] = Field(None, description="Список ID работ для привязки к заказу")
+
+class OrderResponse(OrderRead):
+    """Схема для ответа при создании заказа"""
+    class Config:
+        from_attributes = True
+
+
 # class OrderUpdate(BaseModel):
 #     name: Optional[str] = None
 #     customer_id: Optional[int] = None
