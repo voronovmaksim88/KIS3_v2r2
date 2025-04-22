@@ -12,6 +12,7 @@ import {computed, onMounted, ref, watch} from 'vue';
 import {useAuthStore} from "./stores/storeAuth.ts";
 import TheLogin from "@/components/TheLogin.vue";
 import TheOrders from "@/components/TheOrders.vue";
+import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 
 const apiUrl = ref<string>('');
 
