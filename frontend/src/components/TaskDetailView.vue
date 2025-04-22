@@ -132,9 +132,9 @@ const isOverdue = computed(() => {
 </script>
 
 <template>
-  <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-4xl w-full mx-auto">
+  <div class="bg-gray-600 rounded-lg shadow-lg overflow-hidden max-w-4xl w-full mx-auto">
     <!-- Шапка с названием и кнопкой закрытия -->
-    <div class="bg-gray-700 px-6 py-4 flex justify-between items-center">
+    <div class="bg-gray-500 px-6 py-4 flex justify-between items-center">
       <h2 class="text-xl font-semibold text-white truncate">{{ task.name }}</h2>
       <button
           v-if="onClose"
@@ -231,14 +231,6 @@ const isOverdue = computed(() => {
 </template>
 
 <style scoped>
-.bg-gray-700 {
-  background-color: rgba(55, 65, 81, 1);
-}
-
-.bg-gray-800 {
-  background-color: rgba(31, 41, 55, 1);
-}
-
 /* Добавим плавные переходы для эффектов наведения */
 button {
   transition: all 0.2s ease;

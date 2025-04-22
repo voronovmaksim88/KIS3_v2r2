@@ -11,7 +11,7 @@
   "dependencies": {
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
-    "@primeuix/themes": "^1.0.0",
+    "@primeuix/themes": "^1.0.3",
     "axios": "^1.8.4",
     "pinia": "^3.0.1",
     "primeicons": "^7.0.0",
