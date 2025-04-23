@@ -19,21 +19,19 @@ export const useThemeStore = defineStore('theme', () => {
     }
 
     // При запуске пытаемся прочитать из localStorage
-    function initTheme() {
-        const stored = localStorage.getItem('theme') as ThemeMode | null
-        if (stored === 'dark' || stored === 'light') {
-            setTheme(stored)
-        } else {
-            // Или используем prefers-color-scheme
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-            setTheme(prefersDark ? 'dark' : 'light')
-        }
-    }
+    // function initTheme() {
+    //     const stored = localStorage.getItem('theme') as ThemeMode | null
+    //     if (stored === 'dark' || stored === 'light') {
+    //         setTheme(stored)
+    //     } else {
+    //         // Или используем prefers-color-scheme
+    //         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    //         setTheme(prefersDark ? 'dark' : 'light')
+    //     }
+    // }
 
     return {
         theme,
-        setTheme,
         toggleTheme,
-        initTheme
     }
 })
