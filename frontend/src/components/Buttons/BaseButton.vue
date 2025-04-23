@@ -16,7 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Определяем классы стилей в зависимости от переданного `styleType`
 const buttonClasses = computed(() => {
-  const baseClasses = "w-full py-2 px-4 rounded transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 shadow-md"; // Добавляем тень
+  const baseClasses = "w-full py-2 px-4 rounded transition-all duration-300" +
+      " focus:outline-none focus:ring-2 focus:ring-opacity-50 shadow-md"; // Добавляем тень
 
   const styleMap = {
     Primary: "bg-blue-700 text-white hover:bg-blue-500 focus:ring-blue-300",
@@ -39,7 +40,15 @@ const buttonClasses = computed(() => {
         :class="buttonClasses"
         @click="action"
     >
+      <!-- Слот для контента перед текстом -->
+      <slot name="prepend"></slot>
+
+      <!-- Основной текст кнопки -->
       {{ text }}
+
+      <!-- Слот для контента после текста -->
+      <slot name="append"></slot>
+
     </button>
  </div>
 </template>
