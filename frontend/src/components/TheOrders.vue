@@ -1,6 +1,6 @@
 <!-- src/components/TheOrders.vue -->
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import {onMounted, ref, computed} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue";
@@ -181,13 +181,151 @@ const goToNextPage = () => {
     });
   }
 };
-</script>
 
+
+// Классы для заголовков таблицы (<th>)
+const thClasses = computed(() => {
+  const base = 'px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider'; // Общие стили
+  if (currentTheme.value === 'dark') {
+    return `${base} border-1 border-gray-300 text-gray-300 bg-gray-600`; // Стили для темной темы
+  } else {
+    return `${base} border-1 border-gray-300 text-gray-600 bg-gray-100`; // Стили для светлой темы
+  }
+});
+
+// Базовый цвет текста для обычных ячеек таблицы (<td>)
+const tdBaseTextClass = computed(() => {
+  return currentTheme.value === 'dark' ? 'text-gray-100' : 'text-gray-800';
+});
+
+// Классы для контейнера раскрытых деталей (<td> colspan="6")
+const detailsContainerClass = computed(() => {
+  const base = 'p-4 transition-colors duration-300 ease-in-out';
+  return currentTheme.value === 'dark'
+      ? `${base} bg-gray-750 text-gray-300` // Используем bg-gray-750 для отличия
+      : `${base} bg-gray-50 text-gray-700`; // Используем bg-gray-50 для отличия
+});
+
+// Классы для основных блоков внутри деталей (Комментарии, Даты, Финансы, Задачи)
+const detailBlockClass = computed(() => {
+  const base = 'border rounded-md p-3 h-full transition-colors duration-300 ease-in-out';
+  return currentTheme.value === 'dark'
+      ? `${base} bg-gray-800 border-gray-600`
+      : `${base} bg-white border-gray-200 shadow-sm`;
+});
+
+// Классы для заголовков (<h4>) внутри блоков деталей
+const detailHeaderClass = computed(() => {
+  const base = 'font-semibold mb-2';
+  return currentTheme.value === 'dark'
+      ? `${base} text-white`
+      : `${base} text-gray-800`;
+});
+
+// Классы для второстепенного текста (даты/авторы комментариев, "Нет комментариев")
+const detailSubtleTextClass = computed(() => {
+  return currentTheme.value === 'dark' ? 'text-gray-400' : 'text-gray-500';
+});
+
+// Классы для отдельного комментария
+const commentItemClass = computed(() => {
+  const base = 'border rounded-md p-2 mb-2 transition-colors duration-300 ease-in-out';
+  // Используем bg-gray-850/bg-gray-100 для отличия от фона блока
+  return currentTheme.value === 'dark'
+      ? `${base} border-gray-700 bg-gray-850`
+      : `${base} border-gray-300 bg-gray-100`;
+});
+
+// Классы для кнопок пагинации
+const paginationButtonClass = computed(() => {
+  const base = 'px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300';
+  return currentTheme.value === 'dark'
+      ? `${base} bg-blue-600 hover:bg-blue-500 text-white`
+      : `${base} bg-blue-500 hover:bg-blue-600 text-white`;
+});
+
+// Классы для текста пагинации
+const paginationTextClass = computed(() => {
+  const base = 'text-lg transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} text-gray-300` : `${base} text-gray-700`;
+});
+
+// Классы для текста "Показано N из M заказов"
+const totalInfoTextClass = computed(() => {
+  const base = 'text-center mt-2 text-sm transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} text-gray-400` : `${base} text-gray-500`;
+});
+
+// Классы для основного контейнера компонента
+const mainContainerClass = computed(() => {
+  const base = 'w-full min-h-screen flex flex-col items-center p-4 transition-colors duration-300 ease-in-out';
+  // Используем bg-gray-900 для темной темы для лучшего контраста с таблицей bg-gray-700
+  return currentTheme.value === 'dark' ? `${base} bg-gray-900 text-gray-100` : `${base} bg-gray-100 text-gray-900`;
+});
+
+// Классы для фона основной таблицы
+const tableBaseClass = computed(() => {
+  const base = 'min-w-full rounded-lg mb-4 table-fixed shadow-md';
+  return currentTheme.value === 'dark' ? `${base} bg-gray-700` : `${base} bg-white border border-gray-200`;
+});
+
+// Классы для шапки таблицы (<th> colspan=6)
+const tableHeaderRowClass = computed(() => {
+  const base = 'px-2 py-2 text-center rounded-t-lg';
+  return currentTheme.value === 'dark' ? `${base} bg-gray-600` : `${base} bg-gray-200`;
+});
+
+// Классы для фона переключателя
+const toggleBackgroundClass = computed(() => {
+  const base = 'block w-10 h-6 rounded-full border transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} bg-gray-800 border-gray-500` : `${base} bg-gray-300 border-gray-400`;
+});
+
+// Классы для текста переключателя
+const toggleTextClass = computed(() => {
+  const base = 'ml-3 text-sm transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} text-gray-200` : `${base} text-gray-700`;
+});
+
+// Классы для строки таблицы (<tr>)
+const trBaseClass = computed(() => {
+  const base = 'transition-colors duration-100';
+  return currentTheme.value === 'dark' ? `${base} border-t border-gray-600` : `${base} border-t border-gray-200`;
+});
+
+// Классы для hover эффекта ячейки с номером
+const tdNumberHoverClass = computed(() => {
+  return currentTheme.value === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100';
+});
+
+// Классы для блока ошибки
+const errorBlockClass = computed(() => {
+  const base = 'w-full p-4 rounded mb-4 flex justify-between items-center transition-colors duration-300 ease-in-out';
+  return currentTheme.value === 'dark' ? `${base} bg-red-800 text-red-100` : `${base} bg-red-100 text-red-800 border border-red-300`;
+});
+
+// Классы для кнопки "Повторить" в ошибке
+const errorRepeatButtonClass = computed(() => {
+  const base = 'ml-4 p-1 px-2 rounded text-xs transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} bg-red-600 hover:bg-red-500 text-white` : `${base} bg-red-500 hover:bg-red-600 text-white`;
+});
+
+// Классы для кнопки "Скрыть" в ошибке
+const errorHideButtonClass = computed(() => {
+  const base = 'ml-2 p-1 px-2 rounded text-xs transition-colors duration-300';
+  return currentTheme.value === 'dark' ? `${base} bg-gray-600 hover:bg-gray-500 text-white` : `${base} bg-gray-300 hover:bg-gray-400 text-gray-800`;
+});
+
+// Классы для блока задач (внутри деталей)
+const taskListBlockClass = computed(() => {
+  const base = 'h-full border rounded-md p-1 transition-colors duration-300 ease-in-out';
+  return currentTheme.value === 'dark'
+      ? `${base} bg-gray-800 border-gray-600`
+      : `${base} bg-white border-gray-200 shadow-sm`;
+});
+</script>
 <template>
-  <div
-      class="w-full min-h-screen flex flex-col items-center p-4 transition-colors duration-300 ease-in-out"
-      :class="[ currentTheme === 'dark' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900' ]"
-  >
+  <div :class="mainContainerClass">
 
 
     <Dialog
@@ -207,30 +345,22 @@ const goToNextPage = () => {
 
 
     <div v-if="isLoading" class="w-full flex justify-center my-4">
-
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
 
-    <div
-        v-if="!isLoading && error"
-        class="w-full p-4 rounded mb-4 flex justify-between items-center transition-colors duration-300 ease-in-out"
-        :class="[ currentTheme === 'dark' ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800 border border-red-300' ]"
-    >
+    <div v-if="!isLoading && error" :class="errorBlockClass">
       <span>Ошибка: {{ error }}</span>
       <div>
-
         <button
             @click="fetchOrders({ skip: currentSkip, limit: currentLimit, showEnded: showEndedOrders })"
-            class="ml-4 p-1 px-2 rounded text-xs transition-colors duration-300"
-            :class="[ currentTheme === 'dark' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-500 hover:bg-red-600 text-white' ]"
+            :class="errorRepeatButtonClass"
         >
           Повторить
         </button>
         <button
             @click="clearError"
-            class="ml-2 p-1 px-2 rounded text-xs transition-colors duration-300"
-            :class="[ currentTheme === 'dark' ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800' ]"
+            :class="errorHideButtonClass"
         >
           Скрыть
         </button>
@@ -239,10 +369,7 @@ const goToNextPage = () => {
 
 
     <div v-if="!isLoading && !error" class="w-full">
-      <table
-          class="min-w-full rounded-lg mb-4 table-fixed shadow-md"
-          :class="[ currentTheme === 'dark' ? 'bg-gray-700' : 'bg-white border border-gray-200' ]"
-      >
+      <table :class="tableBaseClass">
         <colgroup>
           <col style="width: 7%">
           <col style="width: 21%">
@@ -253,13 +380,9 @@ const goToNextPage = () => {
         </colgroup>
         <thead>
         <tr>
-          <th
-              colspan="6"
-              class="px-2 py-2 text-center rounded-t-lg"
-              :class="[ currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200' ]"
-          >
+          <th colspan="6" :class="tableHeaderRowClass">
             <div class="px-1 py-1 flex justify-between items-center">
-              
+
               <span class="flex items-center">
                   <label for="toggle-ended-orders" class="flex items-center cursor-pointer">
                     <span class="relative">
@@ -270,22 +393,16 @@ const goToNextPage = () => {
                           @change="toggleEndedOrders"
                           class="sr-only"
                       />
-                      
-                      <span
-                          class="block w-10 h-6 rounded-full border transition-colors duration-300"
-                          :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-500' : 'bg-gray-300 border-gray-400' ]"
-                      ></span>
-                      
+
+                      <span :class="toggleBackgroundClass"></span>
+
                       <span
                           class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
                           :class="{ 'transform translate-x-4': showEndedOrders }"
                       ></span>
                     </span>
-                    
-                    <span
-                        class="ml-3 text-sm transition-colors duration-300"
-                        :class="[ currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-700' ]"
-                    >
+
+                    <span :class="toggleTextClass">
                       {{ showEndedOrders ? 'Скрыть завершённые' : 'Показать завершённые' }}
                     </span>
                   </label>
@@ -310,50 +427,24 @@ const goToNextPage = () => {
         </tr>
         <tr>
 
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Номер
-          </th>
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Заказчик
-          </th>
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Приоритет
-          </th>
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Название
-          </th>
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Виды работ
-          </th>
-          <th
-              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
-              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
-          >Статус
-          </th>
+          <th :class="thClasses">Номер</th>
+          <th :class="thClasses">Заказчик</th>
+          <th :class="thClasses">Приоритет</th>
+          <th :class="thClasses">Название</th>
+          <th :class="thClasses">Виды работ</th>
+          <th :class="thClasses">Статус</th>
         </tr>
         </thead>
         <tbody>
         <template v-for="order in orders" :key="order.serial">
 
-          <tr
-              class="transition-colors duration-100"
-              :class="[ currentTheme === 'dark' ? 'border-t border-gray-600' : 'border-t border-gray-200' ]"
-          >
+          <tr :class="trBaseClass">
 
             <td
                 class="px-4 py-2 cursor-pointer transition duration-300"
                 :class="[
-                  currentTheme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100',
+                  tdNumberHoverClass, // computed для hover
+                  tdBaseTextClass, // computed для базового текста
                   {
                     'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
                     'text-yellow-400': order.status_id === 1, // Статусные цвета остаются
@@ -368,38 +459,13 @@ const goToNextPage = () => {
             </td>
 
 
-            <td
-                class="px-4 py-2"
-                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
-            >
-              {{ order.customer }}
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.customer }} </td>
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.priority ?? '-' }} </td>
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }} </td>
+            <td class="px-4 py-2" :class="tdBaseTextClass">
+              <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
             </td>
 
-
-            <td
-                class="px-4 py-2"
-                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
-            >
-              {{ order.priority ?? '-' }}
-            </td>
-
-
-            <td
-                class="px-4 py-2"
-                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
-            >
-              {{ order.name }}
-            </td>
-
-
-            <td
-                class="px-4 py-2"
-                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
-            >
-              <p v-for="work in order.works" :key="work.id">
-                • {{ work.name }}
-              </p>
-            </td>
 
             <td
                 class="px-4 py-2"
@@ -419,12 +485,9 @@ const goToNextPage = () => {
           <tr
               v-if="expandedOrderSerial === order.serial"
               :class="[ currentTheme === 'dark' ? 'border-b border-gray-600' : 'border-b border-gray-200' ]"
+
           >
-            <td
-                colspan="6"
-                class="p-4 transition-colors duration-300 ease-in-out"
-                :class="[ currentTheme === 'dark' ? 'bg-gray-750 text-gray-300' : 'bg-gray-50 text-gray-700' ]"
-            >
+            <td colspan="6" :class="detailsContainerClass">
 
               <div v-if="isDetailLoading" class="flex justify-center items-center p-4">
                 <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
@@ -435,17 +498,11 @@ const goToNextPage = () => {
               <div v-else>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-                  <div
-                      class="border rounded-md p-3 h-full transition-colors duration-300 ease-in-out"
-                      :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
-                  >
-                    <h4
-                        class="font-semibold mb-2"
-                        :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
-                    >Комментарии</h4>
+                  <div :class="detailBlockClass">
+                    <h4 :class="detailHeaderClass">Комментарии</h4>
                     <div
                         v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
-                        :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]"
+                        :class="detailSubtleTextClass"
                     >
                       Нет комментариев
                     </div>
@@ -453,18 +510,17 @@ const goToNextPage = () => {
                       <div
                           v-for="(comment, index) in currentOrderDetail.comments"
                           :key="index"
-                          class="border rounded-md p-2 mb-2 transition-colors duration-300 ease-in-out"
-                          :class="[ currentTheme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100' ]"
+                          :class="commentItemClass"
                       >
                         <div class="flex justify-between items-center">
-                          <div class="text-xs" :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]">
+                          <div class="text-xs" :class="detailSubtleTextClass">
                             {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
                           </div>
-                          <div class="text-xs" :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]">
+                          <div class="text-xs" :class="detailSubtleTextClass">
                             {{ formatFIO(comment.person) || 'Автор не указан' }}
                           </div>
                         </div>
-                        <div class="mt-1">{{ comment.text }}</div>
+                        <div class="mt-1" :class="tdBaseTextClass">{{ comment.text }}</div>
                       </div>
                     </div>
                   </div>
@@ -472,38 +528,24 @@ const goToNextPage = () => {
 
                   <div class="flex flex-col gap-4">
 
-                    <div
-                        class="border rounded-md p-3 transition-colors duration-300 ease-in-out"
-                        :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
-                    >
-                      <h4
-                          class="font-semibold mb-2"
-                          :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
-                      >Даты</h4>
-                      <p>
+                    <div :class="detailBlockClass">
+                      <h4 :class="detailHeaderClass">Даты</h4>
+                      <p :class="tdBaseTextClass">
                         создан: {{ formatLocalDateTime(currentOrderDetail?.start_moment, false) || 'не определено' }}
                       </p>
-                      <p>
-                        дедлайн: {{
-                          formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено'
-                        }}
+                      <p :class="tdBaseTextClass">
+                        дедлайн: {{ formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено' }}
                       </p>
-                      <p v-if="currentOrderDetail?.end_moment">
+                      <p v-if="currentOrderDetail?.end_moment" :class="tdBaseTextClass">
                         завершен: {{ formatLocalDateTime(currentOrderDetail?.end_moment, false) || 'не определено' }}
                       </p>
                     </div>
 
 
-                    <div
-                        class="border rounded-md p-3 transition-colors duration-300 ease-in-out"
-                        :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
-                    >
-                      <h4
-                          class="font-semibold mb-2"
-                          :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
-                      >Финансы</h4>
-                      {/* Цвета сумм (красный/зеленый) не зависят от темы */}
-                      <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div :class="detailBlockClass">
+                      <h4 :class="detailHeaderClass">Финансы</h4>
+
+                      <div class="grid grid-cols-2 gap-2 text-sm" :class="tdBaseTextClass">
                         <div>
                           <span>Материалы: </span>
                           <span
@@ -545,15 +587,10 @@ const goToNextPage = () => {
                   </div>
 
 
-                  <div
-                      class="h-full border rounded-md p-1 transition-colors duration-300 ease-in-out"
-                      :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
-                  >
-                    <h4
-                        class="font-semibold mb-2 px-2 pt-2"
-                        :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
-                    >Задачи</h4>
-                    <TaskList :tasks="currentOrderDetail?.tasks || []"/>
+                  <div :class="taskListBlockClass">
+                    <h4 :class="[detailHeaderClass, 'px-2 pt-2']">Задачи</h4>
+
+                    <TaskList :tasks="currentOrderDetail?.tasks || []" :theme="currentTheme" />
                   </div>
                 </div>
               </div>
@@ -568,33 +605,24 @@ const goToNextPage = () => {
         <button
             @click="goToPreviousPage"
             :disabled="currentPage === 0"
-            class="px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
-            :class="[ currentTheme === 'dark' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white' ]"
+            :class="paginationButtonClass"
         >
           Назад
         </button>
-        <span
-            class="text-lg transition-colors duration-300"
-            :class="[ currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-700' ]"
-        >
+        <span :class="paginationTextClass">
           Страница {{ currentPage + 1 }} из {{ totalPages }}
         </span>
         <button
             @click="goToNextPage"
             :disabled="currentPage >= totalPages - 1"
-            class="px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
-            :class="[ currentTheme === 'dark' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white' ]"
+            :class="paginationButtonClass"
         >
           Вперед
         </button>
       </div>
 
 
-      <div
-          v-if="!isLoading && orders.length > 0"
-          class="text-center mt-2 text-sm transition-colors duration-300"
-          :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]"
-      >
+      <div v-if="!isLoading && orders.length > 0" :class="totalInfoTextClass">
         Показано {{ orders.length }} из {{ totalOrders }} заказов.
       </div>
     </div>
@@ -613,11 +641,8 @@ const goToNextPage = () => {
 /* Стили для переключателя */
 /* Движение точки при checked */
 input:checked ~ .dot {
-  /* transform: translateX(100%); Это двигает на всю ширину контейнера span, нам нужно на ширину самой точки */
   transform: translateX(1rem); /* 16px, что равно w-4 */
-  /* background-color: white; /* Точка всегда белая */
 }
-
 /* Добавляем плавный переход для точки */
 .dot {
   transition: transform 0.3s ease-in-out;
@@ -627,11 +652,10 @@ input:checked ~ .dot {
 :deep(.p-dialog) {
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.3s ease-in-out;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   /* Динамическая рамка для светлой темы */
-  border: 1px solid v-bind('currentTheme === "dark" ? "transparent" : "rgba(209, 213, 219, 1)"');
-  /* Можно добавить тень для светлой темы */
+  border: 1px solid v-bind('currentTheme === "dark" ? "transparent" : "rgba(209, 213, 219, 1)"'); /* border-gray-300 */
+  /* Тень для светлой темы */
   box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
-
 </style>
