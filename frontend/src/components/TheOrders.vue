@@ -8,11 +8,11 @@ import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
 import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
-import { useThemeStore } from '../stores/storeTheme'; // <--- 1. Импорт Theme Store
+import {useThemeStore} from '../stores/storeTheme'; // <--- 1. Импорт Theme Store
 
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
-const { theme: currentTheme } = storeToRefs(themeStore); // <--- 3. Получаем реактивную ссылку на тему
+const {theme: currentTheme} = storeToRefs(themeStore); // <--- 3. Получаем реактивную ссылку на тему
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
@@ -107,7 +107,7 @@ function formatLocalDateTime(
     const timezoneOffsetHours = -date.getTimezoneOffset() / 60;
     console.log(`Применено смещение часового пояса: UTC${timezoneOffsetHours >= 0 ? '+' : ''}${timezoneOffsetHours} часов`);
 
-        // Прямое прибавление смещения часового пояса к времени
+    // Прямое прибавление смещения часового пояса к времени
     // getTimezoneOffset возвращает смещение в минутах, отрицательное для восточных зон
     // поэтому мы вычитаем его, что эквивалентно прибавлению часов для восточных зон
     const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -184,64 +184,82 @@ const goToNextPage = () => {
 </script>
 
 <template>
-  <div class="w-full min-h-screen flex flex-col items-center bg-gray-800 p-4 text-white">
-    <!-- Модальное окно для создания заказа -->
+  <div
+      class="w-full min-h-screen flex flex-col items-center p-4 transition-colors duration-300 ease-in-out"
+      :class="[ currentTheme === 'dark' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900' ]"
+  >
+
+
     <Dialog
         v-model:visible="showCreateDialog"
         modal
         :style="{width: '500px'}"
         :closable="false"
         class="p-0"
+        :draggable="false"
     >
+
       <OrderCreateForm
           @success="handleOrderCreated"
           @cancel="handleCreateCancel"
       />
     </Dialog>
 
-    <!-- Индикатор загрузки -->
+
     <div v-if="isLoading" class="w-full flex justify-center my-4">
+
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <!-- Отображение ошибки -->
+
     <div
         v-if="!isLoading && error"
-        class="w-full bg-red-500 text-white p-4 rounded mb-4 flex justify-between items-center"
+        class="w-full p-4 rounded mb-4 flex justify-between items-center transition-colors duration-300 ease-in-out"
+        :class="[ currentTheme === 'dark' ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800 border border-red-300' ]"
     >
       <span>Ошибка: {{ error }}</span>
       <div>
+
         <button
             @click="fetchOrders({ skip: currentSkip, limit: currentLimit, showEnded: showEndedOrders })"
-            class="ml-4 p-1 px-2 bg-red-700 rounded hover:bg-red-600 text-xs"
+            class="ml-4 p-1 px-2 rounded text-xs transition-colors duration-300"
+            :class="[ currentTheme === 'dark' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-500 hover:bg-red-600 text-white' ]"
         >
           Повторить
         </button>
         <button
             @click="clearError"
-            class="ml-2 p-1 px-2 bg-gray-600 rounded hover:bg-gray-500 text-xs"
+            class="ml-2 p-1 px-2 rounded text-xs transition-colors duration-300"
+            :class="[ currentTheme === 'dark' ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800' ]"
         >
           Скрыть
         </button>
       </div>
     </div>
 
-    <!-- Основной контент -->
+
     <div v-if="!isLoading && !error" class="w-full">
-      <table class="min-w-full bg-gray-700 rounded-lg mb-4 table-fixed">
+      <table
+          class="min-w-full rounded-lg mb-4 table-fixed shadow-md"
+          :class="[ currentTheme === 'dark' ? 'bg-gray-700' : 'bg-white border border-gray-200' ]"
+      >
         <colgroup>
-          <col style="width: 7%">  <!-- номер заказа -->
-          <col style="width: 21%"> <!-- Заказчик -->
-          <col style="width: 7%">  <!-- Приоритет -->
-          <col style="width: 25%"> <!-- Название -->
-          <col style="width: 15%"> <!-- Виды работ -->
-          <col style="width: 25%"> <!-- Статус -->
+          <col style="width: 7%">
+          <col style="width: 21%">
+          <col style="width: 7%">
+          <col style="width: 25%">
+          <col style="width: 15%">
+          <col style="width: 25%">
         </colgroup>
         <thead>
         <tr>
-          <th colspan="6" class="px-2 py-2 text-center bg-gray-600">
-            <div class="px-1 py-1 bg-gray-600 flex justify-between items-center">
-              <!-- Переключатель слева -->
+          <th
+              colspan="6"
+              class="px-2 py-2 text-center rounded-t-lg"
+              :class="[ currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200' ]"
+          >
+            <div class="px-1 py-1 flex justify-between items-center">
+              
               <span class="flex items-center">
                   <label for="toggle-ended-orders" class="flex items-center cursor-pointer">
                     <span class="relative">
@@ -252,19 +270,28 @@ const goToNextPage = () => {
                           @change="toggleEndedOrders"
                           class="sr-only"
                       />
-                      <span class="block bg-gray-700 w-10 h-6 rounded-full border border-gray-400"></span>
+                      
+                      <span
+                          class="block w-10 h-6 rounded-full border transition-colors duration-300"
+                          :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-500' : 'bg-gray-300 border-gray-400' ]"
+                      ></span>
+                      
                       <span
                           class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
                           :class="{ 'transform translate-x-4': showEndedOrders }"
                       ></span>
                     </span>
-                    <span class="ml-3 text-gray-200 text-sm">
+                    
+                    <span
+                        class="ml-3 text-sm transition-colors duration-300"
+                        :class="[ currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-700' ]"
+                    >
                       {{ showEndedOrders ? 'Скрыть завершённые' : 'Показать завершённые' }}
                     </span>
                   </label>
                 </span>
 
-              <!-- Кнопки справа -->
+
               <span class="flex">
                   <BaseButton
                       :action="findOrders"
@@ -282,39 +309,98 @@ const goToNextPage = () => {
           </th>
         </tr>
         <tr>
-          <th class="px-4 py-2 text-left">Номер</th>
-          <th class="px-4 py-2 text-left">Заказчик</th>
-          <th class="px-4 py-2 text-left">Приоритет</th>
-          <th class="px-4 py-2 text-left">Название</th>
-          <th class="px-4 py-2 text-left">Виды работ</th>
-          <th class="px-4 py-2 text-left">Статус</th>
+
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Номер
+          </th>
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Заказчик
+          </th>
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Приоритет
+          </th>
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Название
+          </th>
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Виды работ
+          </th>
+          <th
+              class="px-4 py-2 text-left text-sm font-semibold uppercase tracking-wider border-1"
+              :class="[ currentTheme === 'dark' ? 'border-gray-300 text-gray-300' : ' border-gray-600 text-gray-600 bg-gray-100' ]"
+          >Статус
+          </th>
         </tr>
         </thead>
         <tbody>
         <template v-for="order in orders" :key="order.serial">
-          <!-- Строка заказа -->
-          <tr class="border-t border-gray-600">
+
+          <tr
+              class="transition-colors duration-100"
+              :class="[ currentTheme === 'dark' ? 'border-t border-gray-600' : 'border-t border-gray-200' ]"
+          >
+
             <td
-                class="px-4 py-2 cursor-pointer hover:bg-gray-600 transition duration-300"
-                :class="{
-                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
-                  'text-yellow-400': order.status_id === 1,
-                  'text-blue-400': order.status_id === 2,
-                  'text-green-400': order.status_id === 3,
-                  'text-red-400': order.status_id === 4
-                }"
+                class="px-4 py-2 cursor-pointer transition duration-300"
+                :class="[
+                  currentTheme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100',
+                  {
+                    'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
+                    'text-yellow-400': order.status_id === 1, // Статусные цвета остаются
+                    'text-blue-400': order.status_id === 2,
+                    'text-green-400': order.status_id === 3,
+                    'text-red-400': order.status_id === 4
+                  }
+                ]"
                 @click="toggleOrderDetails(order.serial)"
             >
               {{ order.serial }}
             </td>
-            <td class="px-4 py-2">{{ order.customer }}</td>
-            <td class="px-4 py-2">{{ order.priority ?? '-' }}</td>
-            <td class="px-4 py-2">{{ order.name }}</td>
-            <td class="px-4 py-2">
+
+
+            <td
+                class="px-4 py-2"
+                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
+            >
+              {{ order.customer }}
+            </td>
+
+
+            <td
+                class="px-4 py-2"
+                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
+            >
+              {{ order.priority ?? '-' }}
+            </td>
+
+
+            <td
+                class="px-4 py-2"
+                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
+            >
+              {{ order.name }}
+            </td>
+
+
+            <td
+                class="px-4 py-2"
+                :class="[ currentTheme === 'dark' ? 'text-gray-100' : 'text-gray-800' ]"
+            >
               <p v-for="work in order.works" :key="work.id">
                 • {{ work.name }}
               </p>
             </td>
+
             <td
                 class="px-4 py-2"
                 :class="{
@@ -329,25 +415,37 @@ const goToNextPage = () => {
             </td>
           </tr>
 
-          <!-- Детали заказа -->
-          <tr v-if="expandedOrderSerial === order.serial" class="border-b border-gray-600">
-            <td colspan="6" class="p-4 bg-gray-700 text-gray-300">
-              <!-- Индикатор загрузки деталей -->
+
+          <tr
+              v-if="expandedOrderSerial === order.serial"
+              :class="[ currentTheme === 'dark' ? 'border-b border-gray-600' : 'border-b border-gray-200' ]"
+          >
+            <td
+                colspan="6"
+                class="p-4 transition-colors duration-300 ease-in-out"
+                :class="[ currentTheme === 'dark' ? 'bg-gray-750 text-gray-300' : 'bg-gray-50 text-gray-700' ]"
+            >
+
               <div v-if="isDetailLoading" class="flex justify-center items-center p-4">
                 <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
                 <span>Загрузка данных заказа...</span>
               </div>
 
-              <!-- Отображение деталей заказа -->
+
               <div v-else>
-                <div class="grid grid-cols-3 gap-4">
-                  <!-- Комментарии -->
-                  <!-- Комментарии -->
-                  <div class="border rounded-md p-3 bg-gray-800 h-full">
-                    <h4 class="font-semibold text-white mb-2">Комментарии</h4>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                  <div
+                      class="border rounded-md p-3 h-full transition-colors duration-300 ease-in-out"
+                      :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
+                  >
+                    <h4
+                        class="font-semibold mb-2"
+                        :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
+                    >Комментарии</h4>
                     <div
                         v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
-                        class="text-gray-400"
+                        :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]"
                     >
                       Нет комментариев
                     </div>
@@ -355,13 +453,14 @@ const goToNextPage = () => {
                       <div
                           v-for="(comment, index) in currentOrderDetail.comments"
                           :key="index"
-                          class="border rounded-md border-gray-700 p-2 mb-2"
+                          class="border rounded-md p-2 mb-2 transition-colors duration-300 ease-in-out"
+                          :class="[ currentTheme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100' ]"
                       >
                         <div class="flex justify-between items-center">
-                          <div class="text-xs text-gray-400">
+                          <div class="text-xs" :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]">
                             {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
                           </div>
-                          <div class="text-xs text-gray-400">
+                          <div class="text-xs" :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]">
                             {{ formatFIO(comment.person) || 'Автор не указан' }}
                           </div>
                         </div>
@@ -370,25 +469,40 @@ const goToNextPage = () => {
                     </div>
                   </div>
 
-                  <!-- Даты и финансы -->
+
                   <div class="flex flex-col gap-4">
-                    <!-- Даты -->
-                    <div class="border rounded-md p-3 bg-gray-800">
-                      <h4 class="font-semibold text-white mb-2">Даты</h4>
+
+                    <div
+                        class="border rounded-md p-3 transition-colors duration-300 ease-in-out"
+                        :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
+                    >
+                      <h4
+                          class="font-semibold mb-2"
+                          :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
+                      >Даты</h4>
                       <p>
                         создан: {{ formatLocalDateTime(currentOrderDetail?.start_moment, false) || 'не определено' }}
                       </p>
                       <p>
-                        дедлайн: {{ formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено' }}
+                        дедлайн: {{
+                          formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено'
+                        }}
                       </p>
                       <p v-if="currentOrderDetail?.end_moment">
                         завершен: {{ formatLocalDateTime(currentOrderDetail?.end_moment, false) || 'не определено' }}
                       </p>
                     </div>
 
-                    <!-- Финансы -->
-                    <div class="border rounded-md p-3 bg-gray-800">
-                      <h4 class="font-semibold text-white mb-2">Финансы</h4>
+
+                    <div
+                        class="border rounded-md p-3 transition-colors duration-300 ease-in-out"
+                        :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
+                    >
+                      <h4
+                          class="font-semibold mb-2"
+                          :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
+                      >Финансы</h4>
+                      {/* Цвета сумм (красный/зеленый) не зависят от темы */}
                       <div class="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span>Материалы: </span>
@@ -430,9 +544,16 @@ const goToNextPage = () => {
                     </div>
                   </div>
 
-                  <!-- Список задач -->
-                  <div class="h-full">
-                    <TaskList :tasks="currentOrderDetail?.tasks || []" />
+
+                  <div
+                      class="h-full border rounded-md p-1 transition-colors duration-300 ease-in-out"
+                      :class="[ currentTheme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200 shadow-sm' ]"
+                  >
+                    <h4
+                        class="font-semibold mb-2 px-2 pt-2"
+                        :class="[ currentTheme === 'dark' ? 'text-white' : 'text-gray-800' ]"
+                    >Задачи</h4>
+                    <TaskList :tasks="currentOrderDetail?.tasks || []"/>
                   </div>
                 </div>
               </div>
@@ -442,29 +563,38 @@ const goToNextPage = () => {
         </tbody>
       </table>
 
-      <!-- Пагинация -->
+
       <div v-if="totalPages > 1" class="mt-6 flex justify-center items-center space-x-3">
         <button
             @click="goToPreviousPage"
             :disabled="currentPage === 0"
-            class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
+            :class="[ currentTheme === 'dark' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white' ]"
         >
           Назад
         </button>
-        <span class="text-lg">
+        <span
+            class="text-lg transition-colors duration-300"
+            :class="[ currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-700' ]"
+        >
           Страница {{ currentPage + 1 }} из {{ totalPages }}
         </span>
         <button
             @click="goToNextPage"
             :disabled="currentPage >= totalPages - 1"
-            class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300"
+            :class="[ currentTheme === 'dark' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white' ]"
         >
           Вперед
         </button>
       </div>
 
-      <!-- Информация о количестве заказов -->
-      <div v-if="!isLoading && orders.length > 0" class="text-center text-gray-400 mt-2 text-sm">
+
+      <div
+          v-if="!isLoading && orders.length > 0"
+          class="text-center mt-2 text-sm transition-colors duration-300"
+          :class="[ currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500' ]"
+      >
         Показано {{ orders.length }} из {{ totalOrders }} заказов.
       </div>
     </div>
@@ -481,28 +611,27 @@ const goToNextPage = () => {
 
 <style scoped>
 /* Стили для переключателя */
+/* Движение точки при checked */
 input:checked ~ .dot {
-  transform: translateX(100%);
-  background-color: white;
+  /* transform: translateX(100%); Это двигает на всю ширину контейнера span, нам нужно на ширину самой точки */
+  transform: translateX(1rem); /* 16px, что равно w-4 */
+  /* background-color: white; /* Точка всегда белая */
 }
 
-/* Добавляем стили для модального окна */
+/* Добавляем плавный переход для точки */
+.dot {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Добавляем стили для модального окна PrimeVue Dialog с использованием v-bind */
 :deep(.p-dialog) {
   border-radius: 8px;
   overflow: hidden;
+  transition: border-color 0.3s ease-in-out;
+  /* Динамическая рамка для светлой темы */
+  border: 1px solid v-bind('currentTheme === "dark" ? "transparent" : "rgba(209, 213, 219, 1)"');
+  /* Можно добавить тень для светлой темы */
+  box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
 
-:deep(.p-dialog-header) {
-  padding: 0;
-}
-
-:deep(.p-dialog-content) {
-  padding: 0;
-  background-color: #2d3748; /* bg-gray-800 */
-  color: white;
-}
-
-:deep(.p-dialog-header-close) {
-  display: none;
-}
 </style>
