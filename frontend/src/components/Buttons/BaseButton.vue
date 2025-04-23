@@ -43,6 +43,8 @@ const buttonClasses = computed(() => {
       <!-- Слот для контента перед текстом -->
       <slot name="prepend"></slot>
 
+      <slot name="default"></slot>
+
       <!-- Основной текст кнопки -->
       {{ text }}
 

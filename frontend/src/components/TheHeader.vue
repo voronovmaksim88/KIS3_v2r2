@@ -64,7 +64,7 @@ function toggleTheme() {
   >
     <div class="flex items-center">
       <BaseButton
-          :text="'Home'"
+          :text="''"
           :action="GoHome"
           :style="currentTheme === 'dark' ? 'Primary' : 'Secondary'"
       >
@@ -77,6 +77,11 @@ function toggleTheme() {
           currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-100'
         ]"
           />
+        </template>
+
+        <!-- Показываем текст только на больших экранах -->
+        <template #default>
+          <span class="hidden sm:inline">Home</span>
         </template>
       </BaseButton>
     </div>
@@ -141,7 +146,7 @@ function toggleTheme() {
 
       <!-- Кнопка выхода с иконкой -->
       <BaseButton
-          :text="'logout'"
+          :text="''"
           :action="Logout"
           :style="currentTheme === 'dark' ? 'Secondary' : 'Danger'"
       >
@@ -153,6 +158,10 @@ function toggleTheme() {
         currentTheme === 'dark' ? 'text-white' : 'text-red-100'
       ]"
           />
+        </template>
+
+        <template #default>
+          <span class="hidden sm:inline">logout</span>
         </template>
       </BaseButton>
     </div>
