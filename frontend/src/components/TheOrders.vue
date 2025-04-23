@@ -8,6 +8,11 @@ import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
 import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
+import { useThemeStore } from '../stores/storeTheme'; // <--- 1. Импорт Theme Store
+
+// Store темы
+const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
+const { theme: currentTheme } = storeToRefs(themeStore); // <--- 3. Получаем реактивную ссылку на тему
 
 // 1. Получаем экземпляр стора
 const ordersStore = useOrdersStore();
