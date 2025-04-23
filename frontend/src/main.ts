@@ -11,11 +11,6 @@ import Toast from 'primevue/toast';
 import Aura from '@primeuix/themes/aura';
 // Попробуйте импортировать тёмную версию Aura
 
-// Импорт CSS-файлов тем PrimeVue
-import 'primevue/resources/themes/lara-light-blue/theme.css';  // светлая тема
-import 'primevue/resources/themes/lara-dark-blue/theme.css';   // темная тема
-import 'primevue/resources/primevue.min.css';
-
 
 
 
@@ -39,7 +34,9 @@ app.use(PrimeVue, {
     // Default theme configuration
     theme: {
         preset: Aura,
-        dark: true
+        options: {
+            darkModeSelector: '.my-app-dark',
+        }
     }
 });
 

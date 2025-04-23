@@ -12,6 +12,7 @@ import {computed, onMounted, ref, watch} from 'vue';
 import {useAuthStore} from "./stores/storeAuth.ts";
 import TheLogin from "@/components/TheLogin.vue";
 import TheOrders from "@/components/TheOrders.vue";
+import { setupThemeWatcher } from './utils/themeManager';
 
 const apiUrl = ref<string>('');
 
@@ -20,6 +21,7 @@ onMounted(() => {
     console.error('VITE_API_URL не определен в переменных окружения');
   }
   apiUrl.value = import.meta.env.VITE_API_URL;
+  setupThemeWatcher();
 });
 
 

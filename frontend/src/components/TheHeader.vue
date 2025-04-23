@@ -54,6 +54,10 @@ function Logout() {
 function toggleTheme() {
   themeStore.toggleTheme();
 }
+
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('my-app-dark');
+}
 </script>
 
 <template>
@@ -66,29 +70,81 @@ function toggleTheme() {
     ]"
   >
     <div class="flex items-center">
-      <Button label="Submit" />
 
-      <BaseButton
-          :text="''"
-          :action="GoHome"
-          :style="currentTheme === 'dark' ? 'Primary' : 'Secondary'"
-      >
-        <!-- Добавляем иконку как слот перед текстом -->
-        <template #prepend>
-          <font-awesome-icon
-              :icon="['fas', 'house-chimney']"
-              class="mr-2 transition-colors duration-300 "
+
+      <!-- Красивый переключатель темы с иконками -->
+      <div class="theme-toggle-wrapper">
+        <button
+            @click="toggleTheme"
+            class="theme-toggle-button flex items-center justify-center relative overflow-hidden rounded-full transition-all duration-500"
+            :class="[
+            currentTheme === 'dark'
+              ? 'bg-gray-700 hover:bg-gray-600'
+              : 'bg-blue-100 hover:bg-blue-200'
+          ]"
+            aria-label="Переключить тему"
+        >
+          <span
+              class="absolute transition-all duration-500 transform"
               :class="[
-              currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-100'
+              currentTheme === 'dark'
+                ? 'translate-y-0 opacity-100'
+                : 'translate-y-10 opacity-0'
             ]"
-          />
-        </template>
+          >
+            <i class="pi pi-moon text-yellow-300"></i>
+          </span>
+          <span
+              class="absolute transition-all duration-500 transform"
+              :class="[
+              currentTheme === 'dark'
+                ? 'translate-y-10 opacity-0'
+                : 'translate-y-0 opacity-100'
+            ]"
+          >
+            <i class="pi pi-sun text-yellow-500"></i>
+          </span>
+          <span class="invisible">
+            <i class="pi pi-sun"></i>
+          </span>
+        </button>
+      </div>
 
-        <!-- Показываем текст только на больших экранах -->
-        <template #default>
-          <span class="hidden sm:inline">Home</span>
-        </template>
-      </BaseButton>
+
+
+      <Button label="Toggle Dark Mode" @click="toggleDarkMode()" />
+      <Button
+          icon="pi pi-home"
+          label="Home"
+          severity="info"
+          raised
+          :onclick="GoHome"
+      />
+
+
+
+<!--      <BaseButton-->
+<!--          :text="''"-->
+<!--          :action="GoHome"-->
+<!--          :style="currentTheme === 'dark' ? 'Primary' : 'Secondary'"-->
+<!--      >-->
+<!--        &lt;!&ndash; Добавляем иконку как слот перед текстом &ndash;&gt;-->
+<!--        <template #prepend>-->
+<!--          <font-awesome-icon-->
+<!--              :icon="['fas', 'house-chimney']"-->
+<!--              class="mr-2 transition-colors duration-300 "-->
+<!--              :class="[-->
+<!--              currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-100'-->
+<!--            ]"-->
+<!--          />-->
+<!--        </template>-->
+
+<!--        &lt;!&ndash; Показываем текст только на больших экранах &ndash;&gt;-->
+<!--        <template #default>-->
+<!--          <span class="hidden sm:inline">Home</span>-->
+<!--        </template>-->
+<!--      </BaseButton>-->
+
     </div>
 
     <p
