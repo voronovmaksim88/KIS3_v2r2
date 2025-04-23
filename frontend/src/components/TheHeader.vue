@@ -12,7 +12,9 @@ import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
 import {faHouseChimney} from '@fortawesome/free-solid-svg-icons';
 import {faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {faUser} from '@fortawesome/free-solid-svg-icons';
-import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import {faSun, faMoon} from '@fortawesome/free-solid-svg-icons';
+
+import Button from 'primevue/button';
 
 // Добавляем используемые иконки в библиотеку
 library.add(faHouseChimney, faSignOutAlt, faUser, faSun, faMoon);
@@ -64,6 +66,8 @@ function toggleTheme() {
     ]"
   >
     <div class="flex items-center">
+      <Button label="Submit" />
+
       <BaseButton
           :text="''"
           :action="GoHome"
@@ -75,8 +79,8 @@ function toggleTheme() {
               :icon="['fas', 'house-chimney']"
               class="mr-2 transition-colors duration-300 "
               :class="[
-          currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-100'
-        ]"
+              currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-100'
+            ]"
           />
         </template>
 
@@ -104,24 +108,30 @@ function toggleTheme() {
           @click="toggleTheme"
           class="theme-toggle flex items-center justify-center px-3 py-2 rounded-lg transition-all duration-300"
           :class="[
-    currentTheme === 'dark'
-      ? 'bg-gray-500 hover:bg-gray-400 text-yellow-300 hover:text-yellow-200'
-      : 'bg-blue-200 hover:bg-blue-300 text-blue-800 hover:text-blue-900'
-  ]"
-          :title="currentTheme === 'dark' ? 'Переключить на светлую тему' : 'Переключить на темную тему'"
+          currentTheme === 'dark'
+            ? 'bg-gray-500 hover:bg-gray-400 text-yellow-300 hover:text-yellow-200'
+            : 'bg-blue-200 hover:bg-blue-300 text-blue-800 hover:text-blue-900'
+        ]"
+          :title="
+          currentTheme === 'dark'
+            ? 'Переключить на светлую тему'
+            : 'Переключить на темную тему'
+          "
       >
         <font-awesome-icon
             :icon="['fas', currentTheme === 'dark' ? 'moon' : 'sun']"
             class="text-xl mr-2 transition-all duration-300"
             :class="[
-      currentTheme === 'dark'
-        ? 'text-yellow-300 rotate-0'
-        : 'text-yellow-600 rotate-90'
-    ]"
+            currentTheme === 'dark'
+              ? 'text-yellow-300 rotate-0'
+              : 'text-yellow-600 rotate-90'
+          ]"
         />
         <span class="hidden sm:inline text-sm font-medium">
-    {{ currentTheme === 'dark' ? 'Темная' : 'Светлая' }}
-  </span>
+          {{
+            currentTheme === 'dark' ? 'Темная' : 'Светлая'
+          }}
+        </span>
       </button>
 
       <!-- Имя пользователя с разным стилем в зависимости от темы -->
@@ -137,9 +147,7 @@ function toggleTheme() {
           <font-awesome-icon
               :icon="['fas', 'user']"
               class="transition-colors duration-300"
-              :class="[
-              currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-500'
-            ]"
+              :class="[currentTheme === 'dark' ? 'text-blue-300' : 'text-blue-500']"
           />
         </span>
         <span class="font-medium">{{ username }}</span>
@@ -155,9 +163,7 @@ function toggleTheme() {
           <font-awesome-icon
               :icon="['fas', 'sign-out-alt']"
               class="mr-2 transition-colors duration-300"
-              :class="[
-        currentTheme === 'dark' ? 'text-white' : 'text-red-100'
-      ]"
+              :class="[currentTheme === 'dark' ? 'text-white' : 'text-red-100']"
           />
         </template>
 
