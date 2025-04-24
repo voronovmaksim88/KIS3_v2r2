@@ -459,9 +459,9 @@ const taskListBlockClass = computed(() => {
             </td>
 
 
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.customer }} </td>
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.priority ?? '-' }} </td>
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }} </td>
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.customer }}</td>
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.priority ?? '-' }}</td>
+            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }}</td>
             <td class="px-4 py-2" :class="tdBaseTextClass">
               <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
             </td>
@@ -534,7 +534,9 @@ const taskListBlockClass = computed(() => {
                         создан: {{ formatLocalDateTime(currentOrderDetail?.start_moment, false) || 'не определено' }}
                       </p>
                       <p :class="tdBaseTextClass">
-                        дедлайн: {{ formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено' }}
+                        дедлайн: {{
+                          formatLocalDateTime(currentOrderDetail?.deadline_moment, false) || 'не определено'
+                        }}
                       </p>
                       <p v-if="currentOrderDetail?.end_moment" :class="tdBaseTextClass">
                         завершен: {{ formatLocalDateTime(currentOrderDetail?.end_moment, false) || 'не определено' }}
@@ -586,12 +588,8 @@ const taskListBlockClass = computed(() => {
                     </div>
                   </div>
 
+                  <TaskList :tasks="currentOrderDetail?.tasks || []" :theme="currentTheme"/>
 
-                  <div :class="taskListBlockClass">
-                    <h4 :class="[detailHeaderClass, 'px-2 pt-2']">Задачи</h4>
-
-                    <TaskList :tasks="currentOrderDetail?.tasks || []" :theme="currentTheme" />
-                  </div>
                 </div>
               </div>
             </td>
@@ -643,6 +641,7 @@ const taskListBlockClass = computed(() => {
 input:checked ~ .dot {
   transform: translateX(1rem); /* 16px, что равно w-4 */
 }
+
 /* Добавляем плавный переход для точки */
 .dot {
   transition: transform 0.3s ease-in-out;
