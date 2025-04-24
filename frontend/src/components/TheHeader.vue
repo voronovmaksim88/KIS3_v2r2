@@ -215,7 +215,7 @@ function cancelLogout() {
 .app-header {
   border-bottom-width: 1px;
   border-bottom-style: solid;
-  border-bottom-color: v-bind('currentTheme === "dark" ? "rgba(75, 85, 99, 1)" : "rgba(229, 231, 235, 1)"');
+  border-bottom-color: v-bind('currentTheme === "dark" ? "rgba(75, 85, 99, 1)" : "gray"');
 }
 
 .page-title {
