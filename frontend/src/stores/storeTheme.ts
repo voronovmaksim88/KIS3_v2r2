@@ -9,7 +9,14 @@ export const useThemeStore = defineStore('theme', () => {
 
     function setTheme(newTheme: ThemeMode) {
         theme.value = newTheme
+
+        // Обновляем класс dark для Tailwind
         document.documentElement.classList.toggle('dark', newTheme === 'dark')
+
+        // Обновляем класс my-app-dark для вашего приложения
+        document.documentElement.classList.toggle('my-app-dark', newTheme === 'dark')
+
+        // Сохраняем в localStorage
         localStorage.setItem('theme', newTheme)
     }
 
@@ -18,20 +25,22 @@ export const useThemeStore = defineStore('theme', () => {
         setTheme(newTheme)
     }
 
-    // При запуске пытаемся прочитать из localStorage
-    // function initTheme() {
-    //     const stored = localStorage.getItem('theme') as ThemeMode | null
-    //     if (stored === 'dark' || stored === 'light') {
-    //         setTheme(stored)
-    //     } else {
-    //         // Или используем prefers-color-scheme
-    //         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    //         setTheme(prefersDark ? 'dark' : 'light')
-    //     }
-    // }
+    // Инициализация темы при запуске приложения
+    function initTheme() {
+        const stored = localStorage.getItem('theme') as ThemeMode | null
+        if (stored === 'dark' || stored === 'light') {
+            setTheme(stored)
+        } else {
+            // Используем системные настройки через prefers-color-scheme
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            setTheme(prefersDark ? 'dark' : 'light')
+        }
+    }
 
     return {
         theme,
+        setTheme,
         toggleTheme,
+        initTheme
     }
 })
