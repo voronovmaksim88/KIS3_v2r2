@@ -66,10 +66,10 @@ const rootTasks = computed(() => {
       <span>Нет задач</span>
     </div>
 
-    <div v-else class="tasks-list space-y-2">
+    <div v-else class="tasks-list space-y-1">
       <!-- Отображаем только корневые задачи (задачи без родителей или с root_task_id = null) -->
       <div v-for="task in rootTasks" :key="task.id"
-           class="task-item mt-2 transition-all duration-300"
+           class="task-item transition-all duration-300"
            :class="[
              currentTheme === 'dark'
                ? 'hover:bg-gray-700/30'

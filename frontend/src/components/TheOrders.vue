@@ -7,7 +7,7 @@ import BaseButton from "@/components/Buttons/BaseButton.vue";
 import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
 import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
-import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
+import OrderCreateForm from '@/components/TheFormAddOrder.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme'; // <--- 1. Импорт Theme Store
 
 // Store темы
