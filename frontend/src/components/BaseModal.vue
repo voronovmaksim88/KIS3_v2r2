@@ -16,14 +16,14 @@ const themeStore = useThemeStore();
 const currentTheme = computed(() => themeStore.theme);
 
 // Вычисляемые свойства для цветов в зависимости от темы
-const bgMainClass = computed(() => currentTheme.value === 'dark' ? 'bg-gray-800' : 'bg-white');
-const bgHeaderClass = computed(() => currentTheme.value === 'dark' ? 'bg-gray-700' : 'bg-gray-100');
+const bgMainClass = computed(() => currentTheme.value === 'dark' ? 'bg-gray-800' : 'bg-gray-100');
+const bgHeaderClass = computed(() => currentTheme.value === 'dark' ? 'bg-gray-700' : 'bg-gray-200');
 const textMainClass = computed(() => currentTheme.value === 'dark' ? 'text-white' : 'text-gray-800');
-const borderClass = computed(() => currentTheme.value === 'dark' ? 'border-gray-700' : 'border-gray-200');
+const borderClass = computed(() => currentTheme.value === 'dark' ? 'border-gray-300' : 'border-gray-600');
 </script>
 
 <template>
-  <div :class="[bgMainClass, 'rounded-lg shadow-lg overflow-hidden max-w-4xl w-full mx-auto border transition-colors duration-300', borderClass]">
+  <div :class="[bgMainClass, 'rounded-lg shadow-lg overflow-hidden max-w-2xl w-full mx-auto border transition-colors duration-300', borderClass]">
     <!-- Шапка с названием и кнопкой закрытия -->
     <div :class="[bgHeaderClass, 'px-6 py-4 flex justify-between items-center transition-colors duration-300']">
       <h2 :class="[textMainClass, 'text-xl font-semibold truncate transition-colors duration-300']">{{ props.name }}</h2>
