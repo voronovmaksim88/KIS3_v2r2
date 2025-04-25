@@ -89,7 +89,7 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-2">
     <Toast />
 
     <div class="flex justify-between items-center mb-4">
@@ -137,6 +137,6 @@ const submitForm = async () => {
 
 <style scoped>
 .form-field {
-  @apply mb-4;
+  @apply mb-2;
 }
 </style>
