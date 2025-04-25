@@ -316,17 +316,12 @@ const errorHideButtonClass = computed(() => {
   return currentTheme.value === 'dark' ? `${base} bg-gray-600 hover:bg-gray-500 text-white` : `${base} bg-gray-300 hover:bg-gray-400 text-gray-800`;
 });
 
-// Классы для блока задач (внутри деталей)
-const taskListBlockClass = computed(() => {
-  const base = 'h-full border rounded-md p-1 transition-colors duration-300 ease-in-out';
-  return currentTheme.value === 'dark'
-      ? `${base} bg-gray-800 border-gray-600`
-      : `${base} bg-white border-gray-200 shadow-sm`;
-});
 </script>
+
+
+
 <template>
   <div :class="mainContainerClass">
-
 
     <Dialog
         v-model:visible="showCreateDialog"
