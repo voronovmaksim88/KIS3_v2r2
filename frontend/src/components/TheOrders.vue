@@ -6,9 +6,8 @@ import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue";
 import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
-import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
-import OrderCreateForm from '@/components/TheFormAddOrder.vue'; // Импорт нашего нового компонента
-import {useThemeStore} from '../stores/storeTheme'; // <--- 1. Импорт Theme Store
+import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
+import {useThemeStore} from '../stores/storeTheme';
 
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
@@ -323,21 +322,19 @@ const errorHideButtonClass = computed(() => {
 <template>
   <div :class="mainContainerClass">
 
-    <Dialog
-        v-model:visible="showCreateDialog"
-        modal
-        :style="{width: '500px'}"
-        :closable="false"
-        class="p-0"
-        :draggable="false"
-    >
 
-      <OrderCreateForm
-          @success="handleOrderCreated"
-          @cancel="handleCreateCancel"
-      />
-    </Dialog>
 
+    <!-- Модальное окно создания заказа -->
+    <transition name="fade">
+      <div v-if="showCreateDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="max-w-4xl w-full">
+          <OrderCreateForm
+              @success="handleOrderCreated"
+              @cancel="handleCreateCancel"
+          />
+        </div>
+      </div>
+    </transition>
 
     <div v-if="isLoading" class="w-full flex justify-center my-4">
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>

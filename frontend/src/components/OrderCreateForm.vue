@@ -1,15 +1,16 @@
+<-- OrderCreateForm.vue -->
 <script setup lang="ts">
-import { reactive, computed } from 'vue';
+import { reactive, computed } from 'vue'; // Добавили watch
 import { useOrdersStore } from '@/stores/storeOrders';
 import { useToast } from 'primevue/usetoast';
+import BaseModal from '@/components/BaseModal.vue'; // <--- Импортируем BaseModal
 
 // PrimeVue компоненты
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Toast from 'primevue/toast';
 
-// Определяем пропсы и события
-const emit = defineEmits(['success', 'cancel']);
+const emit = defineEmits(['cancel', 'success']);
 
 // Store и утилиты
 const ordersStore = useOrdersStore();
@@ -30,30 +31,23 @@ const errors = reactive({
 // Состояние загрузки
 const loading = computed(() => ordersStore.isLoading);
 
+
 // Валидация формы
 const validateForm = (): boolean => {
   let isValid = true;
-
-  // Проверка названия заказа
   if (!formData.name.trim()) {
     errors.name = 'Название заказа обязательно';
     isValid = false;
   } else {
     errors.name = '';
   }
-
   return isValid;
 };
 
 // Отправка формы
 const submitForm = async () => {
   if (!validateForm()) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка валидации',
-      detail: 'Пожалуйста, проверьте форму и исправьте ошибки',
-      life: 3000
-    });
+    toast.add({ severity: 'error', summary: 'Ошибка валидации', detail: 'Пожалуйста, проверьте форму', life: 3000 });
     return;
   }
 
@@ -64,64 +58,63 @@ const submitForm = async () => {
       status_id: formData.status_id,
     });
 
-    toast.add({
-      severity: 'success',
-      summary: 'Заказ создан',
-      detail: `Заказ "${createdOrder.name}" успешно создан`,
-      life: 3000
-    });
+    toast.add({ severity: 'success', summary: 'Заказ создан', detail: `Заказ "${createdOrder.name}" успешно создан`, life: 3000 });
 
     // Сбрасываем форму
     formData.name = '';
+    errors.name = ''; // Сбрасываем ошибки
 
-    // Оповещаем родительский компонент об успешном создании
-    emit('success', createdOrder);
+    emit('success', createdOrder); // Оповещаем родителя об успехе
+
   } catch (error) {
-    // Ошибка уже обработана в store, здесь можно добавить дополнительную логику
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: ordersStore.error || 'Не удалось создать заказ',
-      life: 5000
-    });
+    toast.add({ severity: 'error', summary: 'Ошибка', detail: ordersStore.error || 'Не удалось создать заказ', life: 5000 });
   }
 };
+
+// --- Обработчик нажатия кнопки "Отмена" ---
+const handleCancelClick = () => {
+  errors.name = ''; // Опционально: сбросить ошибку при отмене
+  emit('cancel');   // <--- Сообщаем родителю об отмене
+};
+
 </script>
 
 <template>
-  <div class="p-2">
+
+  <BaseModal
+      name="Создание нового заказа"
+      :on-close="handleCancelClick"
+  >
+
     <Toast />
-
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-bold">Создание нового заказа</h2>
-      <Button
-          icon="pi pi-times"
-          class="p-button-rounded p-button-text"
-          @click="emit('cancel')"
-          aria-label="Закрыть"
-      />
-    </div>
-
     <form @submit.prevent="submitForm" class="space-y-4">
       <div class="form-field">
-        <label for="name" class="block text-sm font-medium mb-1">Название заказа*</label>
+
+        <label for="o-name" class="block text-sm font-medium mb-1">Название заказа*</label>
+
         <InputText
-            id="name"
+            id="o-name"
             v-model="formData.name"
             class="w-full"
             :class="{ 'p-invalid': errors.name }"
             placeholder="Введите название заказа"
+            autocomplete="off"
         />
+
         <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
       </div>
 
+
+
       <div class="form-actions flex justify-end gap-2 mt-6">
+
         <Button
             type="button"
             label="Отмена"
             class="p-button-outlined"
-            @click="emit('cancel')"
+            @click="handleCancelClick"
         />
+
         <Button
             type="submit"
             label="Создать заказ"
@@ -130,13 +123,13 @@ const submitForm = async () => {
         />
       </div>
     </form>
-  </div>
+  </BaseModal>
+
 </template>
-
-
 
 <style scoped>
 .form-field {
-  @apply mb-2;
+  @apply mb-4; /* Сделал отступ чуть больше */
 }
+/* Стили для label или small можно добавить, если наследование/тема не устраивают */
 </style>

@@ -152,7 +152,7 @@ export const useOrdersStore = defineStore('orders', () => {
     const resetOrders = () => {
         orders.value = [];
         totalOrders.value = 0;
-        currentLimit.value = 10; // Возвращаем к дефолту
+        currentLimit.value = 50; // Возвращаем к дефолту
         currentSkip.value = 0;  // Возвращаем к дефолту
         // error.value = null; // Ошибку лучше сбрасывать через clearError
     };
