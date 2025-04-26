@@ -28,6 +28,44 @@ router = APIRouter(
     tags=["order"],
 )
 
+
+async def generate_order_serial(
+        session: AsyncSession,
+        current_date: Optional[datetime] = None
+) -> str:
+    """
+    Генерирует уникальный серийный номер заказа в формате NNN-MM-YYYY
+
+    Параметры:
+    - session: AsyncSession для работы с БД
+    - current_date: опциональная дата для генерации (по умолчанию текущая дата)
+
+    Возвращает:
+    - строку с серийным номером в формате "NNN-MM-YYYY"
+    """
+    if current_date is None:
+        current_date = datetime.now()
+
+    current_month = current_date.month
+    current_year = current_date.year
+
+    # Находим максимальный порядковый номер для текущего года
+    max_serial_query = select(
+        func.max(func.substring(Order.serial, 1, 3).cast(Integer))
+    ).where(
+        func.substring(Order.serial, 8, 4) == str(current_year)
+    )
+
+    result = await session.execute(max_serial_query)
+    max_serial = result.scalar_one_or_none()
+
+    # Если заказов в этом году еще не было, начинаем с 1
+    order_number = (max_serial or 0) + 1
+
+    # Форматируем номер заказа
+    return f"{order_number:03d}-{current_month:02d}-{current_year}"
+
+
 @router.get("/read-serial", response_model=List[OrderSerial])
 async def get_order_serials(
         status_id: Optional[int] = Query(None, description="Filter by status ID"),
@@ -373,25 +411,7 @@ async def create_order(
         )
 
     # Генерируем серийный номер заказа в формате NNN-MM-YYYY
-    current_date = datetime.now()
-    current_month = current_date.month
-    current_year = current_date.year
-
-    # Находим максимальный порядковый номер для текущего года
-    max_serial_query = select(
-        func.max(func.substring(Order.serial, 1, 3).cast(Integer))
-    ).where(
-        func.substring(Order.serial, 8, 4) == str(current_year)
-    )
-
-    result = await session.execute(max_serial_query)
-    max_serial = result.scalar_one_or_none()
-
-    # Если заказов в этом году еще не было, начинаем с 1
-    order_number = (max_serial or 0) + 1
-
-    # Форматируем номер заказа
-    serial = f"{order_number:03d}-{current_month:02d}-{current_year}"
+    serial = await generate_order_serial(session)
 
     # Создаем новый объект Order
     new_order = Order(
@@ -442,7 +462,7 @@ async def create_order(
     # attribute_names гарантирует, что эти связи будут загружены одним запросом (или несколькими эффективными)
     await session.refresh(new_order, attribute_names=["customer", "works"])
 
-    # Если customer был загружен (т.е. он существует), то явно загружаем его связь 'form'
+    # Если customer был загружен, то явно загружаем его связь 'form'
     if new_order.customer:
         await session.refresh(new_order.customer, attribute_names=["form"])
 
