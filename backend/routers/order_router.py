@@ -470,7 +470,7 @@ async def create_order(
             )
 
         # Связываем работы с заказом
-        new_order.works = works
+        new_order.works = list(works)
 
     # Сохраняем новый заказ
     session.add(new_order)
