@@ -66,6 +66,26 @@ async def generate_order_serial(
     return f"{order_number:03d}-{current_month:02d}-{current_year}"
 
 
+@router.get("/new-serial", response_model=OrderSerial)
+async def generate_new_order_serial(
+        session: AsyncSession = Depends(get_async_db)
+):
+    """
+    Генерирует и возвращает новый серийный номер заказа в формате NNN-MM-YYYY
+
+    Возвращает:
+    - объект OrderSerial с полем serial (строка в формате "NNN-MM-YYYY")
+    """
+    try:
+        serial = await generate_order_serial(session)
+        return OrderSerial(serial=serial)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при генерации номера заказа: {str(e)}"
+        )
+
+
 @router.get("/read-serial", response_model=List[OrderSerial])
 async def get_order_serials(
         status_id: Optional[int] = Query(None, description="Filter by status ID"),
