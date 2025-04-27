@@ -1,5 +1,6 @@
 <-- OrderCreateForm.vue -->
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { reactive, computed } from 'vue'; // Добавили watch
 import { useOrdersStore } from '@/stores/storeOrders';
 import { useToast } from 'primevue/usetoast';
@@ -19,6 +20,7 @@ const toast = useToast();
 // Состояние формы
 const formData = reactive({
   name: '',
+  serial: '', // серийный номер нового заказа
   customer_id: 1, // Временное значение, в будущем добавим выбор контрагента
   status_id: 1,   // Временное значение, в будущем добавим выбор статуса
 });
@@ -77,44 +79,62 @@ const handleCancelClick = () => {
   emit('cancel');   // <--- Сообщаем родителю об отмене
 };
 
+// Запрос серийного номера при монтировании компонента
+onMounted(async () => {
+  try {
+    formData.serial = await ordersStore.fetchNewOrderSerial();
+  } catch (error) {
+    console.error('Failed to fetch order serial', error);
+  }
+});
 </script>
 
 <template>
-
   <BaseModal
       name="Создание нового заказа"
       :on-close="handleCancelClick"
   >
-
     <Toast />
     <form @submit.prevent="submitForm" class="space-y-4">
-      <div class="form-field">
 
-        <label for="o-name" class="block text-sm font-medium mb-1">Название заказа*</label>
+      <!-- Grid-контейнер для формы -->
+      <div class="grid grid-cols-[150px_1fr] gap-4 items-start">
 
-        <InputText
-            id="o-name"
-            v-model="formData.name"
-            class="w-full"
-            :class="{ 'p-invalid': errors.name }"
-            placeholder="Введите название заказа"
-            autocomplete="off"
-        />
+        <!-- Серийный номер -->
+        <label for="o-serial" class="text-sm font-medium pt-2">Серийный номер:</label>
+        <div>
+          <InputText
+              id="o-serial"
+              v-model="formData.serial"
+              class="w-full"
+              readonly
+              placeholder="Автоматически сгенерированный номер"
+          />
+        </div>
 
-        <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
+        <!-- Название заказа -->
+        <label for="o-name" class="text-sm font-medium pt-2">Название заказа:*</label>
+        <div>
+          <InputText
+              id="o-name"
+              v-model="formData.name"
+              class="w-full"
+              :class="{ 'p-invalid': errors.name }"
+              placeholder="Введите название заказа"
+              autocomplete="off"
+          />
+          <small v-if="errors.name" class="p-error block mt-1">{{ errors.name }}</small>
+        </div>
       </div>
 
-
-
-      <div class="form-actions flex justify-end gap-2 mt-6">
-
+      <!-- Кнопки действий остаются с прежним расположением -->
+      <div class="flex justify-end gap-2 mt-6">
         <Button
             type="button"
             label="Отмена"
             class="p-button-outlined"
             @click="handleCancelClick"
         />
-
         <Button
             type="submit"
             label="Создать заказ"
@@ -128,8 +148,4 @@ const handleCancelClick = () => {
 </template>
 
 <style scoped>
-.form-field {
-  @apply mb-4; /* Сделал отступ чуть больше */
-}
-/* Стили для label или small можно добавить, если наследование/тема не устраивают */
 </style>

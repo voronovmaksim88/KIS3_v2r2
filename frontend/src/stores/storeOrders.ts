@@ -1,7 +1,7 @@
 // src/stores/storeOrders.ts
-import { defineStore } from 'pinia';
+import {defineStore} from 'pinia';
 import axios from 'axios';
-import { ref, computed } from 'vue';
+import {ref, computed} from 'vue';
 // Импортируем все необходимые типы
 import {
     typeOrderSerial,
@@ -11,7 +11,7 @@ import {
     typeOrderDetail,
     typeOrderCreate
 } from "../types/typeOrder";
-import { getApiUrl } from '../utils/apiUrlHelper';
+import {getApiUrl} from '../utils/apiUrlHelper';
 
 
 export const useOrdersStore = defineStore('orders', () => {
@@ -195,7 +195,7 @@ export const useOrdersStore = defineStore('orders', () => {
             const response = await axios.post<typeOrderRead>(
                 `${getApiUrl()}order/create`,
                 orderData,
-                { withCredentials: true }
+                {withCredentials: true}
             );
 
             // Обновляем список заказов после успешного создания
@@ -212,7 +212,29 @@ export const useOrdersStore = defineStore('orders', () => {
         }
     };
 
+    const newOrderSerial = ref<string>('');
 
+    // Добавить новую функцию после других функций
+    const fetchNewOrderSerial = async () => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const response = await axios.get<typeOrderSerial>(
+                `${getApiUrl()}order/new-serial`,
+                {withCredentials: true}
+            );
+
+            newOrderSerial.value = response.data.serial;
+            return response.data.serial;
+        } catch (err) {
+            console.error('Error fetching new order serial:', err);
+            handleAxiosError(err, 'Failed to fetch new order serial');
+            return '';
+        } finally {
+            loading.value = false;
+        }
+    };
 
     // === Возвращаем все элементы стора ===
     return {
@@ -226,6 +248,7 @@ export const useOrdersStore = defineStore('orders', () => {
         currentSkip,
         currentOrderDetail, // Состояние для детальной информации
         detailLoading,      // Индикатор загрузки для деталей
+        newOrderSerial,        // Состояние для нового серийного номера
 
         // Действия
         fetchOrderSerials,
@@ -237,6 +260,7 @@ export const useOrdersStore = defineStore('orders', () => {
         fetchOrderDetail,  // Действие для получения деталей заказа
         resetOrderDetail,  // Действие для сброса деталей заказа
         createOrder, // Действие для создания заказа
+        fetchNewOrderSerial, // Действие для получения нового номера заказа
 
         // Вычисляемые свойства
         serialsCount,
