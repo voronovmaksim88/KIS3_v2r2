@@ -1,48 +1,64 @@
-<-- OrderCreateForm.vue -->
+<!-- OrderCreateForm.vue -->
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { reactive, computed } from 'vue'; // Добавили watch
+import { reactive, computed } from 'vue';
 import { useOrdersStore } from '@/stores/storeOrders';
+import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импортируем store контрагентов
 import { useToast } from 'primevue/usetoast';
-import BaseModal from '@/components/BaseModal.vue'; // <--- Импортируем BaseModal
+import BaseModal from '@/components/BaseModal.vue';
 
 // PrimeVue компоненты
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Toast from 'primevue/toast';
+import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
+import ProgressSpinner from 'primevue/progressspinner'; // Для отображения загрузки
 
 const emit = defineEmits(['cancel', 'success']);
 
 // Store и утилиты
 const ordersStore = useOrdersStore();
+const counterpartyStore = useCounterpartyStore(); // Добавляем store контрагентов
 const toast = useToast();
 
 // Состояние формы
 const formData = reactive({
   name: '',
   serial: '', // серийный номер нового заказа
-  customer_id: 1, // Временное значение, в будущем добавим выбор контрагента
+  customer_id: null as number | null, // Изменили на null для корректной валидации
   status_id: 1,   // Временное значение, в будущем добавим выбор статуса
 });
 
 // Состояние валидации
 const errors = reactive({
   name: '',
+  customer_id: '',
 });
 
 // Состояние загрузки
 const loading = computed(() => ordersStore.isLoading);
-
+const loadingCounterparties = computed(() => counterpartyStore.isLoading);
 
 // Валидация формы
 const validateForm = (): boolean => {
   let isValid = true;
+
+  // Валидация названия заказа
   if (!formData.name.trim()) {
     errors.name = 'Название заказа обязательно';
     isValid = false;
   } else {
     errors.name = '';
   }
+
+  // Валидация выбора контрагента
+  if (formData.customer_id === null) {
+    errors.customer_id = 'Выбор заказчика обязателен';
+    isValid = false;
+  } else {
+    errors.customer_id = '';
+  }
+
   return isValid;
 };
 
@@ -54,17 +70,31 @@ const submitForm = async () => {
   }
 
   try {
+    // Используем безопасное приведение типа, так как валидация уже подтвердила наличие значения
+    const customerId = formData.customer_id as number;
+
     const createdOrder = await ordersStore.createOrder({
       name: formData.name,
-      customer_id: formData.customer_id,
+      customer_id: customerId,
       status_id: formData.status_id,
     });
 
-    toast.add({ severity: 'success', summary: 'Заказ создан', detail: `Заказ "${createdOrder.name}" успешно создан`, life: 3000 });
+    // Получаем имя контрагента для отображения в сообщении
+    const customer = counterpartyStore.getCounterpartyById(customerId);
+    const customerName = customer ? counterpartyStore.getFullName(customer) : 'выбранный заказчик';
+
+    toast.add({
+      severity: 'success',
+      summary: 'Заказ создан',
+      detail: `Заказ "${createdOrder.name}" для ${customerName} успешно создан`,
+      life: 3000
+    });
 
     // Сбрасываем форму
     formData.name = '';
-    errors.name = ''; // Сбрасываем ошибки
+    formData.customer_id = null;
+    errors.name = '';
+    errors.customer_id = '';
 
     emit('success', createdOrder); // Оповещаем родителя об успехе
 
@@ -75,17 +105,41 @@ const submitForm = async () => {
 
 // --- Обработчик нажатия кнопки "Отмена" ---
 const handleCancelClick = () => {
-  errors.name = ''; // Опционально: сбросить ошибку при отмене
-  emit('cancel');   // <--- Сообщаем родителю об отмене
+  errors.name = '';
+  errors.customer_id = '';
+  emit('cancel');
 };
 
-// Запрос серийного номера при монтировании компонента
+// Запрос данных при монтировании компонента
 onMounted(async () => {
   try {
+    // Сначала получаем серийный номер
     formData.serial = await ordersStore.fetchNewOrderSerial();
+
+    // Затем получаем список контрагентов
+    await counterpartyStore.fetchCounterparties();
+
+    // Если есть контрагенты, предварительно выбираем первого в списке
+    if (counterpartyStore.counterparties.length > 0) {
+      formData.customer_id = counterpartyStore.counterparties[0].id;
+    }
   } catch (error) {
-    console.error('Failed to fetch order serial', error);
+    console.error('Failed to load initial data', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка загрузки',
+      detail: 'Не удалось загрузить необходимые данные',
+      life: 5000
+    });
   }
+});
+
+// Опции для выпадающего списка контрагентов
+const customerOptions = computed(() => {
+  return counterpartyStore.sortedCounterparties.map(cp => ({
+    label: counterpartyStore.getFullName(cp),
+    value: cp.id
+  }));
 });
 </script>
 
@@ -125,6 +179,35 @@ onMounted(async () => {
           />
           <small v-if="errors.name" class="p-error block mt-1">{{ errors.name }}</small>
         </div>
+
+        <!-- Заказчик (контрагент) -->
+        <label for="o-customer" class="text-sm font-medium pt-2">Заказчик:*</label>
+        <div>
+          <div v-if="loadingCounterparties" class="flex items-center">
+            <ProgressSpinner style="width: 1.5rem; height: 1.5rem" />
+            <span class="ml-2 text-sm text-gray-500">Загрузка заказчиков...</span>
+          </div>
+          <Select
+              v-else
+              id="o-customer"
+              v-model="formData.customer_id"
+              :options="customerOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Выберите заказчика"
+              class="w-full"
+              :class="{ 'p-invalid': errors.customer_id }"
+          />
+          <small v-if="errors.customer_id" class="p-error block mt-1">{{ errors.customer_id }}</small>
+
+          <!-- Информация, если нет контрагентов -->
+          <small
+              v-if="!loadingCounterparties && customerOptions.length === 0"
+              class="text-yellow-600 block mt-1"
+          >
+            Нет доступных заказчиков. Пожалуйста, сначала добавьте контрагентов.
+          </small>
+        </div>
       </div>
 
       <!-- Кнопки действий остаются с прежним расположением -->
@@ -140,6 +223,7 @@ onMounted(async () => {
             label="Создать заказ"
             icon="pi pi-check"
             :loading="loading"
+            :disabled="loadingCounterparties || customerOptions.length === 0"
         />
       </div>
     </form>
@@ -148,4 +232,5 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* Можно добавить дополнительные стили при необходимости */
 </style>
