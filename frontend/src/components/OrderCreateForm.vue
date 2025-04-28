@@ -95,7 +95,7 @@ const submitForm = async () => {
       severity: 'success',
       summary: 'Заказ создан',
       detail: `Заказ "${createdOrder.name}" для ${customerName} успешно создан`,
-      life: 3000
+      life: 4000
     });
 
     // Сбрасываем форму

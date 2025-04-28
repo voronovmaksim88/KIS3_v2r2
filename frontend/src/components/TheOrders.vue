@@ -8,6 +8,11 @@ import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
+import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+
+// всплывающие сообщение
+const toast = useToast()
 
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
@@ -52,17 +57,18 @@ function addNewOrder() {
   disableScroll(); // Блокируем прокрутку при открытии модального окна
 }
 
+
 // Модифицируем обработчики закрытия модального окна
 const handleOrderCreated = () => {
   showCreateDialog.value = false;
   enableScroll(); // Восстанавливаем прокрутку при закрытии модального окна
-  // обновляем список заказов после успешного создания
   fetchOrders({
     skip: currentSkip.value,
     limit: currentLimit.value,
     showEnded: showEndedOrders.value
   });
 }
+
 
 const handleCreateCancel = () => {
   showCreateDialog.value = false;
@@ -338,7 +344,7 @@ const errorHideButtonClass = computed(() => {
 
 <template>
   <div :class="mainContainerClass">
-
+    <Toast />
 
 
     <!-- Модальное окно создания заказа -->
