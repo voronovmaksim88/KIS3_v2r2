@@ -14,6 +14,7 @@ import InputText from 'primevue/inputtext';
 import Toast from 'primevue/toast';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
 import ProgressSpinner from 'primevue/progressspinner'; // Для отображения загрузки
+import DatePicker from 'primevue/datepicker';
 
 const emit = defineEmits(['cancel', 'success']);
 
@@ -28,6 +29,7 @@ const formData = reactive({
   serial: '', // серийный номер нового заказа
   customer_id: null as number | null, // Изменили на null для корректной валидации
   status_id: 1,   // Временное значение, в будущем добавим выбор статуса
+  deadline_moment: null as Date | null,
 });
 
 // Состояние валидации
@@ -74,10 +76,15 @@ const submitForm = async () => {
     // Используем безопасное приведение типа, так как валидация уже подтвердила наличие значения
     const customerId = formData.customer_id as number;
 
+// Преобразование Date в строку ISO
+    const deadlineMomentStr = formData.deadline_moment ?
+        formData.deadline_moment.toISOString() : null;
+
     const createdOrder = await ordersStore.createOrder({
       name: formData.name,
       customer_id: customerId,
       status_id: formData.status_id,
+      deadline_moment: deadlineMomentStr // Передаем дедлайн
     });
 
     // Получаем имя контрагента для отображения в сообщении
@@ -238,6 +245,20 @@ const getCustomerNameById = (id: number): string => {
             Нет доступных заказчиков. Пожалуйста, сначала добавьте контрагентов.
           </small>
         </div>
+
+        <!-- Дедлайн заказа -->
+        <label for="o-deadline" class="text-sm font-medium pt-2">Дедлайн:</label>
+        <div>
+          <DatePicker
+              id="o-deadline"
+              v-model="formData.deadline_moment"
+              class="w-full"
+              dateFormat="dd.mm.yy"
+              placeholder="Выберите дату дедлайна"
+              :showIcon="true"
+          />
+        </div>
+
       </div>
 
       <!-- Кнопки действий остаются с прежним расположением -->
