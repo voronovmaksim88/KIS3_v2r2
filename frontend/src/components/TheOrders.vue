@@ -31,19 +31,32 @@ const {
 } = storeToRefs(ordersStore);
 
 // Действия можно извлекать напрямую
-const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail} = ordersStore;
+const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail, resetOrders} = ordersStore;
 
 // Состояние для модального окна создания заказа
 const showCreateDialog = ref(false);
 
-function addNewOrder() {
-  showCreateDialog.value = true;
+
+// Методы для управления прокруткой страницы
+function disableScroll() {
+  document.body.style.overflow = 'hidden';
 }
 
-// Обработчик успешного создания заказа
+function enableScroll() {
+  document.body.style.overflow = '';
+}
+
+// Модифицируем функцию addNewOrder
+function addNewOrder() {
+  showCreateDialog.value = true;
+  disableScroll(); // Блокируем прокрутку при открытии модального окна
+}
+
+// Модифицируем обработчики закрытия модального окна
 const handleOrderCreated = () => {
   showCreateDialog.value = false;
-  // Обновляем список заказов после успешного создания
+  enableScroll(); // Восстанавливаем прокрутку при закрытии модального окна
+  // обновляем список заказов после успешного создания
   fetchOrders({
     skip: currentSkip.value,
     limit: currentLimit.value,
@@ -51,10 +64,11 @@ const handleOrderCreated = () => {
   });
 }
 
-// Обработчик отмены создания заказа
 const handleCreateCancel = () => {
   showCreateDialog.value = false;
+  enableScroll(); // Восстанавливаем прокрутку при закрытии модального окна
 }
+
 
 function findOrders() {
   // Функциональность поиска может быть добавлена позже
@@ -154,6 +168,9 @@ const toggleEndedOrders = () => {
 
 // Вызываем действие fetchOrders при монтировании компонента
 onMounted(() => {
+  // Сбрасываем список заказов
+  resetOrders()
+
   // Загружаем первую страницу с учетом параметра showEndedOrders
   fetchOrders({skip: 0, limit: 50, showEnded: showEndedOrders.value});
 });
@@ -336,7 +353,7 @@ const errorHideButtonClass = computed(() => {
       </div>
     </transition>
 
-    <div v-if="isLoading" class="w-full flex justify-center my-4">
+    <div v-if="isLoading && orders.length === 0" class="w-full flex justify-center my-4">
       <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
@@ -360,7 +377,7 @@ const errorHideButtonClass = computed(() => {
     </div>
 
 
-    <div v-if="!isLoading && !error" class="w-full">
+    <div v-if="(!isLoading && !error) || (isLoading && orders.length > 0)" class="w-full">
       <table :class="tableBaseClass">
         <colgroup>
           <col style="width: 7%">
@@ -649,4 +666,6 @@ input:checked ~ .dot {
   /* Тень для светлой темы */
   box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
+
+
 </style>

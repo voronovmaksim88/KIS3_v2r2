@@ -107,7 +107,7 @@ export const useOrdersStore = defineStore('orders', () => {
             // Обновляем состояние данными из ответа
             orders.value = response.data.data;
             totalOrders.value = response.data.total;
-            currentLimit.value = response.data.limit;
+            // currentLimit.value = response.data.limit; // Не обновляйте currentLimit из ответа
             currentSkip.value = response.data.skip;
 
         } catch (err) {
