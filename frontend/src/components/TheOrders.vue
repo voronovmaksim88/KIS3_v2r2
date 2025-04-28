@@ -9,10 +9,6 @@ import {formatFIO} from "@/utils/formatFIO.ts";
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
 import Toast from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
-
-// всплывающие сообщение
-const toast = useToast()
 
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
