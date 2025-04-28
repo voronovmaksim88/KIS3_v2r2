@@ -2,8 +2,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
-import { Counterparty, CounterpartyForm } from '../types/typeCounterparty';
-import {getApiUrl} from '../utils/apiUrlHelper';
+import { Counterparty } from '../types/typeCounterparty';
+import { getApiUrl } from '../utils/apiUrlHelper';
 
 export const useCounterpartyStore = defineStore('counterparty', () => {
     // Состояние
@@ -13,37 +13,22 @@ export const useCounterpartyStore = defineStore('counterparty', () => {
 
     // Геттеры (computed properties)
     const sortedCounterparties = computed(() => {
-        return [...counterparties.value].sort((a, b) =>
-            a.name.localeCompare(b.name)
-        );
-    });
+        // Добавляем проверку на пустой массив
+        if (!counterparties.value || counterparties.value.length === 0) {
+            return [];
+        }
 
-    // Получить список форм контрагентов (уникальные значения)
-    const counterpartyForms = computed(() => {
-        const formMap = new Map<number, CounterpartyForm>();
-
-        counterparties.value.forEach(counterparty => {
-            if (!formMap.has(counterparty.form.id)) {
-                formMap.set(counterparty.form.id, counterparty.form);
-            }
+        return [...counterparties.value].sort((a, b) => {
+            // Добавляем защиту от undefined
+            const nameA = a.name || '';
+            const nameB = b.name || '';
+            return nameA.localeCompare(nameB);
         });
-
-        return Array.from(formMap.values());
     });
 
     // Методы
-    function clearStore() {
-        counterparties.value = [];
-        error.value = '';
-        isLoading.value = false;
-    }
-
     function clearError() {
         error.value = '';
-    }
-
-    function setError(message: string) {
-        error.value = message;
     }
 
     async function fetchCounterparties() {
@@ -61,10 +46,10 @@ export const useCounterpartyStore = defineStore('counterparty', () => {
         } catch (e) {
             if (axios.isAxiosError(e)) {
                 console.error('Error fetching counterparties:', e.response?.data || e.message);
-                setError(e.response?.data?.detail || 'Error fetching counterparties');
+                error.value = e.response?.data?.detail || 'Error fetching counterparties';
             } else {
                 console.error('Unexpected error:', e);
-                setError('Unknown error occurred');
+                error.value = 'Unknown error occurred';
             }
             return null;
         } finally {
@@ -72,132 +57,16 @@ export const useCounterpartyStore = defineStore('counterparty', () => {
         }
     }
 
-    // Функция для фильтрации контрагентов по форме
-    function filterByForm(formId: number): Counterparty[] {
-        return counterparties.value.filter(counterparty => counterparty.form.id === formId);
-    }
-
-    // Функция для поиска контрагентов по названию
-    function searchCounterparties(query: string): Counterparty[] {
-        if (!query.trim()) return counterparties.value;
-
-        const lowercaseQuery = query.toLowerCase().trim();
-        return counterparties.value.filter(counterparty =>
-            counterparty.name.toLowerCase().includes(lowercaseQuery)
-        );
-    }
-
     // Получение контрагента по ID
     function getCounterpartyById(id: number): Counterparty | undefined {
         return counterparties.value.find(counterparty => counterparty.id === id);
     }
 
-    // Добавление нового контрагента
-    async function addCounterparty(name: string, formId: number) {
-        clearError();
-
-        // Валидация входных данных
-        if (!name.trim()) {
-            setError('Counterparty name is required');
-            return null;
-        }
-
-        try {
-            const response = await axios.post(
-                '/api/counterparty/create',
-                {
-                    name: name.trim(),
-                    form_id: formId
-                },
-                { withCredentials: true }
-            );
-
-            // Обновляем список контрагентов после успешного добавления
-            await fetchCounterparties();
-
-            return response.data;
-        } catch (e) {
-            if (axios.isAxiosError(e)) {
-                console.error('Error creating counterparty:', e.response?.data || e.message);
-                setError(e.response?.data?.detail || 'Error creating counterparty');
-            } else {
-                console.error('Unexpected error:', e);
-                setError('Unknown error occurred');
-            }
-            return null;
-        }
-    }
-
-    // Обновление существующего контрагента
-    async function updateCounterparty(id: number, name: string, formId: number) {
-        clearError();
-
-        // Валидация входных данных
-        if (!name.trim()) {
-            setError('Counterparty name is required');
-            return null;
-        }
-
-        try {
-            const response = await axios.put(
-                `${getApiUrl()}counterparty/update/${id}`,
-                {
-                    name: name.trim(),
-                    form_id: formId
-                },
-                { withCredentials: true }
-            );
-
-            // Обновляем конкретного контрагента в списке
-            const index = counterparties.value.findIndex(cp => cp.id === id);
-            if (index !== -1) {
-                counterparties.value[index] = response.data;
-            }
-
-            return response.data;
-        } catch (e) {
-            if (axios.isAxiosError(e)) {
-                console.error('Error updating counterparty:', e.response?.data || e.message);
-                setError(e.response?.data?.detail || 'Error updating counterparty');
-            } else {
-                console.error('Unexpected error:', e);
-                setError('Unknown error occurred');
-            }
-            return null;
-        }
-    }
-
-    // Удаление контрагента
-    async function deleteCounterparty(id: number) {
-        clearError();
-
-        try {
-            await axios.delete(
-                `${getApiUrl()}counterparty/delete/${id}`,
-                { withCredentials: true }
-            );
-
-            // Удаляем контрагента из списка
-            counterparties.value = counterparties.value.filter(cp => cp.id !== id);
-
-            return true;
-        } catch (e) {
-            if (axios.isAxiosError(e)) {
-                console.error('Error deleting counterparty:', e.response?.data || e.message);
-                setError(e.response?.data?.detail || 'Error deleting counterparty');
-            } else {
-                console.error('Unexpected error:', e);
-                setError('Unknown error occurred');
-            }
-            return false;
-        }
-    }
-
-    // Подсчет количества контрагентов
-    const counterpartiesCount = computed(() => counterparties.value.length);
-
     // Функция для получения названия контрагента с формой
     function getFullName(counterparty: Counterparty): string {
+        if (!counterparty || !counterparty.form) {
+            return 'Неизвестный контрагент';
+        }
         return `${counterparty.form.name} "${counterparty.name}"`;
     }
 
@@ -209,19 +78,10 @@ export const useCounterpartyStore = defineStore('counterparty', () => {
 
         // Геттеры
         sortedCounterparties,
-        counterpartyForms,
-        counterpartiesCount,
 
         // Методы
-        clearStore,
-        clearError,
         fetchCounterparties,
-        filterByForm,
-        searchCounterparties,
         getCounterpartyById,
-        addCounterparty,
-        updateCounterparty,
-        deleteCounterparty,
         getFullName
     };
 });
