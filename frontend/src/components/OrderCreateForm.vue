@@ -137,10 +137,17 @@ onMounted(async () => {
 // Опции для выпадающего списка контрагентов
 const customerOptions = computed(() => {
   return counterpartyStore.sortedCounterparties.map(cp => ({
-    label: counterpartyStore.getFullName(cp),
-    value: cp.id
+    name: counterpartyStore.getFullName(cp),
+    value: cp.id,
+    code: cp.id.toString() // Добавляем code для совместимости с шаблоном
   }));
 });
+
+// Вспомогательная функция для получения имени по ID
+const getCustomerNameById = (id: number): string => {
+  const customer = counterpartyStore.getCounterpartyById(id);
+  return customer ? counterpartyStore.getFullName(customer) : 'Заказчик не найден';
+};
 </script>
 
 <template>
@@ -180,7 +187,7 @@ const customerOptions = computed(() => {
           <small v-if="errors.name" class="p-error block mt-1">{{ errors.name }}</small>
         </div>
 
-        <!-- Заказчик (контрагент) -->
+        <!-- Заказчик (контрагент) с поиском -->
         <label for="o-customer" class="text-sm font-medium pt-2">Заказчик:*</label>
         <div>
           <div v-if="loadingCounterparties" class="flex items-center">
@@ -192,12 +199,35 @@ const customerOptions = computed(() => {
               id="o-customer"
               v-model="formData.customer_id"
               :options="customerOptions"
-              optionLabel="label"
               optionValue="value"
+              filter
+              optionLabel="name"
               placeholder="Выберите заказчика"
               class="w-full"
               :class="{ 'p-invalid': errors.customer_id }"
-          />
+          >
+            <!-- Шаблон для отображения выбранного значения -->
+            <template #value="slotProps">
+              <div v-if="slotProps.value" class="flex items-center">
+                <div> {{
+                    typeof slotProps.value === 'object' && slotProps.value.name
+                        ? slotProps.value.name
+                        : getCustomerNameById(slotProps.value)
+                  }}
+                </div>
+              </div>
+              <span v-else>
+                {{ slotProps.placeholder }}
+              </span>
+            </template>
+
+            <!-- Шаблон для отображения опций -->
+            <template #option="slotProps">
+              <div class="flex items-center">
+                <div>{{ slotProps.option.name }}</div>
+              </div>
+            </template>
+          </Select>
           <small v-if="errors.customer_id" class="p-error block mt-1">{{ errors.customer_id }}</small>
 
           <!-- Информация, если нет контрагентов -->
@@ -232,5 +262,4 @@ const customerOptions = computed(() => {
 </template>
 
 <style scoped>
-/* Можно добавить дополнительные стили при необходимости */
 </style>
