@@ -1,4 +1,5 @@
 <!-- OrderCreateForm.vue -->
+<!--suppress VueUnrecognizedSlot -->
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { reactive, computed } from 'vue';
@@ -119,10 +120,6 @@ onMounted(async () => {
     // Затем получаем список контрагентов
     await counterpartyStore.fetchCounterparties();
 
-    // Если есть контрагенты, предварительно выбираем первого в списке
-    if (counterpartyStore.counterparties.length > 0) {
-      formData.customer_id = counterpartyStore.counterparties[0].id;
-    }
   } catch (error) {
     console.error('Failed to load initial data', error);
     toast.add({
@@ -194,6 +191,7 @@ const getCustomerNameById = (id: number): string => {
             <ProgressSpinner style="width: 1.5rem; height: 1.5rem" />
             <span class="ml-2 text-sm text-gray-500">Загрузка заказчиков...</span>
           </div>
+
           <Select
               v-else
               id="o-customer"
@@ -205,6 +203,7 @@ const getCustomerNameById = (id: number): string => {
               placeholder="Выберите заказчика"
               class="w-full"
               :class="{ 'p-invalid': errors.customer_id }"
+              :autoFilterFocus="true"
           >
             <!-- Шаблон для отображения выбранного значения -->
             <template #value="slotProps">
@@ -228,6 +227,7 @@ const getCustomerNameById = (id: number): string => {
               </div>
             </template>
           </Select>
+
           <small v-if="errors.customer_id" class="p-error block mt-1">{{ errors.customer_id }}</small>
 
           <!-- Информация, если нет контрагентов -->
