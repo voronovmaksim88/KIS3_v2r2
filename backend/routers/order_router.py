@@ -433,6 +433,10 @@ async def create_order(
     # Генерируем серийный номер заказа в формате NNN-MM-YYYY
     serial = await generate_order_serial(session)
 
+    if order_data.deadline_moment and order_data.deadline_moment.tzinfo:
+        # Удаляем информацию о часовом поясе
+        order_data.deadline_moment = order_data.deadline_moment.replace(tzinfo=None)
+
     # Создаем новый объект Order
     new_order = Order(
         serial=serial,
