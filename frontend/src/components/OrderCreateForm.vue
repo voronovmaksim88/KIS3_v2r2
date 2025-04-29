@@ -76,6 +76,13 @@ const priorityOptions = [
 ];
 
 
+const today = computed(() => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // обнуляем часы, чтобы день был текущий, а не по времени
+  return now;
+});
+
+
 // Отправка формы
 const submitForm = async () => {
   if (!validateForm()) {
@@ -271,6 +278,7 @@ const getCustomerNameById = (id: number): string => {
               dateFormat="dd.mm.yy"
               placeholder="Выберите дату дедлайна"
               :showIcon="true"
+              :minDate="today"
           />
         </div>
 
