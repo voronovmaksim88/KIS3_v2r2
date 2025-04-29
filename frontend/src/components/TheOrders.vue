@@ -168,13 +168,39 @@ const toggleEndedOrders = () => {
   });
 };
 
+
+// Функция загрузки с автоповтором при ошибке 500
+async function fetchOrdersWithRetry(params: { skip: number, limit: number, showEnded: boolean }) {
+  try {
+    await fetchOrders(params);
+    // Если успешно, просто возвращаем
+  } catch (err: any) {
+    // Если ошибка есть и это 500, пробуем ещё раз
+    if (err?.response?.status === 500 || (typeof error.value === 'string' && error.value.includes('500'))) {
+      // Сбросить ошибку перед повтором (если нужно)
+      clearError();
+      try {
+        await fetchOrders(params);
+        // Если второй раз успешно — ок
+      } catch {
+        // Если второй раз ошибка — позволяем ошибке отобразиться
+      }
+    }
+    // Если другая ошибка — ничего не делаем (она отобразится стандартно)
+  }
+}
+
+
 // Вызываем действие fetchOrders при монтировании компонента
 onMounted(() => {
   // Сбрасываем список заказов
   resetOrders()
 
   // Загружаем первую страницу с учетом параметра showEndedOrders
-  fetchOrders({skip: 0, limit: 50, showEnded: showEndedOrders.value});
+  //fetchOrders({skip: 0, limit: 50, showEnded: showEndedOrders.value});
+
+  // Загружаем с повтором
+  fetchOrdersWithRetry({skip: 0, limit: 50, showEnded: showEndedOrders.value});
 });
 
 // Функции для пагинации (вызывают fetchOrders с новыми параметрами)
