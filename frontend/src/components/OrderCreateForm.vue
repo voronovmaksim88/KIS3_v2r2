@@ -413,6 +413,8 @@ const getCustomerNameById = (id: number): string => {
               placeholder="Выберите работы по заказу"
               class="w-full"
               filter
+              :maxSelectedLabels="2"
+              selectedItemsLabel="{0} работ выбрано"
           >
             <template #option="slotProps">
               <div class="flex align-items-center">
@@ -436,6 +438,7 @@ const getCustomerNameById = (id: number): string => {
                 Работы не определены в системе
               </div>
             </template>
+
           </MultiSelect>
         </div>
 
@@ -464,4 +467,5 @@ const getCustomerNameById = (id: number): string => {
 
 
 <style scoped>
+
 </style>
