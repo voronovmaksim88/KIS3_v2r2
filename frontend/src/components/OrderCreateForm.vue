@@ -1,11 +1,11 @@
 <!-- OrderCreateForm.vue -->
 <!--suppress VueUnrecognizedSlot -->
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { reactive, computed } from 'vue';
-import { useOrdersStore } from '@/stores/storeOrders';
-import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импортируем store контрагентов
-import { useToast } from 'primevue/usetoast';
+import {onMounted} from 'vue';
+import {reactive, computed} from 'vue';
+import {useOrdersStore} from '@/stores/storeOrders';
+import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импортируем store контрагентов
+import {useToast} from 'primevue/usetoast';
 import BaseModal from '@/components/BaseModal.vue';
 
 // PrimeVue компоненты
@@ -28,7 +28,7 @@ const formData = reactive({
   name: '',
   serial: '', // серийный номер нового заказа
   customer_id: null as number | null, // Изменили на null для корректной валидации
-  status_id: 1,   // Временное значение, в будущем добавим выбор статуса
+  status_id: 1,
   deadline_moment: null as Date | null,
   priority: null as number | null,
 });
@@ -38,6 +38,27 @@ const errors = reactive({
   name: '',
   customer_id: '',
 });
+
+const statusOptions = [
+  {value: 1, label: 'Не определён'},
+  {value: 2, label: 'На согласовании'},
+  {value: 3, label: 'В работе'},
+  {value: 4, label: 'Просрочено'},
+  {value: 5, label: 'Выполнено в срок'},
+  {value: 6, label: 'Выполнено НЕ в срок'},
+  {value: 7, label: 'Не согласовано'},
+  {value: 8, label: 'На паузе'},
+];
+
+// Функция для выбора цвета текста (как в таблице)
+function getStatusColor(statusId: number) {
+  if (statusId === 1) return '#FACC15'; // text-yellow-400
+  if (statusId === 2) return '#60A5FA'; // text-blue-400
+  if (statusId === 3) return '#34D399'; // text-green-400
+  if (statusId === 4) return '#F87171'; // text-red-400
+  if (statusId === 8) return '#FFFFFF'; // допустим, сиреневый text-purple-500
+  return '#64748B'; // text-gray-500
+}
 
 // Состояние загрузки
 const loading = computed(() => ordersStore.isLoading);
@@ -68,8 +89,8 @@ const validateForm = (): boolean => {
 
 
 const priorityOptions = [
-  { label: 'Нет', value: null },
-  ...Array.from({ length: 10 }, (_, i) => ({
+  {label: 'Нет', value: null},
+  ...Array.from({length: 10}, (_, i) => ({
     label: (i + 1).toString(),
     value: i + 1,
   }))
@@ -86,7 +107,7 @@ const today = computed(() => {
 // Отправка формы
 const submitForm = async () => {
   if (!validateForm()) {
-    toast.add({ severity: 'error', summary: 'Ошибка валидации', detail: 'Пожалуйста, проверьте форму', life: 3000 });
+    toast.add({severity: 'error', summary: 'Ошибка валидации', detail: 'Пожалуйста, проверьте форму', life: 3000});
     return;
   }
 
@@ -127,7 +148,12 @@ const submitForm = async () => {
     emit('success', createdOrder); // Оповещаем родителя об успехе
 
   } catch (error) {
-    toast.add({ severity: 'error', summary: 'Ошибка', detail: ordersStore.error || 'Не удалось создать заказ', life: 5000 });
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: ordersStore.error || 'Не удалось создать заказ',
+      life: 5000
+    });
   }
 };
 
@@ -181,7 +207,7 @@ const getCustomerNameById = (id: number): string => {
       name="Создание нового заказа"
       :on-close="handleCancelClick"
   >
-    <Toast />
+    <Toast/>
     <form @submit.prevent="submitForm" class="space-y-4">
 
       <!-- Grid-контейнер для формы -->
@@ -200,7 +226,7 @@ const getCustomerNameById = (id: number): string => {
         </div>
 
         <!-- Название заказа -->
-        <label for="o-name" class="text-sm font-medium pt-2">Название заказа:*</label>
+        <label for="o-name" class="text-sm font-medium pt-2">Название заказа: <span class="text-red-500">*</span></label>
         <div>
           <InputText
               id="o-name"
@@ -214,10 +240,10 @@ const getCustomerNameById = (id: number): string => {
         </div>
 
         <!-- Заказчик (контрагент) с поиском -->
-        <label for="o-customer" class="text-sm font-medium pt-2">Заказчик:*</label>
+        <label for="o-name" class="text-sm font-medium pt-2">Заказчик: <span class="text-red-500">*</span></label>
         <div>
           <div v-if="loadingCounterparties" class="flex items-center">
-            <ProgressSpinner style="width: 1.5rem; height: 1.5rem" />
+            <ProgressSpinner style="width: 1.5rem; height: 1.5rem"/>
             <span class="ml-2 text-sm text-gray-500">Загрузка заказчиков...</span>
           </div>
 
@@ -237,7 +263,8 @@ const getCustomerNameById = (id: number): string => {
             <!-- Шаблон для отображения выбранного значения -->
             <template #value="slotProps">
               <div v-if="slotProps.value" class="flex items-center">
-                <div> {{
+                <div>
+                  {{
                     typeof slotProps.value === 'object' && slotProps.value.name
                         ? slotProps.value.name
                         : getCustomerNameById(slotProps.value)
@@ -282,25 +309,70 @@ const getCustomerNameById = (id: number): string => {
           />
         </div>
 
-        <!-- Приоритет -->
-        <label for="o-priority" class="text-sm font-medium pt-2">Приоритет:</label>
-        <div>
-          <Select
-              id="o-priority"
-              v-model="formData.priority"
-              :options="priorityOptions"
-              :optionLabel="'label'"
-              :optionValue="'value'"
-              placeholder="Нет"
-              class="w-full"
-              :clearable="true"
-          />
-        </div>
+        <!-- Приоритет и статус на одной строке -->
+        <label class="text-sm font-medium pt-2">Приоритет и статус:</label>
+        <div class="flex flex-row gap-4 items-end">
+          <!-- Приоритет -->
+          <div class="flex-1 min-w-0">
+            <label for="o-priority" class="block text-xs font-medium mb-1">Приоритет</label>
+            <Select
+                id="o-priority"
+                v-model="formData.priority"
+                :options="priorityOptions"
+                :optionLabel="'label'"
+                :optionValue="'value'"
+                placeholder="Нет"
+                class="w-full"
+                :clearable="true"
+            >
+              <template #option="slotProps">
+                <div class="flex items-center">
+                  <div :class="`priority-indicator priority-${slotProps.option.value}`"
+                       class="w-3 h-3 rounded-full mr-2"></div>
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+              <template #value="slotProps">
+                <div v-if="slotProps.value" class="flex items-center">
+                  <div :class="`priority-indicator priority-${slotProps.value}`"
+                       class="w-3 h-3 rounded-full mr-2"></div>
+                  <span>{{ priorityOptions.find(opt => opt.value === slotProps.value)?.label || 'Нет' }}</span>
+                </div>
+                <span v-else>{{ slotProps.placeholder }}</span>
+              </template>
+            </Select>
+          </div>
 
+          <!-- Статус -->
+          <div class="flex-1 min-w-0">
+            <label for="status" class="block text-xs font-medium mb-1">Статус</label>
+            <Select
+                id="o-status"
+                v-model="formData.status_id"
+                :options="statusOptions"
+                :optionLabel="'label'"
+                :optionValue="'value'"
+                placeholder="Выберите статус"
+                class="w-full"
+            >
+              <template #option="slotProps">
+                <div class="flex items-center">
+                  <span :style="{ color: getStatusColor(slotProps.option.value) }">{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+              <template #value="slotProps">
+    <span v-if="slotProps.value" :style="{ color: getStatusColor(slotProps.value) }">
+      {{ statusOptions.find(opt => opt.value === slotProps.value)?.label || 'Не выбрано' }}
+    </span>
+                <span v-else>{{ slotProps.placeholder }}</span>
+              </template>
+            </Select>
+          </div>
+        </div>
 
       </div>
 
-      <!-- Кнопки действий остаются с прежним расположением -->
+      <!-- Кнопки действий -->
       <div class="flex justify-end gap-2 mt-6">
         <Button
             type="button"
@@ -318,8 +390,6 @@ const getCustomerNameById = (id: number): string => {
       </div>
     </form>
   </BaseModal>
-
 </template>
-
 <style scoped>
-</style>
+</style>при
