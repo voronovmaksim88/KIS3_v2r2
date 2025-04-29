@@ -16,6 +16,7 @@ import Toast from 'primevue/toast';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
 import ProgressSpinner from 'primevue/progressspinner'; // Для отображения загрузки
 import DatePicker from 'primevue/datepicker';
+import MultiSelect from 'primevue/multiselect';
 
 
 
@@ -28,6 +29,15 @@ const counterpartyStore = useCounterpartyStore(); // Добавляем store к
 const toast = useToast();
 const worksStore = useWorksStore()
 
+// Опции для мультиселекта работ
+const workOptions = computed(() => {
+  return worksStore.activeWorks.map(work => ({
+    name: work.name,
+    value: work.id,
+    description: work.description || ''
+  }));
+});
+
 // Состояние формы
 const formData = reactive({
   name: '',
@@ -36,6 +46,7 @@ const formData = reactive({
   status_id: 1,
   deadline_moment: null as Date | null,
   priority: null as number | null,
+  works: [] as number[], // массив ID выбранных работ
 });
 
 // Состояние валидации
@@ -129,7 +140,8 @@ const submitForm = async () => {
       customer_id: customerId,
       status_id: formData.status_id,
       deadline_moment: deadlineMomentStr, // Передаем дедлайн
-      priority: formData.priority
+      priority: formData.priority,
+      work_ids: formData.works // выбранные работы
     });
 
     // Получаем имя контрагента для отображения в сообщении
@@ -149,6 +161,7 @@ const submitForm = async () => {
     errors.name = '';
     errors.customer_id = '';
     formData.priority = null;
+    formData.works = [];
 
     emit('success', createdOrder); // Оповещаем родителя об успехе
 
@@ -370,13 +383,60 @@ const getCustomerNameById = (id: number): string => {
                 </div>
               </template>
               <template #value="slotProps">
-    <span v-if="slotProps.value" :style="{ color: getStatusColor(slotProps.value) }">
-      {{ statusOptions.find(opt => opt.value === slotProps.value)?.label || 'Не выбрано' }}
-    </span>
+                <span v-if="slotProps.value" :style="{ color: getStatusColor(slotProps.value) }">
+                  {{ statusOptions.find(opt => opt.value === slotProps.value)?.label || 'Не выбрано' }}
+                </span>
                 <span v-else>{{ slotProps.placeholder }}</span>
               </template>
             </Select>
           </div>
+
+
+          </div>
+
+        <!-- Выбор работ -->
+        <label for="o-works" class="text-sm font-medium pt-2">Работы по заказу:</label>
+        <div>
+          <div v-if="worksStore.isLoading" class="flex items-center">
+            <ProgressSpinner style="width: 1.5rem; height: 1.5rem"/>
+            <span class="ml-2 text-sm text-gray-500">Загрузка списка работ...</span>
+          </div>
+
+          <MultiSelect
+              v-else
+              id="o-works"
+              v-model="formData.works"
+              :options="workOptions"
+              optionValue="value"
+              optionLabel="name"
+              display="chip"
+              placeholder="Выберите работы по заказу"
+              class="w-full"
+              filter
+          >
+            <template #option="slotProps">
+              <div class="flex align-items-center">
+                <div>
+                  <div>{{ slotProps.option.name }}</div>
+                  <small v-if="slotProps.option.description" class="text-gray-500">
+                    {{ slotProps.option.description }}
+                  </small>
+                </div>
+              </div>
+            </template>
+
+            <template #emptyfilter>
+              <div class="px-3 py-2 text-gray-500">
+                Работы не найдены
+              </div>
+            </template>
+
+            <template #empty>
+              <div class="px-3 py-2 text-gray-500">
+                Работы не определены в системе
+              </div>
+            </template>
+          </MultiSelect>
         </div>
 
       </div>
@@ -398,22 +458,10 @@ const getCustomerNameById = (id: number): string => {
         />
       </div>
 
-      <div class="works-container">
-        <p v-if="worksStore.isLoading">Загрузка...</p>
-        <p v-else-if="worksStore.error">Ошибка: {{ worksStore.error }}</p>
-
-        <div v-else>
-          <h2>Доступные работы:</h2>
-          <ul>
-            <li v-for="work in worksStore.activeWorks" :key="work.id">
-              {{ work.name }}
-              <p v-if="work.description">{{ work.description }}</p>
-            </li>
-          </ul>
-        </div>
-      </div>
     </form>
   </BaseModal>
 </template>
+
+
 <style scoped>
-</style>при
+</style>
