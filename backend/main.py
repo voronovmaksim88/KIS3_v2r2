@@ -16,6 +16,7 @@ from routers.get_all_router import router as get_all_router
 from routers.order_router import router as order_router
 from routers.people_router import router as people_router
 from routers.counterparty_router import router as counterparty_router
+from routers.work_router import router as work_router
 
 app = FastAPI(root_path="/api")
 
@@ -28,6 +29,7 @@ app.include_router(get_all_router)
 app.include_router(order_router)
 app.include_router(people_router)
 app.include_router(counterparty_router)
+app.include_router(work_router)
 
 # Настройка CORS
 app.add_middleware(
