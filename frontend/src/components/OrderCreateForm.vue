@@ -30,6 +30,7 @@ const formData = reactive({
   customer_id: null as number | null, // Изменили на null для корректной валидации
   status_id: 1,   // Временное значение, в будущем добавим выбор статуса
   deadline_moment: null as Date | null,
+  priority: null as number | null,
 });
 
 // Состояние валидации
@@ -65,6 +66,16 @@ const validateForm = (): boolean => {
   return isValid;
 };
 
+
+const priorityOptions = [
+  { label: 'Нет', value: null },
+  ...Array.from({ length: 10 }, (_, i) => ({
+    label: (i + 1).toString(),
+    value: i + 1,
+  }))
+];
+
+
 // Отправка формы
 const submitForm = async () => {
   if (!validateForm()) {
@@ -84,7 +95,8 @@ const submitForm = async () => {
       name: formData.name,
       customer_id: customerId,
       status_id: formData.status_id,
-      deadline_moment: deadlineMomentStr // Передаем дедлайн
+      deadline_moment: deadlineMomentStr, // Передаем дедлайн
+      priority: formData.priority
     });
 
     // Получаем имя контрагента для отображения в сообщении
@@ -103,6 +115,7 @@ const submitForm = async () => {
     formData.customer_id = null;
     errors.name = '';
     errors.customer_id = '';
+    formData.priority = null;
 
     emit('success', createdOrder); // Оповещаем родителя об успехе
 
@@ -152,6 +165,8 @@ const getCustomerNameById = (id: number): string => {
   const customer = counterpartyStore.getCounterpartyById(id);
   return customer ? counterpartyStore.getFullName(customer) : 'Заказчик не найден';
 };
+
+
 </script>
 
 <template>
@@ -258,6 +273,22 @@ const getCustomerNameById = (id: number): string => {
               :showIcon="true"
           />
         </div>
+
+        <!-- Приоритет -->
+        <label for="o-priority" class="text-sm font-medium pt-2">Приоритет:</label>
+        <div>
+          <Select
+              id="o-priority"
+              v-model="formData.priority"
+              :options="priorityOptions"
+              :optionLabel="'label'"
+              :optionValue="'value'"
+              placeholder="Нет"
+              class="w-full"
+              :clearable="true"
+          />
+        </div>
+
 
       </div>
 
