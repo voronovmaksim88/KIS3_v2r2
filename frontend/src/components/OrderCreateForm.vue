@@ -15,7 +15,6 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Toast from 'primevue/toast';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
-import ProgressSpinner from 'primevue/progressspinner'; // Для отображения загрузки
 import DatePicker from 'primevue/datepicker';
 import MultiSelect from 'primevue/multiselect';
 
@@ -177,14 +176,15 @@ const handleCancelClick = () => {
 // Запрос данных при монтировании компонента
 onMounted(async () => {
   try {
-    // Сначала получаем серийный номер
-    formData.serial = await ordersStore.fetchNewOrderSerial();
+    // Запускаем все запросы параллельно
+    const [serial] = await Promise.all([
+      ordersStore.fetchNewOrderSerial(),
+      counterpartyStore.fetchCounterparties(),
+      worksStore.fetchWorks()
+    ]);
 
-    // Затем получаем список контрагентов
-    await counterpartyStore.fetchCounterparties();
-
-    // Затем получаем список работ
-    await worksStore.fetchWorks()
+    // Устанавливаем полученный серийный номер
+    formData.serial = serial;
 
   } catch (error) {
     console.error('Failed to load initial data', error);
@@ -230,7 +230,11 @@ const getCustomerNameById = (id: number): string => {
         <!-- Серийный номер -->
         <label for="o-serial" class="text-sm font-medium pt-2">Серийный номер:</label>
         <div>
+          <div v-if="!formData.serial" class="flex items-center w-full">
+            <Select placeholder="Загрузка..." loading class="w-full" />
+          </div>
           <InputText
+              v-else
               id="o-serial"
               v-model="formData.serial"
               class="w-full"
@@ -257,8 +261,7 @@ const getCustomerNameById = (id: number): string => {
         <label for="o-name" class="text-sm font-medium pt-2">Заказчик: <span class="text-red-500">*</span></label>
         <div>
           <div v-if="loadingCounterparties" class="flex items-center">
-            <ProgressSpinner style="width: 1.5rem; height: 1.5rem"/>
-            <span class="ml-2 text-sm text-gray-500">Загрузка заказчиков...</span>
+            <Select placeholder="Загрузка..." loading class="w-full" />
           </div>
 
           <Select
@@ -390,8 +393,7 @@ const getCustomerNameById = (id: number): string => {
         <label for="o-works" class="text-sm font-medium pt-2">Работы по заказу:</label>
         <div>
           <div v-if="worksStore.isLoading" class="flex items-center">
-            <ProgressSpinner style="width: 1.5rem; height: 1.5rem"/>
-            <span class="ml-2 text-sm text-gray-500">Загрузка списка работ...</span>
+            <MultiSelect placeholder="Загрузка..." loading class="w-full"></MultiSelect>
           </div>
 
           <MultiSelect
