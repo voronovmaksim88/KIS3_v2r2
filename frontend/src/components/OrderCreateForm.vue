@@ -415,6 +415,8 @@ const getCustomerNameById = (id: number): string => {
               filter
               :maxSelectedLabels="2"
               selectedItemsLabel="{0} работ выбрано"
+              :selectAll="false"
+              :showToggleAll="false"
           >
             <template #option="slotProps">
               <div class="flex align-items-center">
@@ -467,5 +469,4 @@ const getCustomerNameById = (id: number): string => {
 
 
 <style scoped>
-
 </style>
