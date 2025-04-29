@@ -8,6 +8,7 @@ import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импорт
 import {useToast} from 'primevue/usetoast';
 import BaseModal from '@/components/BaseModal.vue';
 import { useWorksStore } from "@/stores/storeWorks";
+import {getStatusColor} from "@/utils/getStatusColor";
 
 // PrimeVue компоненты
 import Button from 'primevue/button';
@@ -66,15 +67,6 @@ const statusOptions = [
   {value: 8, label: 'На паузе'},
 ];
 
-// Функция для выбора цвета текста (как в таблице)
-function getStatusColor(statusId: number) {
-  if (statusId === 1) return '#FACC15'; // text-yellow-400
-  if (statusId === 2) return '#60A5FA'; // text-blue-400
-  if (statusId === 3) return '#34D399'; // text-green-400
-  if (statusId === 4) return '#F87171'; // text-red-400
-  if (statusId === 8) return '#FFFFFF'; // допустим, сиреневый text-purple-500
-  return '#64748B'; // text-gray-500
-}
 
 // Состояние загрузки
 const loading = computed(() => ordersStore.isLoading);

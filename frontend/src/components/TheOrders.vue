@@ -6,6 +6,7 @@ import {useOrdersStore} from '../stores/storeOrders';
 import BaseButton from "@/components/Buttons/BaseButton.vue";
 import TaskList from "@/components/TaskList.vue";
 import {formatFIO} from "@/utils/formatFIO.ts";
+import {getStatusColor} from "@/utils/getStatusColor";
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
 import Toast from 'primevue/toast'
@@ -480,16 +481,11 @@ const errorHideButtonClass = computed(() => {
             <td
                 class="px-4 py-2 cursor-pointer transition duration-300"
                 :class="[
-                  tdNumberHoverClass, // computed для hover
-                  tdBaseTextClass, // computed для базового текста
-                  {
-                    'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
-                    'text-yellow-400': order.status_id === 1, // Статусные цвета остаются
-                    'text-blue-400': order.status_id === 2,
-                    'text-green-400': order.status_id === 3,
-                    'text-red-400': order.status_id === 4
-                  }
+                    tdNumberHoverClass, // computed для hover
+                    tdBaseTextClass, // computed для базового текста
+                    { 'font-bold': [1, 2, 3, 4, 8].includes(order.status_id) }
                 ]"
+                :style="{ color: getStatusColor(order.status_id) }"
                 @click="toggleOrderDetails(order.serial)"
             >
               {{ order.serial }}
@@ -503,19 +499,16 @@ const errorHideButtonClass = computed(() => {
               <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
             </td>
 
-
             <td
                 class="px-4 py-2"
                 :class="{
-                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id),
-                  'text-yellow-400': order.status_id === 1,
-                  'text-blue-400': order.status_id === 2,
-                  'text-green-400': order.status_id === 3,
-                  'text-red-400': order.status_id === 4
+                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id)
                 }"
+                :style="{ color: getStatusColor(order.status_id) }"
             >
               {{ ordersStore.getStatusText(order.status_id) }}
             </td>
+
           </tr>
 
 
