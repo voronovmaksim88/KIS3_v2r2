@@ -189,9 +189,9 @@ async def read_orders(
     # Заменяем старую сортировку query = query.order_by(Order.serial)
     # на сортировку по частям serial: Год (9-12), Месяц (5-6), Номер (1-3)
     query = query.order_by(
-        cast(func.substring(Order.serial, 9, 4), Integer).asc(),  # Сортировка по году (возрастание)
-        cast(func.substring(Order.serial, 5, 2), Integer).asc(),  # Сортировка по месяцу (возрастание)
-        cast(func.substring(Order.serial, 1, 3), Integer).asc()  # Сортировка по номеру (возрастание)
+        cast(func.substring(Order.serial, 9, 4), Integer).desc(),  # Сортировка по году (возрастание)
+        cast(func.substring(Order.serial, 5, 2), Integer).desc(),  # Сортировка по месяцу (возрастание)
+        cast(func.substring(Order.serial, 1, 3), Integer).desc()  # Сортировка по номеру (возрастание)
     )
     # Применяем пагинацию
     query = query.offset(skip).limit(limit)
