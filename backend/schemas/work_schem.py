@@ -18,5 +18,3 @@ class WorkSchema(BaseModel):
 
     # Убедитесь, что конфигурация соответствует вашей версии Pydantic
     model_config = ConfigDict(from_attributes=True) # Для Pydantic v2+
-    # class Config: # Для Pydantic v1
-    #     from_attributes = True

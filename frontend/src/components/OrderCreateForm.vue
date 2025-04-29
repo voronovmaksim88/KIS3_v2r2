@@ -7,6 +7,7 @@ import {useOrdersStore} from '@/stores/storeOrders';
 import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импортируем store контрагентов
 import {useToast} from 'primevue/usetoast';
 import BaseModal from '@/components/BaseModal.vue';
+import { useWorksStore } from "@/stores/storeWorks";
 
 // PrimeVue компоненты
 import Button from 'primevue/button';
@@ -16,12 +17,16 @@ import Select from 'primevue/select'; // Импортируем компонен
 import ProgressSpinner from 'primevue/progressspinner'; // Для отображения загрузки
 import DatePicker from 'primevue/datepicker';
 
+
+
+
 const emit = defineEmits(['cancel', 'success']);
 
 // Store и утилиты
 const ordersStore = useOrdersStore();
 const counterpartyStore = useCounterpartyStore(); // Добавляем store контрагентов
 const toast = useToast();
+const worksStore = useWorksStore()
 
 // Состояние формы
 const formData = reactive({
@@ -173,6 +178,9 @@ onMounted(async () => {
     // Затем получаем список контрагентов
     await counterpartyStore.fetchCounterparties();
 
+    // Затем получаем список работ
+    await worksStore.fetchWorks()
+
   } catch (error) {
     console.error('Failed to load initial data', error);
     toast.add({
@@ -208,6 +216,7 @@ const getCustomerNameById = (id: number): string => {
       :on-close="handleCancelClick"
   >
     <Toast/>
+
     <form @submit.prevent="submitForm" class="space-y-4">
 
       <!-- Grid-контейнер для формы -->
@@ -387,6 +396,21 @@ const getCustomerNameById = (id: number): string => {
             :loading="loading"
             :disabled="loadingCounterparties || customerOptions.length === 0"
         />
+      </div>
+
+      <div class="works-container">
+        <p v-if="worksStore.isLoading">Загрузка...</p>
+        <p v-else-if="worksStore.error">Ошибка: {{ worksStore.error }}</p>
+
+        <div v-else>
+          <h2>Доступные работы:</h2>
+          <ul>
+            <li v-for="work in worksStore.activeWorks" :key="work.id">
+              {{ work.name }}
+              <p v-if="work.description">{{ work.description }}</p>
+            </li>
+          </ul>
+        </div>
       </div>
     </form>
   </BaseModal>
