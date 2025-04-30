@@ -1,5 +1,5 @@
 # routers/order_router.py
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, cast, Integer
@@ -545,3 +545,162 @@ async def create_order(
         # Используем model_validate (Pydantic V2) / from_orm (Pydantic V1)
         works=[WorkSchema.model_validate(work) for work in new_order.works],
     )
+
+
+@router.patch("/edit/{serial}", response_model=OrderResponse)
+async def edit_order(
+        serial: str,
+        order_data: OrderCreate = Body(..., embed=True),  # Используем тот же класс схемы, что и для создания
+        session: AsyncSession = Depends(get_async_db)
+):
+    """
+    Редактирует существующий заказ по его серийному номеру.
+    Позволяет обновить любое поле заказа, кроме серийного номера.
+
+    Параметры:
+    - serial: серийный номер заказа для редактирования
+    - order_data: данные для обновления заказа (можно указать только те поля, которые нужно обновить)
+
+    Примечание:
+     - Время надо передавать без таймзоны
+
+    Возвращает: обновленный заказ с полной информацией
+    """
+    # Проверяем существование заказа
+    order_query = select(Order).where(Order.serial == serial).options(
+        selectinload(Order.works)
+    )
+    result = await session.execute(order_query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Заказ с номером {serial} не найден"
+        )
+
+    # Проверяем существование контрагента, если он меняется
+    if order_data.customer_id:
+        counterparty_query = select(Counterparty).where(Counterparty.id == order_data.customer_id)
+        result = await session.execute(counterparty_query)
+        customer = result.scalar_one_or_none()
+        if not customer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Контрагент с ID {order_data.customer_id} не найден"
+            )
+        order.customer_id = order_data.customer_id
+
+    # Проверяем существование статуса заказа, если он меняется
+    if order_data.status_id:
+        status_query = select(OrderStatus).where(OrderStatus.id == order_data.status_id)
+        result = await session.execute(status_query)
+        order_status = result.scalar_one_or_none()
+        if not order_status:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Статус заказа с ID {order_data.status_id} не найден"
+            )
+        order.status_id = order_data.status_id
+
+    # Обновляем остальные поля, если они предоставлены
+    if order_data.name is not None:
+        order.name = order_data.name
+
+    if order_data.priority is not None:
+        order.priority = order_data.priority
+
+    if order_data.deadline_moment is not None:
+        # Удаляем информацию о часовом поясе, если она есть
+        if order_data.deadline_moment.tzinfo:
+            order_data.deadline_moment = order_data.deadline_moment.replace(tzinfo=None)
+        order.deadline_moment = order_data.deadline_moment
+
+    if order_data.end_moment is not None:
+        order.end_moment = order_data.end_moment
+
+    if order_data.materials_cost is not None:
+        order.materials_cost = order_data.materials_cost
+
+    if order_data.materials_paid is not None:
+        order.materials_paid = order_data.materials_paid
+
+    if order_data.products_cost is not None:
+        order.products_cost = order_data.products_cost
+
+    if order_data.products_paid is not None:
+        order.products_paid = order_data.products_paid
+
+    if order_data.work_cost is not None:
+        order.work_cost = order_data.work_cost
+
+    if order_data.work_paid is not None:
+        order.work_paid = order_data.work_paid
+
+    if order_data.debt is not None:
+        order.debt = order_data.debt
+
+    if order_data.debt_paid is not None:
+        order.debt_paid = order_data.debt_paid
+
+    # Обновляем связанные работы, если они указаны
+    if order_data.work_ids is not None:
+        # Проверяем существование всех работ
+        works_query = select(Work).where(Work.id.in_(order_data.work_ids))
+        result = await session.execute(works_query)
+        works = result.scalars().all()
+
+        # Проверяем, что все запрошенные работы существуют
+        found_work_ids = {work.id for work in works}
+        missing_work_ids = set(order_data.work_ids) - found_work_ids
+        if missing_work_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Работы с ID {missing_work_ids} не найдены"
+            )
+
+        # Заменяем список работ
+        order.works = list(works)
+
+    # Сохраняем изменения
+    session.add(order)
+    await session.commit()
+
+    # Явно обновляем объект заказа для получения свежих данных
+    await session.refresh(order, attribute_names=["customer", "works"])
+
+    # Если customer был загружен, то явно загружаем его связь 'form'
+    if order.customer:
+        await session.refresh(order.customer, attribute_names=["form"])
+
+    # Формируем имя для отображения клиента
+    customer_display_name = "Контрагент не указан"
+    if order.customer:
+        if order.customer.form:
+            customer_display_name = f"{order.customer.form.name} {order.customer.name}"
+        else:
+            customer_display_name = order.customer.name
+
+    # Преобразуем ORM модель в словарь с обычными значениями
+    order_dict = {
+        "serial": order.serial,
+        "name": order.name,
+        "customer": customer_display_name,  # Это уже строка, не Mapped
+        "priority": order.priority,
+        "status_id": order.status_id,
+        "start_moment": order.start_moment,
+        "deadline_moment": order.deadline_moment,
+        "end_moment": order.end_moment,
+        "materials_cost": order.materials_cost,
+        "materials_paid": order.materials_paid,
+        "products_cost": order.products_cost,
+        "products_paid": order.products_paid,
+        "work_cost": order.work_cost,
+        "work_paid": order.work_paid,
+        "debt": order.debt,
+        "debt_paid": order.debt_paid,
+        "works": [WorkSchema.model_validate(work) for work in order.works],
+    }
+
+    # Затем используем model_validate для создания Pydantic модели
+    return OrderResponse.model_validate(order_dict)
