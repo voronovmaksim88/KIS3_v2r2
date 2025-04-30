@@ -9,7 +9,11 @@ import {formatFIO} from "@/utils/formatFIO.ts";
 import {getStatusColor} from "@/utils/getStatusColor";
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
+
+// primevue компоненты
 import Toast from 'primevue/toast'
+import SelectButton from 'primevue/selectbutton';
+
 
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
@@ -323,18 +327,6 @@ const tableHeaderRowClass = computed(() => {
   return currentTheme.value === 'dark' ? `${base} bg-gray-600` : `${base} bg-gray-200`;
 });
 
-// Классы для фона переключателя
-const toggleBackgroundClass = computed(() => {
-  const base = 'block w-10 h-6 rounded-full border transition-colors duration-300';
-  return currentTheme.value === 'dark' ? `${base} bg-gray-800 border-gray-500` : `${base} bg-gray-300 border-gray-400`;
-});
-
-// Классы для текста переключателя
-const toggleTextClass = computed(() => {
-  const base = 'ml-3 text-sm transition-colors duration-300';
-  return currentTheme.value === 'dark' ? `${base} text-gray-200` : `${base} text-gray-700`;
-});
-
 // Классы для строки таблицы (<tr>)
 const trBaseClass = computed(() => {
   const base = 'transition-colors duration-100';
@@ -372,6 +364,12 @@ const getSortIcon = (field: string) => {
   }
   return 'pi pi-sort text-gray-400';
 };
+
+// Опции для переключателя видимости заказов
+const orderVisibilityOptions = [
+  { label: 'Активные', value: false },
+  { label: 'Все заказы', value: true }
+];
 </script>
 
 
@@ -433,29 +431,10 @@ const getSortIcon = (field: string) => {
             <div class="px-1 py-1 flex justify-between items-center">
 
               <span class="flex items-center">
-                  <label for="toggle-ended-orders" class="flex items-center cursor-pointer">
-                    <span class="relative">
-                      <input
-                          id="toggle-ended-orders"
-                          type="checkbox"
-                          v-model="showEndedOrders"
-                          @change="toggleEndedOrders"
-                          class="sr-only"
-                      />
-
-                      <span :class="toggleBackgroundClass"></span>
-
-                      <span
-                          class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"
-                          :class="{ 'transform translate-x-4': showEndedOrders }"
-                      ></span>
-                    </span>
-
-                    <span :class="toggleTextClass">
-                      {{ showEndedOrders ? 'Скрыть завершённые' : 'Показать завершённые' }}
-                    </span>
-                  </label>
-                </span>
+                <SelectButton v-model="showEndedOrders" :options="orderVisibilityOptions"
+                              @change="toggleEndedOrders" optionLabel="label" optionValue="value"
+                              aria-labelledby="orders-visibility-label" class="text-sm" />
+              </span>
 
 
               <span class="flex">
@@ -697,16 +676,6 @@ const getSortIcon = (field: string) => {
 </template>
 
 <style scoped>
-/* Стили для переключателя */
-/* Движение точки при checked */
-input:checked ~ .dot {
-  transform: translateX(1rem); /* 16px, что равно w-4 */
-}
-
-/* Добавляем плавный переход для точки */
-.dot {
-  transition: transform 0.3s ease-in-out;
-}
 
 /* Добавляем стили для модального окна PrimeVue Dialog с использованием v-bind */
 :deep(.p-dialog) {
@@ -718,6 +687,5 @@ input:checked ~ .dot {
   /* Тень для светлой темы */
   box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
-
 
 </style>
