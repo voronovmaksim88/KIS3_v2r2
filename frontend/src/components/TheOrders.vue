@@ -415,6 +415,38 @@ const handleCustomerChange = async (orderId: string, customerId: number) => {
 };
 
 
+/**
+ * Обработчик изменения приоритета заказа
+ * @param orderId - ID заказа
+ * @param priority - Новый приоритет
+ */
+const handlePriorityChange = async (orderId: string, priority: number | null) => {
+  try {
+    console.log(`Приоритет для заказа ${orderId} изменен на ${priority}`);
+
+    // Используем существующий метод updateOrder
+    await ordersStore.updateOrder(orderId, { priority });
+
+    // Показываем уведомление об успехе через PrimeVue Toast
+    toast.add({
+      severity: 'success',
+      summary: 'Успешно',
+      detail: `Приоритет заказа #${orderId} успешно изменен`,
+      life: 3000
+    });
+  } catch (error) {
+    console.error('Ошибка при изменении приоритета:', error);
+    // Показываем уведомление об ошибке
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: `Не удалось изменить приоритет заказа #${orderId}`,
+      life: 5000
+    });
+  }
+};
+
+
 // Функция для получения опций для выпадающего списка контрагентов
 const getCustomerOptions = computed(() => {
   return counterpartyStore.sortedCounterparties.map(cp => ({
@@ -429,6 +461,16 @@ const getCustomerNameById = (id: number): string => {
   const customer = counterpartyStore.getCounterpartyById(id);
   return customer ? counterpartyStore.getFullName(customer) : 'Заказчик не найден';
 };
+
+// Опции для приоритета
+const priorityOptions = [
+  {label: 'Нет', value: null},
+  ...Array.from({length: 10}, (_, i) => ({
+    label: (i + 1).toString(),
+    value: i + 1,
+  }))
+];
+
 </script>
 
 
@@ -601,7 +643,33 @@ const getCustomerNameById = (id: number): string => {
                 </template>
               </Select>
             </td>
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.priority ?? '-' }}</td>
+            <td class="px-4 py-2" :class="tdBaseTextClass">
+              <Select
+                  v-model="order.priority"
+                  :options="priorityOptions"
+                  optionValue="value"
+                  optionLabel="label"
+                  placeholder="Нет"
+                  class="w-full"
+                  :clearable="true"
+                  @change="handlePriorityChange(order.serial, order.priority)"
+              >
+                <template #option="slotProps">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.option.value}`"></div>
+                    <span>{{ slotProps.option.label }}</span>
+                  </div>
+                </template>
+                <template #value="slotProps">
+                  <div v-if="slotProps.value !== null" class="flex items-center">
+                    <div class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.value}`"></div>
+                    <span>{{ priorityOptions.find(opt => opt.value === slotProps.value)?.label }}</span>
+                  </div>
+                  <span v-else>Нет</span>
+                </template>
+              </Select>
+            </td>
+
             <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }}</td>
             <td class="px-4 py-2" :class="tdBaseTextClass">
               <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
