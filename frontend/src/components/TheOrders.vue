@@ -38,6 +38,9 @@ const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail, resetOrders}
 // Состояние для модального окна создания заказа
 const showCreateDialog = ref(false);
 
+// для сортировки
+const { currentSortField, currentSortDirection } = storeToRefs(ordersStore);
+
 
 // Методы для управления прокруткой страницы
 function disableScroll() {
@@ -361,6 +364,14 @@ const errorHideButtonClass = computed(() => {
   return currentTheme.value === 'dark' ? `${base} bg-gray-600 hover:bg-gray-500 text-white` : `${base} bg-gray-300 hover:bg-gray-400 text-gray-800`;
 });
 
+
+// Функция для определения иконки сортировки
+const getSortIcon = (field: string) => {
+  if (currentSortField.value === field) {
+    return currentSortDirection.value === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down';
+  }
+  return 'pi pi-sort text-gray-400';
+};
 </script>
 
 
@@ -465,9 +476,29 @@ const errorHideButtonClass = computed(() => {
         </tr>
         <tr>
 
-          <th :class="thClasses">Номер</th>
+          <!-- Номер -->
+          <th :class="thClasses" class="cursor-pointer" @click="ordersStore.setSortField('serial')">
+            <div class="flex items-center">
+              Номер
+              <span class="ml-1">
+                <i :class="getSortIcon('serial')"></i>
+              </span>
+            </div>
+          </th>
+
+
           <th :class="thClasses">Заказчик</th>
-          <th :class="thClasses">Приоритет</th>
+
+          <!-- Приоритет-->
+          <th :class="thClasses" class="cursor-pointer" @click="ordersStore.setSortField('priority')">
+            <div class="flex items-center">
+              Приоритет
+              <span class="ml-1">
+                <i :class="getSortIcon('priority')"></i>
+              </span>
+            </div>
+          </th>
+
           <th :class="thClasses">Название</th>
           <th :class="thClasses">Виды работ</th>
           <th :class="thClasses">Статус</th>

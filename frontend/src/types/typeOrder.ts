@@ -42,7 +42,7 @@ export interface typePaginatedOrderResponse {
     data: typeOrderRead[];
 }
 
-// Новый тип для параметров запроса fetchOrders
+// тип для параметров запроса fetchOrders
 export interface typeFetchOrdersParams {
     skip?: number;
     limit?: number;
@@ -50,7 +50,9 @@ export interface typeFetchOrdersParams {
     searchSerial?: string | null;
     searchCustomer?: string | null;
     searchPriority?: number | null;
-    showEnded?: boolean; // параметр для фильтрации завершенных заказов
+    showEnded?: boolean;
+    sortField?: string; // поле для сортировки
+    sortDirection?: string; // направление для сортировки
 }
 
 // Типы для вложенных структур

@@ -30,6 +30,14 @@ export const useOrdersStore = defineStore('orders', () => {
     const currentOrderDetail = ref<typeOrderDetail | null>(null);
     const detailLoading = ref(false); // Отдельный индикатор загрузки для деталей заказа
 
+    //  === Показывать завершённые заказы ===
+    const showEndedOrders = ref<boolean>(false);
+
+    // === Состояние для сортировки ===
+    const currentSortField = ref<string>('serial'); // По умолчанию сортировка по серийному номеру
+    const currentSortDirection = ref<string>('asc'); // По умолчанию сортировка по возрастанию
+
+
     // === Словарь статусов заказов ===
     const orderStatuses = {
         1: "Не определён",
@@ -98,6 +106,21 @@ export const useOrdersStore = defineStore('orders', () => {
         // Добавляем параметр showEnded, только если он явно определен
         if (params.showEnded !== undefined) queryParams.show_ended = params.showEnded;
 
+        // Добавляем параметры сортировки
+        if (params.sortField !== undefined) {
+            queryParams.sort_field = params.sortField;
+            currentSortField.value = params.sortField;
+        } else {
+            queryParams.sort_field = currentSortField.value;
+        }
+
+        if (params.sortDirection !== undefined) {
+            queryParams.sort_direction = params.sortDirection;
+            currentSortDirection.value = params.sortDirection;
+        } else {
+            queryParams.sort_direction = currentSortDirection.value;
+        }
+
         try {
             const response = await axios.get<typePaginatedOrderResponse>(`${getApiUrl()}order/read`, {
                 params: queryParams, // Используем отфильтрованные параметры
@@ -107,7 +130,6 @@ export const useOrdersStore = defineStore('orders', () => {
             // Обновляем состояние данными из ответа
             orders.value = response.data.data;
             totalOrders.value = response.data.total;
-            // currentLimit.value = response.data.limit; // Не обновляйте currentLimit из ответа
             currentSkip.value = response.data.skip;
 
         } catch (err) {
@@ -115,7 +137,6 @@ export const useOrdersStore = defineStore('orders', () => {
             // Сбрасываем данные в случае ошибки, чтобы не показывать старые/неактуальные
             orders.value = [];
             totalOrders.value = 0;
-            // currentLimit и currentSkip можно оставить или сбросить на дефолт
             handleAxiosError(err, 'Failed to fetch orders'); // Используем хелпер
         } finally {
             loading.value = false;
@@ -154,7 +175,7 @@ export const useOrdersStore = defineStore('orders', () => {
         totalOrders.value = 0;
         currentLimit.value = 50; // Возвращаем к дефолту
         currentSkip.value = 0;  // Возвращаем к дефолту
-        // error.value = null; // Ошибку лучше сбрасывать через clearError
+        resetSorting(); // Сбрасываем сортировку к дефолтным значениям
     };
 
     // === Хелпер для обработки ошибок Axios (чтобы не дублировать код) ===
@@ -166,6 +187,39 @@ export const useOrdersStore = defineStore('orders', () => {
         } else {
             error.value = 'An unknown error occurred';
         }
+    };
+
+
+    // === Действия для управления сортировкой ===
+    const setSortField = async (field: string) => {
+        // Если поле изменилось - обновляем, если то же самое - инвертируем направление
+        if (currentSortField.value !== field) {
+            currentSortField.value = field;
+            currentSortDirection.value = 'asc'; // По умолчанию при смене поля - сортировка по возрастанию
+        } else {
+            // Инвертируем направление сортировки
+            currentSortDirection.value = currentSortDirection.value === 'asc' ? 'desc' : 'asc';
+        }
+
+        // Перезагружаем данные с новыми параметрами сортировки,
+        // СОХРАНЯЯ текущие параметры пагинации
+        try {
+            await fetchOrders({
+                skip: currentSkip.value,
+                limit: currentLimit.value,
+                sortField: currentSortField.value,
+                sortDirection: currentSortDirection.value,
+                // Добавляем флаг showEnded из компонента
+                showEnded: showEndedOrders.value
+            });
+        } catch (err) {
+            console.error('Error when applying sorting:', err);
+        }
+    };
+
+    const resetSorting = () => {
+        currentSortField.value = 'serial';
+        currentSortDirection.value = 'asc';
     };
 
 
@@ -249,6 +303,9 @@ export const useOrdersStore = defineStore('orders', () => {
         currentOrderDetail, // Состояние для детальной информации
         detailLoading,      // Индикатор загрузки для деталей
         newOrderSerial,        // Состояние для нового серийного номера
+        currentSortField,
+        currentSortDirection,
+        showEndedOrders,
 
         // Действия
         fetchOrderSerials,
@@ -261,6 +318,8 @@ export const useOrdersStore = defineStore('orders', () => {
         resetOrderDetail,  // Действие для сброса деталей заказа
         createOrder, // Действие для создания заказа
         fetchNewOrderSerial, // Действие для получения нового номера заказа
+        setSortField,
+        resetSorting,
 
         // Вычисляемые свойства
         serialsCount,
