@@ -149,41 +149,34 @@ class OrderCreate(BaseModel):
     debt_paid: Optional[bool] = Field(False, description="Задолженность оплачена")
     work_ids: Optional[List[int]] = Field(None, description="Список ID работ для привязки к заказу")
 
+
+class OrderUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=64, description="Название заказа")
+    customer_id: Optional[int] = Field(None, description="ID заказчика")
+    priority: Optional[int] = Field(None, ge=1, le=10, description="Приоритет от 1 до 10")
+    status_id: Optional[int] = Field(None, ge=1, le=8, description="ID статуса заказа")
+    start_moment: Optional[datetime] = Field(None, description="Дата и время начала")
+    deadline_moment: Optional[datetime] = Field(None, description="Дата и время дедлайна")
+    end_moment: Optional[datetime] = Field(None, description="Дата и время завершения")
+    materials_cost: Optional[int] = Field(None, description="Стоимость материалов")
+    materials_paid: Optional[bool] = Field(False, description="Материалы оплачены")
+    products_cost: Optional[int] = Field(None, description="Стоимость товаров")
+    products_paid: Optional[bool] = Field(False, description="Товары оплачены")
+    work_cost: Optional[int] = Field(None, description="Стоимость работ")
+    work_paid: Optional[bool] = Field(False, description="Работы оплачены")
+    debt: Optional[int] = Field(None, description="Задолженность")
+    debt_paid: Optional[bool] = Field(False, description="Задолженность оплачена")
+    work_ids: Optional[List[int]] = Field(None, description="Список ID работ для привязки к заказу")
+
+
+
 class OrderResponse(OrderRead):
     """Схема для ответа при создании заказа"""
     class Config:
         from_attributes = True
 
 
-# class OrderUpdate(BaseModel):
-#     name: Optional[str] = None
-#     customer_id: Optional[int] = None
-#     priority: Optional[int] = None
-#     status_id: Optional[int] = None
-#     deadline_moment: Optional[datetime] = None
-#     end_moment: Optional[datetime] = None
-#     materials_cost: Optional[int] = None
-#     materials_paid: Optional[bool] = None
-#     products_cost: Optional[int] = None
-#     products_paid: Optional[bool] = None
-#     work_cost: Optional[int] = None
-#     work_paid: Optional[bool] = None
-#     debt: Optional[int] = None
-#     debt_paid: Optional[bool] = None
-#
-#     @validator('priority')
-#     def validate_priority(cls, v):
-#         if v is not None and (v < 1 or v > 10):
-#             raise ValueError("Priority must be between 1 and 10")
-#         return v
-#
-#     @validator('status_id')
-#     def validate_status_id(cls, v):
-#         if v is not None and (v < 1 or v > 8):
-#             raise ValueError("Status ID must be between 1 and 8")
-#         return v
-#
-#
+
 # class OrderResponse(OrderBase):
 #     customer: CounterpartySchema
 #     status: OrderStatusSchema

@@ -12,7 +12,7 @@ from database import get_async_db
 from models import Order, Counterparty, Person, OrderStatus, Work
 
 from schemas.order_schem import OrderSerial, OrderRead, PaginatedOrderResponse, OrderCommentSchema, OrderResponse, \
-    OrderCreate
+    OrderCreate, OrderUpdate
 from schemas.order_schem import OrderDetailResponse  # Импортируем новую схему
 
 # Импортируем другие необходимые схемы, если они используются в OrderDetailResponse
@@ -551,7 +551,7 @@ async def create_order(
 @router.patch("/edit/{serial}", response_model=OrderResponse)
 async def edit_order(
         serial: str,
-        order_data: OrderCreate = Body(..., embed=True),  # Используем тот же класс схемы, что и для создания
+        order_data: OrderUpdate = Body(..., embed=True),  # Используем тот же класс схемы, что и для создания
         session: AsyncSession = Depends(get_async_db)
 ):
     """
@@ -687,6 +687,7 @@ async def edit_order(
         "serial": order.serial,
         "name": order.name,
         "customer": customer_display_name,  # Это уже строка, не Mapped
+        "customer_id": order.customer_id,  # Добавьте это поле
         "priority": order.priority,
         "status_id": order.status_id,
         "start_moment": order.start_moment,
