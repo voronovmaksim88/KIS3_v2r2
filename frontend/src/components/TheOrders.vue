@@ -9,10 +9,14 @@ import {formatFIO} from "@/utils/formatFIO.ts";
 import {getStatusColor} from "@/utils/getStatusColor";
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
+import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импортируем store контрагентов
 
 // primevue компоненты
 import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
+import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
+
+
 
 
 // Store темы
@@ -45,6 +49,8 @@ const showCreateDialog = ref(false);
 // для сортировки
 const { currentSortField, currentSortDirection } = storeToRefs(ordersStore);
 
+// Добавляем store контрагентов
+const counterpartyStore = useCounterpartyStore();
 
 // Методы для управления прокруткой страницы
 function disableScroll() {
@@ -206,6 +212,9 @@ onMounted(() => {
 
   // Загружаем первую страницу с учетом параметра showEndedOrders
   //fetchOrders({skip: 0, limit: 50, showEnded: showEndedOrders.value});
+
+  // Загружаем список контрагентов
+  counterpartyStore.fetchCounterparties();
 
   // Загружаем с повтором
   fetchOrdersWithRetry({skip: 0, limit: 50, showEnded: showEndedOrders.value});
@@ -370,6 +379,32 @@ const orderVisibilityOptions = [
   { label: 'Активные', value: false },
   { label: 'Все заказы', value: true }
 ];
+
+// Добавить после функции formatLocalDateTime
+/**
+ * Обработчик изменения заказчика заказа
+ * @param orderId - ID заказа
+ * @param customerId - ID нового заказчика
+ */
+const handleCustomerChange = (orderId: string, customerId: number) => {
+  console.log(`Заказчик для заказа ${orderId} изменен на ${customerId}`);
+  // TODO: Добавить вызов API для обновления заказчика
+};
+
+// Функция для получения опций для выпадающего списка контрагентов
+const getCustomerOptions = computed(() => {
+  return counterpartyStore.sortedCounterparties.map(cp => ({
+    name: counterpartyStore.getFullName(cp),
+    value: cp.id,
+    code: cp.id.toString()
+  }));
+});
+
+// Вспомогательная функция для получения имени по ID
+const getCustomerNameById = (id: number): string => {
+  const customer = counterpartyStore.getCounterpartyById(id);
+  return customer ? counterpartyStore.getFullName(customer) : 'Заказчик не найден';
+};
 </script>
 
 
@@ -502,7 +537,46 @@ const orderVisibilityOptions = [
             </td>
 
 
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.customer }}</td>
+            <td class="px-4 py-2" :class="tdBaseTextClass">
+              <div v-if="counterpartyStore.isLoading" class="flex items-center">
+                <span>{{ order.customer }}</span>
+              </div>
+              <Select
+                  v-else
+                  v-model="order.customer_id"
+                  :options="getCustomerOptions"
+                  optionValue="value"
+                  filter
+                  optionLabel="name"
+                  :placeholder="order.customer"
+                  class="w-full"
+                  :autoFilterFocus="true"
+                  @change="handleCustomerChange(order.serial, order.customer_id)"
+              >
+                <!-- Шаблон для отображения выбранного значения -->
+                <template #value="slotProps">
+                  <div v-if="slotProps.value" class="flex items-center">
+                    <div>
+                      {{
+                        typeof slotProps.value === 'object' && slotProps.value.name
+                            ? slotProps.value.name
+                            : getCustomerNameById(slotProps.value)
+                      }}
+                    </div>
+                  </div>
+                  <span v-else>
+                    {{ order.customer }}
+                  </span>
+                </template>
+
+                <!-- Шаблон для отображения опций -->
+                <template #option="slotProps">
+                  <div class="flex items-center">
+                    <div>{{ slotProps.option.name }}</div>
+                  </div>
+                </template>
+              </Select>
+            </td>
             <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.priority ?? '-' }}</td>
             <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }}</td>
             <td class="px-4 py-2" :class="tdBaseTextClass">

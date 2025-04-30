@@ -18,6 +18,7 @@ export interface typeOrderRead {
     serial: string;
     name: string;
     customer: string; // Ожидаем строку 'Форма Имя'
+    customer_id: number;
     priority: number | null;
     status_id: number;
     start_moment: string | null; // Даты приходят как строки ISO 8601

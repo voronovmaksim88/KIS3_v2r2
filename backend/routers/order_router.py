@@ -245,6 +245,7 @@ async def read_orders(
             "serial": order.serial,
             "name": order.name,
             "customer": customer_display_name,
+            "customer_id": order.customer_id,
             "priority": order.priority,
             "status_id": order.status_id,
             "start_moment": order.start_moment,
