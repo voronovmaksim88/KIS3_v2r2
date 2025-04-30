@@ -84,6 +84,7 @@ class OrderRead(BaseModel):
     serial: str
     name: str
     customer: str  # Ожидаем строку
+    customer_id: int
     priority: Optional[int] = None
     status_id: int
     start_moment: Optional[datetime] = None
