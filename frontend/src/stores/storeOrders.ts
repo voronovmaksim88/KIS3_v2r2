@@ -9,7 +9,7 @@ import {
     typePaginatedOrderResponse,
     typeFetchOrdersParams,
     typeOrderDetail,
-    typeOrderCreate
+    typeOrderCreate, typeOrderEdit
 } from "../types/typeOrder";
 import {getApiUrl} from '../utils/apiUrlHelper';
 
@@ -290,6 +290,46 @@ export const useOrdersStore = defineStore('orders', () => {
         }
     };
 
+
+    // Функция для редактирования существующего заказа
+    const updateOrder = async (serial: string, orderData: typeOrderEdit) => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const response = await axios.patch<typeOrderRead>(
+                `${getApiUrl()}order/edit/${serial}`,
+                { order_data: orderData }, // Оборачиваем в order_data, как требует API
+                { withCredentials: true }
+            );
+
+            // Если успешно отредактировали и просматриваем детали этого заказа,
+            // обновляем детальную информацию
+            if (currentOrderDetail.value?.serial === serial) {
+                await fetchOrderDetail(serial);
+            }
+
+            // Обновляем список заказов, чтобы отразить изменения
+            await fetchOrders({
+                skip: currentSkip.value,
+                limit: currentLimit.value,
+                sortField: currentSortField.value,
+                sortDirection: currentSortDirection.value,
+                showEnded: showEndedOrders.value
+            });
+
+            // Возвращаем обновленный заказ
+            return response.data;
+        } catch (err) {
+            console.error('Error updating order:', err);
+            handleAxiosError(err, 'Failed to update order');
+            throw err; // Пробрасываем ошибку дальше для обработки в компоненте
+        } finally {
+            loading.value = false;
+        }
+    };
+
+
     // === Возвращаем все элементы стора ===
     return {
         // Состояния
@@ -320,6 +360,7 @@ export const useOrdersStore = defineStore('orders', () => {
         fetchNewOrderSerial, // Действие для получения нового номера заказа
         setSortField,
         resetSorting,
+        updateOrder,
 
         // Вычисляемые свойства
         serialsCount,

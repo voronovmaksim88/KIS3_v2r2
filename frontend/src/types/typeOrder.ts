@@ -122,3 +122,23 @@ export interface typeOrderCreate {
     debt_paid?: boolean;
     work_ids?: number[];
 }
+
+// Тип для редактирования заказа (все поля опциональные)
+export interface typeOrderEdit {
+    name?: string;
+    customer_id?: number | null;
+    priority?: number | null;
+    status_id?: number;
+    start_moment?: string | null; // Возможно не используется бэкендом
+    deadline_moment?: string | null;
+    end_moment?: string | null;
+    materials_cost?: number | null;
+    materials_paid?: boolean;
+    products_cost?: number | null;
+    products_paid?: boolean;
+    work_cost?: number | null;
+    work_paid?: boolean;
+    debt?: number | null;
+    debt_paid?: boolean;
+    work_ids?: number[];
+}

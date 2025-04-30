@@ -15,8 +15,10 @@ import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импор
 import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
+import { useToast } from 'primevue/usetoast';
 
 
+const toast = useToast();
 
 
 // Store темы
@@ -386,10 +388,32 @@ const orderVisibilityOptions = [
  * @param orderId - ID заказа
  * @param customerId - ID нового заказчика
  */
-const handleCustomerChange = (orderId: string, customerId: number) => {
-  console.log(`Заказчик для заказа ${orderId} изменен на ${customerId}`);
-  // TODO: Добавить вызов API для обновления заказчика
+const handleCustomerChange = async (orderId: string, customerId: number) => {
+  try {
+    console.log(`Заказчик для заказа ${orderId} изменен на ${customerId}`);
+
+    // Используем существующий метод updateOrder, передавая только изменение customer_id
+    await ordersStore.updateOrder(orderId, { customer_id: customerId });
+
+    // Показываем уведомление об успехе через PrimeVue Toast
+    toast.add({
+      severity: 'success',
+      summary: 'Успешно',
+      detail: `Заказчик заказа #${orderId} успешно изменен`,
+      life: 3000
+    });
+  } catch (error) {
+    console.error('Ошибка при изменении заказчика:', error);
+    // Показываем уведомление об ошибке
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: `Не удалось изменить заказчика заказа #${orderId}`,
+      life: 5000
+    });
+  }
 };
+
 
 // Функция для получения опций для выпадающего списка контрагентов
 const getCustomerOptions = computed(() => {
