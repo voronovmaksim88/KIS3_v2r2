@@ -656,12 +656,12 @@ const priorityOptions = [
               >
                 <template #option="slotProps">
                   <div class="flex items-center">
-                    <div class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.option.value}`"></div>
+                    <div v-if="slotProps.option.value !== null" class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.option.value}`"></div>
                     <span>{{ slotProps.option.label }}</span>
                   </div>
                 </template>
                 <template #value="slotProps">
-                  <div v-if="slotProps.value !== null" class="flex items-center">
+                  <div v-if="slotProps.value" class="flex items-center">
                     <div class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.value}`"></div>
                     <span>{{ priorityOptions.find(opt => opt.value === slotProps.value)?.label }}</span>
                   </div>
