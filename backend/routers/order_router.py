@@ -399,6 +399,7 @@ async def get_order_detail(
         "serial": order.serial,
         "name": order.name,
         "customer": customer_display_name,
+        "customer_id": order.customer_id,
         "priority": order.priority,
         "status_id": order.status_id,
         "start_moment": order.start_moment,
@@ -530,6 +531,7 @@ async def create_order(
         serial=new_order.serial,
         name=new_order.name,
         customer=customer_display_name,  # Передаем строку, как ожидает OrderResponse -> OrderRead
+        customer_id = new_order.customer_id,
         priority=new_order.priority,
         status_id=new_order.status_id,
         start_moment=new_order.start_moment,
