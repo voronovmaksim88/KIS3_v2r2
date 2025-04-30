@@ -2,31 +2,24 @@
 import { watch } from 'vue';
 import { useThemeStore } from '../stores/storeTheme';
 
+// Импортируем файлы для их включения в сборку, но не используем возвращаемые значения
+// PrimeVue 4.x использует другие пути для тем
+
+
 export function setupThemeWatcher() {
     const themeStore = useThemeStore();
 
-    // Функция для установки темы PrimeVue
-    const updatePrimeVueTheme = (isDark: boolean) => {
-        // Удаляем все ссылки на темы PrimeVue
-        const links = document.querySelectorAll('link[data-primevue-theme]');
-        links.forEach(link => link.remove());
-
-        // Создаем новую ссылку на CSS темы
-        const linkElement = document.createElement('link');
-        linkElement.rel = 'stylesheet';
-        linkElement.href = isDark
-            ? '/node_modules/primevue/resources/themes/lara-dark-blue/theme.css'
-            : '/node_modules/primevue/resources/themes/lara-light-blue/theme.css';
-        linkElement.setAttribute('data-primevue-theme', 'true');
-
-        document.head.appendChild(linkElement);
+    const updateTheme = (isDark: boolean) => {
+        if (isDark) {
+            document.documentElement.classList.add('dark-theme');
+        } else {
+            document.documentElement.classList.remove('dark-theme');
+        }
     };
 
-    // Инициализация темы
-    updatePrimeVueTheme(themeStore.theme === 'dark');
+    updateTheme(themeStore.theme === 'dark');
 
-    // Наблюдение за изменениями темы
     watch(() => themeStore.theme, (newTheme) => {
-        updatePrimeVueTheme(newTheme === 'dark');
+        updateTheme(newTheme === 'dark');
     });
 }
