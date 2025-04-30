@@ -8,7 +8,7 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
-import Aura from '@primeuix/themes/Aura';
+import Aura from '@primeuix/themes/aura';
 
 
 const app = createApp(App)
