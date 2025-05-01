@@ -3,6 +3,7 @@
 import { usePagesStore } from "../stores/storePages.ts";
 import { useThemeStore } from "../stores/storeTheme";
 import { computed, ref } from "vue"; // Добавим импорт ref
+import Button from "primevue/button";
 
 
 // Получаем текущую тему из хранилища
@@ -29,19 +30,45 @@ const openModal = () => {
        ]"
   >
     <div class="flex flex-col w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6 space-y-4">
-      <button class="btn btn-p" @click="pageStore.setPage('box-serial-num')">Учёт с/н шкафов</button>
-      <button class="btn btn-p" @click="pageStore.setPage('orders')">Заказы</button>
-      <button class="btn btn-s">Задачи</button>
-      <button class="btn btn-s">Тайминги</button>
-      <button class="btn btn-p" @click="pageStore.setPage('test-fastapi')">Тест FastAPI</button>
-      <button class="btn btn-p" @click="pageStore.setPage('test-db')">Тест базы данных</button>
-      <button class="btn btn-s" @click="">Составление КП</button>
-      <button class="btn btn-s">Бланк ТЗ для ШАОВ</button>
-      <button class="btn btn-s">Расчёт стоимости ША</button>
-      <button class="btn btn-s">Подбор ПЛК</button>
+      <Button
+          severity="info"
+          label="Учёт шкафов"
+          @click="pageStore.setPage('box-serial-num')"
+      />
 
-      <!-- Новая кнопка для открытия модального окна -->
-      <button class="btn btn-p" @click="openModal">Открыть модальное окно</button>
+      <Button
+          severity="info"
+          label="Заказы"
+          @click="pageStore.setPage('orders')"
+      />
+
+
+      <Button
+          severity="info"
+          label="Задачи"
+          @click="pageStore.setPage('')"
+          disabled="true"
+      />
+
+      <Button
+          severity="info"
+          label="Тайминги"
+          @click="pageStore.setPage('')"
+          disabled="true"
+      />
+
+      <Button
+          severity="info"
+          label="Тест FastAPI"
+          @click="pageStore.setPage('test-fastapi')"
+      />
+
+      <Button
+          severity="info"
+          label="Тест базы данных"
+          @click="pageStore.setPage('test-db')"
+      />
+
     </div>
   </div>
 </template>
