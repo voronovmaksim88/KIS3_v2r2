@@ -103,6 +103,11 @@ const daysSinceCompletion = computed(() => {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 });
 
+// Проверка, просрочен ли дедлайн
+const isDeadlineOverdue = computed(() => {
+  return daysUntilDeadline.value !== null && daysUntilDeadline.value < 0;
+});
+
 // Вспомогательная функция для склонения слова "день"
 function getDaysText(days: number): string {
   const lastDigit = days % 10;
@@ -128,44 +133,81 @@ function getDaysText(days: number): string {
   <div :class="detailBlockClass">
     <h4 :class="detailHeaderClass">Даты</h4>
 
-    <div class="flex flex-col space-y-2">
-      <div class="flex justify-between items-center">
-        <span :class="tdBaseTextClass">создан:</span>
-        <span :class="tdBaseTextClass" class="min-w-[180px] text-right">
+    <table class="w-full border-none table-fixed border-collapse">
+      <tbody>
+      <tr>
+        <td :class="tdBaseTextClass" class="text-left pr-2">
+          создан:
+        </td>
+        <td :class="tdBaseTextClass" class="text-left">
           {{ formatLocalDateTime(props.order?.start_moment, false) || 'не определено' }}
-          <span v-if="daysSinceCreation !== null" class="text-xs text-gray-500 ml-1">
-            ({{ daysSinceCreation }} {{ getDaysText(daysSinceCreation) }} назад)
-          </span>
-        </span>
-      </div>
+        </td>
+        <td v-if="daysSinceCreation !== null" class="text-xs text-gray-500 pl-2 text-left">
+          ({{ daysSinceCreation }} {{ getDaysText(daysSinceCreation) }} назад)
+        </td>
+        <td v-else></td>
+      </tr>
 
-      <div class="flex justify-between items-center">
-        <span :class="tdBaseTextClass">дедлайн:</span>
-        <span :class="tdBaseTextClass" class="min-w-[180px] text-right">
+      <tr>
+        <td :class="tdBaseTextClass" class="text-left pr-2">
+          дедлайн:
+        </td>
+        <td class="text-left">
           {{ formatLocalDateTime(props.order?.deadline_moment, false) || 'не определено' }}
-          <span v-if="daysUntilDeadline !== null" class="text-xs text-gray-500 ml-1">
-            <template v-if="daysUntilDeadline > 0">
-              (через {{ daysUntilDeadline }} {{ getDaysText(daysUntilDeadline) }})
-            </template>
-            <template v-else-if="daysUntilDeadline === 0">
-              (сегодня)
-            </template>
-            <template v-else>
-              (просрочен на {{ Math.abs(daysUntilDeadline) }} {{ getDaysText(Math.abs(daysUntilDeadline)) }})
-            </template>
-          </span>
-        </span>
-      </div>
+        </td>
+        <td
+            v-if="daysUntilDeadline !== null"
+            class="text-xs pl-2 text-left"
+            :class="isDeadlineOverdue ? 'text-red-400' : 'text-gray-500'"
+        >
+          <template v-if="daysUntilDeadline > 0">
+            (через {{ daysUntilDeadline }} {{ getDaysText(daysUntilDeadline) }})
+          </template>
+          <template v-else-if="daysUntilDeadline === 0">
+            (сегодня)
+          </template>
+          <template v-else>
+            (просрочен на {{ Math.abs(daysUntilDeadline) }} {{ getDaysText(Math.abs(daysUntilDeadline)) }})
+          </template>
+        </td>
+        <td v-else></td>
+      </tr>
 
-      <div v-if="props.order?.end_moment" class="flex justify-between items-center">
-        <span :class="tdBaseTextClass">завершен:</span>
-        <span :class="tdBaseTextClass" class="min-w-[180px] text-right">
+      <tr v-if="props.order?.end_moment">
+        <td :class="tdBaseTextClass" class="text-left pr-2">
+          завершён:
+        </td>
+        <td :class="tdBaseTextClass" class="text-left">
           {{ formatLocalDateTime(props.order?.end_moment, false) || 'не определено' }}
-          <span v-if="daysSinceCompletion !== null" class="text-xs text-gray-500 ml-1">
-            ({{ daysSinceCompletion }} {{ getDaysText(daysSinceCompletion) }} назад)
-          </span>
-        </span>
-      </div>
-    </div>
+        </td>
+        <td v-if="daysSinceCompletion !== null" class="text-xs text-gray-500 pl-2 text-left">
+          ({{ daysSinceCompletion }} {{ getDaysText(daysSinceCompletion) }} назад)
+        </td>
+        <td v-else></td>
+      </tr>
+      </tbody>
+    </table>
   </div>
 </template>
+
+
+<style scoped>
+table {
+  border: none;
+  border-collapse: collapse;
+}
+
+table tr {
+  height: 2rem; /* Выставляет фиксированную высоту строк для лучшего выравнивания */
+  border: none;
+}
+
+table td {
+  padding: 4px 0; /* Вертикальный отступ внутри ячеек для лучшей читаемости */
+  border: none;
+}
+
+table th {
+  border: none;
+}
+</style>
