@@ -4,8 +4,11 @@ import {onMounted, ref, computed} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import {getStatusColor} from "@/utils/getStatusColor";
+
+// импорт сторов
 import {useThemeStore} from '../stores/storeTheme';
 import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импортируем store контрагентов
+import { useWorksStore } from "@/stores/storeWorks"; // <-- Импорт works store если еще не импортирован
 
 // мои компоненты
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
@@ -14,6 +17,9 @@ import TaskList from "@/components/TaskList.vue";
 import FinanceBlock from '@/components/FinanceBlock.vue';
 import DateBlock from '@/components/DateBlock.vue';
 import OrderNameEditDialog from '@/components/OrderNameEditDialog.vue'; // Импорт нового компонента диалога
+import OrderWorksEditDialog from '@/components/OrderWorksEditDialog.vue'; // <-- Импорт нового компонента
+
+
 
 
 // primevue компоненты
@@ -159,6 +165,9 @@ onMounted(() => {
 
   // Загружаем список контрагентов
   counterpartyStore.fetchCounterparties();
+
+  // Загружаем работы один раз при монтировании основного компонента
+  worksStore.fetchWorks();
 
   // Загружаем с повтором
   fetchOrdersWithRetry({skip: 0, limit: 50, showEnded: showEndedOrders.value});
@@ -436,6 +445,54 @@ const handleNameEditCancel = () => {
   selectedOrderForNameEdit.value = {id: null, name: ''};
 };
 
+
+// --- State for Works Edit Dialog ---
+const showWorksEditDialog = ref(false);
+const selectedOrderForWorksEdit = ref<{ id: string | null, workIds: number[] }>({ id: null, workIds: [] });
+const worksStore = useWorksStore(); // <-- Получаем экземпляр works store
+
+
+/**
+ * Открывает диалог редактирования списка работ для заказа
+ * @param orderId - ID заказа
+ * @param currentWorks - Массив объектов текущих работ [{id: number, name: string}, ...]
+ */
+const openWorksEditDialog = (orderId: string, currentWorks: { id: number, name?: string }[]) => {
+  selectedOrderForWorksEdit.value = {
+    id: orderId,
+    workIds: currentWorks ? currentWorks.map(w => w.id) : [] // Извлекаем только ID
+  };
+  // Предзагрузка списка работ, если он пуст (проверяем основной массив 'works')
+  // Это запасной вариант, так как fetchWorks вызывается в onMounted
+  if (worksStore.works.length === 0 && !worksStore.isLoading) { // <--- FIX HERE
+    worksStore.fetchWorks();
+  }
+  showWorksEditDialog.value = true;
+  disableScroll(); // Блокируем прокрутку
+};
+
+
+
+/**
+ * Обработчик успешного обновления списка работ из диалога
+ */
+const handleWorksUpdated = async () => {
+  // Просто обновим список заказов, чтобы увидеть изменения
+  // В будущем можно оптимизировать и обновить только измененный заказ локально
+  await fetchOrders({
+    skip: currentSkip.value,
+    limit: currentLimit.value,
+    showEnded: showEndedOrders.value
+  });
+  enableScroll(); // Восстанавливаем прокрутку
+};
+
+// Обработчик отмены редактирования списка работ
+const handleWorksEditCancel = () => {
+  // selectedOrderForWorksEdit.value = { id: null, workIds: [] }; // Диалог сам сбросит visible
+  enableScroll(); // Восстанавливаем прокрутку
+};
+
 </script>
 
 
@@ -443,6 +500,7 @@ const handleNameEditCancel = () => {
   <div :class="mainContainerClass">
     <Toast/>
 
+    <!-- Модальное окно редактирования названия заказа -->
     <OrderNameEditDialog
         v-model:visible="showNameEditDialog"
         :order-id="selectedOrderForNameEdit.id"
@@ -450,6 +508,17 @@ const handleNameEditCancel = () => {
         @update-name="handleNameUpdated"
         @cancel="handleNameEditCancel"
     />
+
+    <!-- Модальное окно редактирования списка работ -->
+    <OrderWorksEditDialog
+        v-model:visible="showWorksEditDialog"
+        :order-id="selectedOrderForWorksEdit.id"
+        :initial-work-ids="selectedOrderForWorksEdit.workIds"
+        @update-works="handleWorksUpdated"
+        @cancel="handleWorksEditCancel"
+    />
+
+
     <!-- Модальное окно создания заказа -->
     <transition name="fade">
       <div v-if="showCreateDialog"
@@ -654,8 +723,19 @@ const handleNameEditCancel = () => {
               </div>
             </td>
 
-            <td class="px-4 py-2" :class="tdBaseTextClass">
-              <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
+            <td class="px-4 py-2 cursor-pointer hover:bg-opacity-10 hover:bg-blue-500 transition-colors"
+                :class="tdBaseTextClass"
+                @click="openWorksEditDialog(order.serial, order.works)">
+              <div class="flex items-center justify-between">
+                <div v-if="order.works && order.works.length > 0">
+                  <p v-for="work in order.works" :key="work.id" class="text-sm leading-tight"> • {{ work.name }} </p>
+                </div>
+                <div v-else class="text-xs text-gray-400 italic">
+                  Нет работ
+                </div>
+
+                <i class="ml-2 text-xs opacity-30 flex-shrink-0"></i>
+              </div>
             </td>
 
             <td
