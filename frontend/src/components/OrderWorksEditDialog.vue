@@ -157,7 +157,7 @@ const cancelEdit = () => {
 
     <div class="p-4">
       <div class="mb-4">
-        <label for="orderWorksEdit" class="block mb-2">Выберите работы (только активные)</label>
+        <label for="orderWorksEdit" class="block mb-2">Выберите работы</label>
         <MultiSelect
             id="orderWorksEdit"
             v-model="selectedWorkIds"
@@ -169,7 +169,7 @@ const cancelEdit = () => {
             class="w-full"
             filter
             :loading="isWorksLoading"
-            :maxSelectedLabels="5"
+            :maxSelectedLabels="2"
             selectedItemsLabel="{0} работ выбрано"
             :selectAll="false"
             :showToggleAll="false"
