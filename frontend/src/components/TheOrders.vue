@@ -16,6 +16,9 @@ import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
 import { useToast } from 'primevue/usetoast';
+import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
+import InputText from 'primevue/inputtext'; // Для ввода нового названия
+import Button from "primevue/button";
 
 
 const toast = useToast();
@@ -471,6 +474,80 @@ const priorityOptions = [
   }))
 ];
 
+
+
+// Состояние для диалога изменения названия
+const showNameEditDialog = ref(false);
+const selectedOrderForNameEdit = ref<string | null>(null);
+const newOrderName = ref('');
+const originalOrderName = ref('');
+
+/**
+ * Открывает диалог изменения названия заказа
+ * @param orderId - ID заказа
+ * @param currentName - Текущее название заказа
+ */
+const openNameEditDialog = (orderId: string, currentName: string) => {
+  selectedOrderForNameEdit.value = orderId;
+  newOrderName.value = currentName;
+  originalOrderName.value = currentName;
+  showNameEditDialog.value = true;
+};
+
+/**
+ * Обработчик изменения названия заказа
+ */
+const handleUpdateOrderName = async () => {
+  if (!selectedOrderForNameEdit.value || newOrderName.value.trim() === '') {
+    return;
+  }
+
+  try {
+    // Обновляем название заказа через store
+    await ordersStore.updateOrder(selectedOrderForNameEdit.value, {
+      name: newOrderName.value.trim()
+    });
+
+    // Показываем уведомление об успехе
+    toast.add({
+      severity: 'success',
+      summary: 'Успешно',
+      detail: `Название заказа #${selectedOrderForNameEdit.value} обновлено`,
+      life: 3000
+    });
+
+    // Закрываем диалог
+    showNameEditDialog.value = false;
+
+    // Обновляем список заказов с текущими параметрами
+    await fetchOrders({
+      skip: currentSkip.value,
+      limit: currentLimit.value,
+      showEnded: showEndedOrders.value
+    });
+  } catch (error) {
+    console.error('Ошибка при изменении названия заказа:', error);
+
+    // Показываем уведомление об ошибке
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: `Не удалось изменить название заказа #${selectedOrderForNameEdit.value}`,
+      life: 5000
+    });
+  }
+};
+
+/**
+ * Отменяет редактирование названия и закрывает диалог
+ */
+const cancelNameEdit = () => {
+  showNameEditDialog.value = false;
+  selectedOrderForNameEdit.value = null;
+  newOrderName.value = '';
+  originalOrderName.value = '';
+};
+
 </script>
 
 
@@ -478,6 +555,57 @@ const priorityOptions = [
 <template>
   <div :class="mainContainerClass">
     <Toast />
+
+    <!-- Добавляем диалог изменения названия заказа -->
+    <Dialog
+        v-model:visible="showNameEditDialog"
+        modal
+        header="Изменение названия заказа"
+        :style="{ width: '450px' }"
+        :closable="true"
+        :dismissableMask="true"
+    >
+      <template #header>
+        <div :class="['p-dialog-header']">
+          <span class="text-lg font-bold">Изменение названия заказа</span>
+        </div>
+      </template>
+
+      <div :class="['p-4']">
+        <div class="mb-4">
+          <label for="orderName" class="block mb-2">Название заказа</label>
+          <InputText
+              id="orderName"
+              v-model="newOrderName"
+              class="w-full p-2"
+              placeholder="Введите новое название заказа"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div :class="['flex justify-end space-x-2 p-3']">
+
+          <Button
+              @click="cancelNameEdit"
+              label="Cancel"
+              severity="secondary"
+          >
+            Отмена
+          </Button>
+
+          <Button
+              @click="handleUpdateOrderName"
+              label="Сохранить"
+              :disabled="newOrderName.trim() === ''"
+              icon="pi pi-check"
+              iconPos="right"
+          />
+
+
+        </div>
+      </template>
+    </Dialog>
 
 
     <!-- Модальное окно создания заказа -->
@@ -670,7 +798,16 @@ const priorityOptions = [
               </Select>
             </td>
 
-            <td class="px-4 py-2" :class="tdBaseTextClass"> {{ order.name }}</td>
+            <!-- В таблице добавим возможность изменить название при клике -->
+            <td class="px-4 py-2 cursor-pointer hover:bg-opacity-10 hover:bg-blue-500 transition-colors"
+                :class="tdBaseTextClass"
+                @click="openNameEditDialog(order.serial, order.name)">
+              <div class="flex items-center">
+                {{ order.name }}
+                <i class="ml-2 text-xs opacity-50"></i>
+              </div>
+            </td>
+
             <td class="px-4 py-2" :class="tdBaseTextClass">
               <p v-for="work in order.works" :key="work.id"> • {{ work.name }} </p>
             </td>
@@ -853,5 +990,16 @@ const priorityOptions = [
   /* Тень для светлой темы */
   box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
+:deep(.p-dialog-header) {
+  padding: 1rem;
+  border-bottom: 1px solid v-bind('currentTheme === "dark" ? "rgba(75, 85, 99, 1)" : "rgba(229, 231, 235, 1)"');
+}
+
+:deep(.p-dialog-content) {
+  padding: 0;
+}
+
+
+
 
 </style>
