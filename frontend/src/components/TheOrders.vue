@@ -3,13 +3,13 @@
 import {onMounted, ref, computed} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
-import BaseButton from "@/components/Buttons/BaseButton.vue";
-import TaskList from "@/components/TaskList.vue";
-import {formatFIO} from "@/utils/formatFIO.ts";
 import {getStatusColor} from "@/utils/getStatusColor";
-import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import {useThemeStore} from '../stores/storeTheme';
 import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импортируем store контрагентов
+
+import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
+import CommentBlock from '@/components/CommentBlock.vue';
+import TaskList from "@/components/TaskList.vue";
 
 // primevue компоненты
 import Toast from 'primevue/toast'
@@ -288,20 +288,6 @@ const detailHeaderClass = computed(() => {
       : `${base} text-gray-800`;
 });
 
-// Классы для второстепенного текста (даты/авторы комментариев, "Нет комментариев")
-const detailSubtleTextClass = computed(() => {
-  return currentTheme.value === 'dark' ? 'text-gray-400' : 'text-gray-500';
-});
-
-// Классы для отдельного комментария
-const commentItemClass = computed(() => {
-  const base = 'border rounded-md p-2 mb-2 transition-colors duration-300 ease-in-out';
-  // Используем bg-gray-850/bg-gray-100 для отличия от фона блока
-  return currentTheme.value === 'dark'
-      ? `${base} border-gray-700 bg-gray-850`
-      : `${base} border-gray-300 bg-gray-100`;
-});
-
 // Классы для кнопок пагинации
 const paginationButtonClass = computed(() => {
   const base = 'px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300';
@@ -385,7 +371,7 @@ const orderVisibilityOptions = [
   { label: 'Все заказы', value: true }
 ];
 
-// Добавить после функции formatLocalDateTime
+
 /**
  * Обработчик изменения заказчика заказа
  * @param orderId - ID заказа
@@ -678,16 +664,17 @@ const isNameUpdateLoading = ref(false);
 
 
               <span class="flex">
-                  <BaseButton
-                      :action="findOrders"
-                      :text="'Поиск'"
-                      :style="'Primary'"
+                  <Button
+                      @click="findOrders"
+                      :label="'Поиск'"
+                      severity="secondary"
+                      :disabled="'true'"
                       class="mr-2"
                   />
-                  <BaseButton
-                      :action="addNewOrder"
-                      :text="'Добавить'"
-                      :style="'Success'"
+                  <Button
+                      @click="addNewOrder"
+                      :label="'Добавить'"
+                      severity="primary"
                   />
                 </span>
             </div>
@@ -852,33 +839,10 @@ const isNameUpdateLoading = ref(false);
               <div v-else>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-                  <div :class="detailBlockClass">
-                    <h4 :class="detailHeaderClass">Комментарии</h4>
-                    <div
-                        v-if="!currentOrderDetail?.comments || currentOrderDetail.comments.length === 0"
-                        :class="detailSubtleTextClass"
-                    >
-                      Нет комментариев
-                    </div>
-                    <div v-else class="space-y-2">
-                      <div
-                          v-for="(comment, index) in currentOrderDetail.comments"
-                          :key="index"
-                          :class="commentItemClass"
-                      >
-                        <div class="flex justify-between items-center">
-                          <div class="text-xs" :class="detailSubtleTextClass">
-                            {{ formatLocalDateTime(comment.moment_of_creation) || 'Дата не указана' }}
-                          </div>
-                          <div class="text-xs" :class="detailSubtleTextClass">
-                            {{ formatFIO(comment.person) || 'Автор не указан' }}
-                          </div>
-                        </div>
-                        <div class="mt-1" :class="tdBaseTextClass">{{ comment.text }}</div>
-                      </div>
-                    </div>
-                  </div>
-
+                  <CommentBlock
+                      :comments="currentOrderDetail?.comments"
+                      :theme="currentTheme"
+                  />
 
                   <div class="flex flex-col gap-4">
 
