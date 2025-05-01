@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { usePagesStore } from "../stores/storePages.ts";
 import { useThemeStore } from "../stores/storeTheme";
-import { computed, ref } from "vue"; // Добавим импорт ref
+import { computed } from "vue"; // Добавим импорт ref
 import Button from "primevue/button";
 
 
@@ -11,9 +11,6 @@ const themeStore = useThemeStore();
 const currentTheme = computed(() => themeStore.theme);
 
 const pageStore = usePagesStore();
-
-// Добавим состояние для отображения модального окна
-const showModal = ref(false);
 
 </script>
 
