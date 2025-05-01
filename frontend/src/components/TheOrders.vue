@@ -585,7 +585,10 @@ const isNameUpdateLoading = ref(false);
               id="orderName"
               v-model="newOrderName"
               class="w-full p-2"
-              placeholder="Введите новое название заказа"
+              @keyup.enter="newOrderName.trim() !== '' &&
+                   newOrderName.trim() !== originalOrderName &&
+                   !isNameUpdateLoading &&
+                   handleUpdateOrderName()"
           />
         </div>
       </div>
