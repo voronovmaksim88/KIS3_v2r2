@@ -5,17 +5,19 @@ import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import {getStatusColor} from "@/utils/getStatusColor";
 import {useThemeStore} from '../stores/storeTheme';
-import { useCounterpartyStore } from '@/stores/storeCounterparty'; // Импортируем store контрагентов
+import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импортируем store контрагентов
 
+// мои компоненты
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
 import CommentBlock from '@/components/CommentBlock.vue';
 import TaskList from "@/components/TaskList.vue";
+import FinanceBlock from '@/components/FinanceBlock.vue';
 
 // primevue компоненты
 import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
-import { useToast } from 'primevue/usetoast';
+import {useToast} from 'primevue/usetoast';
 import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
 import InputText from 'primevue/inputtext'; // Для ввода нового названия
 import Button from "primevue/button";
@@ -52,7 +54,7 @@ const {fetchOrders, clearError, fetchOrderDetail, resetOrderDetail, resetOrders}
 const showCreateDialog = ref(false);
 
 // для сортировки
-const { currentSortField, currentSortDirection } = storeToRefs(ordersStore);
+const {currentSortField, currentSortDirection} = storeToRefs(ordersStore);
 
 // Добавляем store контрагентов
 const counterpartyStore = useCounterpartyStore();
@@ -367,8 +369,8 @@ const getSortIcon = (field: string) => {
 
 // Опции для переключателя видимости заказов
 const orderVisibilityOptions = [
-  { label: 'Активные', value: false },
-  { label: 'Все заказы', value: true }
+  {label: 'Активные', value: false},
+  {label: 'Все заказы', value: true}
 ];
 
 
@@ -382,7 +384,7 @@ const handleCustomerChange = async (orderId: string, customerId: number) => {
     console.log(`Заказчик для заказа ${orderId} изменен на ${customerId}`);
 
     // Используем существующий метод updateOrder, передавая только изменение customer_id
-    await ordersStore.updateOrder(orderId, { customer_id: customerId });
+    await ordersStore.updateOrder(orderId, {customer_id: customerId});
 
     // Показываем уведомление об успехе через PrimeVue Toast
     toast.add({
@@ -414,7 +416,7 @@ const handlePriorityChange = async (orderId: string, priority: number | null) =>
     console.log(`Приоритет для заказа ${orderId} изменен на ${priority}`);
 
     // Используем существующий метод updateOrder
-    await ordersStore.updateOrder(orderId, { priority });
+    await ordersStore.updateOrder(orderId, {priority});
 
     // Показываем уведомление об успехе через PrimeVue Toast
     toast.add({
@@ -461,7 +463,6 @@ const priorityOptions = [
 ];
 
 
-
 // Состояние для диалога изменения названия
 const showNameEditDialog = ref(false);
 const selectedOrderForNameEdit = ref<string | null>(null);
@@ -479,7 +480,6 @@ const openNameEditDialog = (orderId: string, currentName: string) => {
   originalOrderName.value = currentName;
   showNameEditDialog.value = true;
 };
-
 
 
 /**
@@ -544,10 +544,9 @@ const isNameUpdateLoading = ref(false);
 </script>
 
 
-
 <template>
   <div :class="mainContainerClass">
-    <Toast />
+    <Toast/>
 
     <!-- Добавляем диалог изменения названия заказа -->
     <Dialog
@@ -607,7 +606,8 @@ const isNameUpdateLoading = ref(false);
 
     <!-- Модальное окно создания заказа -->
     <transition name="fade">
-      <div v-if="showCreateDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div v-if="showCreateDialog"
+           class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="max-w-4xl w-full">
           <OrderCreateForm
               @success="handleOrderCreated"
@@ -659,7 +659,7 @@ const isNameUpdateLoading = ref(false);
               <span class="flex items-center">
                 <SelectButton v-model="showEndedOrders" :options="orderVisibilityOptions"
                               @change="toggleEndedOrders" optionLabel="label" optionValue="value"
-                              aria-labelledby="orders-visibility-label" class="text-sm" />
+                              aria-labelledby="orders-visibility-label" class="text-sm"/>
               </span>
 
 
@@ -782,13 +782,15 @@ const isNameUpdateLoading = ref(false);
               >
                 <template #option="slotProps">
                   <div class="flex items-center">
-                    <div v-if="slotProps.option.value !== null" class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.option.value}`"></div>
+                    <div v-if="slotProps.option.value !== null" class="w-3 h-3 rounded-full mr-2"
+                         :class="`priority-indicator priority-${slotProps.option.value}`"></div>
                     <span>{{ slotProps.option.label }}</span>
                   </div>
                 </template>
                 <template #value="slotProps">
                   <div v-if="slotProps.value" class="flex items-center">
-                    <div class="w-3 h-3 rounded-full mr-2" :class="`priority-indicator priority-${slotProps.value}`"></div>
+                    <div class="w-3 h-3 rounded-full mr-2"
+                         :class="`priority-indicator priority-${slotProps.value}`"></div>
                     <span>{{ priorityOptions.find(opt => opt.value === slotProps.value)?.label }}</span>
                   </div>
                   <span v-else>Нет</span>
@@ -862,48 +864,14 @@ const isNameUpdateLoading = ref(false);
                     </div>
 
 
-                    <div :class="detailBlockClass">
-                      <h4 :class="detailHeaderClass">Финансы</h4>
+                    <FinanceBlock
+                        :finance="currentOrderDetail"
+                        :theme="currentTheme"
+                        :detailBlockClass="detailBlockClass"
+                        :detailHeaderClass="detailHeaderClass"
+                        :tdBaseTextClass="tdBaseTextClass"
+                    />
 
-                      <div class="grid grid-cols-2 gap-2 text-sm" :class="tdBaseTextClass">
-                        <div>
-                          <span>Материалы: </span>
-                          <span
-                              class="font-medium text-red-300"
-                              :class="{ 'line-through opacity-60': currentOrderDetail?.materials_paid }"
-                          >
-                              {{ currentOrderDetail?.materials_cost }} руб.
-                            </span>
-                        </div>
-                        <div>
-                          <span>Товары: </span>
-                          <span
-                              class="font-medium text-red-300"
-                              :class="{ 'line-through opacity-60': currentOrderDetail?.products_paid }"
-                          >
-                              {{ currentOrderDetail?.products_cost }} руб.
-                            </span>
-                        </div>
-                        <div>
-                          <span>Работы: </span>
-                          <span
-                              class="font-medium text-red-300"
-                              :class="{ 'line-through opacity-60': currentOrderDetail?.work_paid }"
-                          >
-                              {{ currentOrderDetail?.work_cost }} руб.
-                            </span>
-                        </div>
-                        <div>
-                          <span>Нам должны: </span>
-                          <span
-                              class="font-medium text-green-400"
-                              :class="{ 'line-through opacity-60': currentOrderDetail?.debt_paid }"
-                          >
-                              {{ currentOrderDetail?.debt }} руб.
-                            </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   <TaskList :tasks="currentOrderDetail?.tasks || []" :theme="currentTheme"/>
@@ -965,6 +933,7 @@ const isNameUpdateLoading = ref(false);
   /* Тень для светлой темы */
   box-shadow: v-bind('currentTheme === "dark" ? "none" : "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"');
 }
+
 :deep(.p-dialog-header) {
   padding: 1rem;
   border-bottom: 1px solid v-bind('currentTheme === "dark" ? "rgba(75, 85, 99, 1)" : "rgba(229, 231, 235, 1)"');
@@ -973,8 +942,6 @@ const isNameUpdateLoading = ref(false);
 :deep(.p-dialog-content) {
   padding: 0;
 }
-
-
 
 
 </style>
