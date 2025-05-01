@@ -494,6 +494,8 @@ const openNameEditDialog = (orderId: string, currentName: string) => {
   showNameEditDialog.value = true;
 };
 
+
+
 /**
  * Обработчик изменения названия заказа
  */
@@ -503,6 +505,8 @@ const handleUpdateOrderName = async () => {
   }
 
   try {
+    isNameUpdateLoading.value = true;
+
     // Обновляем название заказа через store
     await ordersStore.updateOrder(selectedOrderForNameEdit.value, {
       name: newOrderName.value.trim()
@@ -535,6 +539,8 @@ const handleUpdateOrderName = async () => {
       detail: `Не удалось изменить название заказа #${selectedOrderForNameEdit.value}`,
       life: 5000
     });
+  } finally {
+    isNameUpdateLoading.value = false;
   }
 };
 
@@ -548,6 +554,7 @@ const cancelNameEdit = () => {
   originalOrderName.value = '';
 };
 
+const isNameUpdateLoading = ref(false);
 </script>
 
 
@@ -597,7 +604,8 @@ const cancelNameEdit = () => {
           <Button
               @click="handleUpdateOrderName"
               label="Сохранить"
-              :disabled="newOrderName.trim() === ''"
+              :loading="isNameUpdateLoading"
+              :disabled="newOrderName.trim() === '' || newOrderName.trim() === originalOrderName"
               icon="pi pi-check"
               iconPos="right"
           />
