@@ -15,10 +15,6 @@ const pageStore = usePagesStore();
 // Добавим состояние для отображения модального окна
 const showModal = ref(false);
 
-// Функции для управления модальным окном
-const openModal = () => {
-  showModal.value = true;
-};
 </script>
 
 <template>
