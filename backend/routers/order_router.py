@@ -193,17 +193,26 @@ async def read_orders(
     if sort_field.lower() == "priority":
         # Сортировка по приоритету
         # Учитываем, что приоритет может быть NULL, поэтому размещаем NULL значения в конце
+        # Для заказов с одинаковым приоритетом сортируем по дате создания (серийному номеру)
         if is_ascending:
             # Низкий приоритет сначала, NULL в конце
             query = query.order_by(
                 Order.priority.is_(None).asc(),  # NULL в конце
-                Order.priority.asc()
+                Order.priority.asc(),
+                # Вторичная сортировка по дате создания (серийный номер)
+                cast(func.substring(Order.serial, 9, 4), Integer).asc(),
+                cast(func.substring(Order.serial, 5, 2), Integer).asc(),
+                cast(func.substring(Order.serial, 1, 3), Integer).asc()
             )
         else:
             # Высокий приоритет сначала, NULL в конце
             query = query.order_by(
                 Order.priority.is_(None).asc(),  # NULL в конце
-                Order.priority.desc()
+                Order.priority.desc(),
+                # Вторичная сортировка по дате создания (серийный номер)
+                cast(func.substring(Order.serial, 9, 4), Integer).asc(),
+                cast(func.substring(Order.serial, 5, 2), Integer).asc(),
+                cast(func.substring(Order.serial, 1, 3), Integer).asc()
             )
     else:
         # Сортировка по серийному номеру (используется по умолчанию)
