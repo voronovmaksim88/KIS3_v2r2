@@ -13,14 +13,14 @@ import CommentBlock from '@/components/CommentBlock.vue';
 import TaskList from "@/components/TaskList.vue";
 import FinanceBlock from '@/components/FinanceBlock.vue';
 import DateBlock from '@/components/DateBlock.vue';
+import OrderNameEditDialog from '@/components/OrderNameEditDialog.vue'; // Импорт нового компонента диалога
+
 
 // primevue компоненты
 import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select'; // Импортируем компонент выпадающего списка
 import {useToast} from 'primevue/usetoast';
-import Dialog from 'primevue/dialog'; // Импорт Dialog из PrimeVue
-import InputText from 'primevue/inputtext'; // Для ввода нового названия
 import Button from "primevue/button";
 
 
@@ -401,83 +401,41 @@ const priorityOptions = [
 
 
 // Состояние для диалога изменения названия
-const showNameEditDialog = ref(false);
-const selectedOrderForNameEdit = ref<string | null>(null);
-const newOrderName = ref('');
-const originalOrderName = ref('');
+const showNameEditDialog = ref(false); // Оставить эту строку
+const selectedOrderForNameEdit = ref<{ id: string | null, name: string }>({id: null, name: ''}); // Изменить тип и инициализацию
 
 /**
- * Открывает диалог изменения названия заказа
- * @param orderId - ID заказа
- * @param currentName - Текущее название заказа
- */
+ + * Открывает диалог изменения названия заказа
+ + * @param orderId - ID заказа
+ + * @param currentName - Текущее название заказа
+ + */
 const openNameEditDialog = (orderId: string, currentName: string) => {
-  selectedOrderForNameEdit.value = orderId;
-  newOrderName.value = currentName;
-  originalOrderName.value = currentName;
+  selectedOrderForNameEdit.value = {id: orderId, name: currentName};
   showNameEditDialog.value = true;
 };
 
 
 /**
- * Обработчик изменения названия заказа
+ * Обработчик успешного обновления названия заказа из диалога
  */
-const handleUpdateOrderName = async () => {
-  if (!selectedOrderForNameEdit.value || newOrderName.value.trim() === '') {
-    return;
-  }
-
-  try {
-    isNameUpdateLoading.value = true;
-
-    // Обновляем название заказа через store
-    await ordersStore.updateOrder(selectedOrderForNameEdit.value, {
-      name: newOrderName.value.trim()
-    });
-
-    // Показываем уведомление об успехе
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Название заказа #${selectedOrderForNameEdit.value} обновлено`,
-      life: 3000
-    });
-
-    // Закрываем диалог
-    showNameEditDialog.value = false;
-
-    // Обновляем список заказов с текущими параметрами
-    await fetchOrders({
-      skip: currentSkip.value,
-      limit: currentLimit.value,
-      showEnded: showEndedOrders.value
-    });
-  } catch (error) {
-    console.error('Ошибка при изменении названия заказа:', error);
-
-    // Показываем уведомление об ошибке
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: `Не удалось изменить название заказа #${selectedOrderForNameEdit.value}`,
-      life: 5000
-    });
-  } finally {
-    isNameUpdateLoading.value = false;
-  }
+const handleNameUpdated = async () => {
+  // Здесь уже не нужно вызывать ordersStore.updateOrder или показывать toast,
+  // так как это делает OrderNameEditDialog.
+  // Но нужно обновить список заказов, чтобы изменения отобразились.
+  await fetchOrders({
+    skip: currentSkip.value,
+    limit: currentLimit.value,
+    showEnded: showEndedOrders.value
+  });
+  // Очищаем выбранный заказ после закрытия диалога
+  selectedOrderForNameEdit.value = {id: null, name: ''};
 };
 
-/**
- * Отменяет редактирование названия и закрывает диалог
- */
-const cancelNameEdit = () => {
-  showNameEditDialog.value = false;
-  selectedOrderForNameEdit.value = null;
-  newOrderName.value = '';
-  originalOrderName.value = '';
+// Обработчик отмены редактирования названия
+const handleNameEditCancel = () => {
+  selectedOrderForNameEdit.value = {id: null, name: ''};
 };
 
-const isNameUpdateLoading = ref(false);
 </script>
 
 
@@ -485,62 +443,13 @@ const isNameUpdateLoading = ref(false);
   <div :class="mainContainerClass">
     <Toast/>
 
-    <!-- Добавляем диалог изменения названия заказа -->
-    <Dialog
+    <OrderNameEditDialog
         v-model:visible="showNameEditDialog"
-        modal
-        header="Изменение названия заказа"
-        :style="{ width: '450px' }"
-        :closable="true"
-        :dismissableMask="true"
-    >
-      <template #header>
-        <div :class="['p-dialog-header']">
-          <span class="text-lg font-bold">Изменение названия заказа</span>
-        </div>
-      </template>
-
-      <div :class="['p-4']">
-        <div class="mb-4">
-          <label for="orderName" class="block mb-2">Название заказа</label>
-          <InputText
-              id="orderName"
-              v-model="newOrderName"
-              class="w-full p-2"
-              @keyup.enter="newOrderName.trim() !== '' &&
-                   newOrderName.trim() !== originalOrderName &&
-                   !isNameUpdateLoading &&
-                   handleUpdateOrderName()"
-          />
-        </div>
-      </div>
-
-      <template #footer>
-        <div :class="['flex justify-end space-x-2 p-3']">
-
-          <Button
-              @click="cancelNameEdit"
-              label="Cancel"
-              severity="secondary"
-          >
-            Отмена
-          </Button>
-
-          <Button
-              @click="handleUpdateOrderName"
-              label="Сохранить"
-              :loading="isNameUpdateLoading"
-              :disabled="newOrderName.trim() === '' || newOrderName.trim() === originalOrderName"
-              icon="pi pi-check"
-              iconPos="right"
-          />
-
-
-        </div>
-      </template>
-    </Dialog>
-
-
+        :order-id="selectedOrderForNameEdit.id"
+        :initial-name="selectedOrderForNameEdit.name"
+        @update-name="handleNameUpdated"
+        @cancel="handleNameEditCancel"
+    />
     <!-- Модальное окно создания заказа -->
     <transition name="fade">
       <div v-if="showCreateDialog"
