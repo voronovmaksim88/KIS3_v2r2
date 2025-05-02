@@ -526,9 +526,7 @@ const handleStatusChange = async (orderId: string, statusId: number) => {
       detail: `Статус заказа #${orderId} успешно изменен`,
       life: 3000
     });
-    // Опционально: можно обновить только этот заказ локально, если store не делает этого автоматически
-    // или перезапросить все заказы (менее оптимально)
-    // await fetchOrders({ skip: currentSkip.value, limit: currentLimit.value, showEnded: showEndedOrders.value });
+
   } catch (error) {
     console.error('Ошибка при изменении статуса:', error);
     // Показываем уведомление об ошибке
