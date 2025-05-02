@@ -21,6 +21,7 @@ from routers.order_router import router as order_router
 from routers.people_router import router as people_router
 from routers.counterparty_router import router as counterparty_router
 from routers.work_router import router as work_router
+from routers.comments_router import router as comments_router
 
 # Импортируем фабрику сессий из вашего модуля database
 from database import async_session_maker
@@ -103,7 +104,8 @@ async def lifespan(_: FastAPI): # <-- Вот так, чтобы показать
 # Создаем приложение FastAPI с lifespan менеджером
 app = FastAPI(root_path="/api", lifespan=lifespan)
 
-# Подключаем роутеры
+
+app.include_router(comments_router)
 app.include_router(import_router)
 app.include_router(test_router)
 app.include_router(jwt_auth.router)
