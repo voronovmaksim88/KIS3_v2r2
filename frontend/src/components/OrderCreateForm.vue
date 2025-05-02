@@ -1,5 +1,4 @@
 <!-- OrderCreateForm.vue -->
-<!--suppress VueUnrecognizedSlot -->
 <script setup lang="ts">
 import {onMounted} from 'vue';
 import {reactive, computed} from 'vue';

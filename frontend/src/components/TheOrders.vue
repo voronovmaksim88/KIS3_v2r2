@@ -493,6 +493,58 @@ const handleWorksEditCancel = () => {
   enableScroll(); // Восстанавливаем прокрутку
 };
 
+// Опции для статуса (копируем из OrderCreateForm для консистентности,
+// в идеале это может быть вынесено в store или общий файл констант)
+const statusOptions = [
+  {value: 1, label: 'Не определён'},
+  {value: 2, label: 'На согласовании'},
+  {value: 3, label: 'В работе'},
+  {value: 4, label: 'Просрочено'},
+  {value: 5, label: 'Выполнено в срок'},
+  {value: 6, label: 'Выполнено НЕ в срок'},
+  {value: 7, label: 'Не согласовано'},
+  {value: 8, label: 'На паузе'},
+];
+
+
+/**
+ * Обработчик изменения статуса заказа
+ * @param orderId - ID заказа
+ * @param statusId - ID нового статуса
+ */
+const handleStatusChange = async (orderId: string, statusId: number) => {
+  try {
+    console.log(`Статус для заказа ${orderId} изменен на ${statusId}`);
+
+    // Используем существующий метод updateOrder
+    await ordersStore.updateOrder(orderId, { status_id: statusId });
+
+    // Показываем уведомление об успехе через PrimeVue Toast
+    toast.add({
+      severity: 'success',
+      summary: 'Успешно',
+      detail: `Статус заказа #${orderId} успешно изменен`,
+      life: 3000
+    });
+    // Опционально: можно обновить только этот заказ локально, если store не делает этого автоматически
+    // или перезапросить все заказы (менее оптимально)
+    // await fetchOrders({ skip: currentSkip.value, limit: currentLimit.value, showEnded: showEndedOrders.value });
+  } catch (error) {
+    console.error('Ошибка при изменении статуса:', error);
+    // Показываем уведомление об ошибке
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: `Не удалось изменить статус заказа #${orderId}`,
+      life: 5000
+    });
+    // Важно: Откатить локальное изменение в UI, если store не обрабатывает ошибки автоматически
+    // Это может потребовать перезапроса данных или более сложной логики отката
+    // Для простоты пока оставим так, но в реальном приложении это нужно учесть.
+    // Возможно, стоит перезапросить данные, чтобы вернуть старое значение
+    await fetchOrders({ skip: currentSkip.value, limit: currentLimit.value, showEnded: showEndedOrders.value });
+  }
+};
 </script>
 
 
@@ -738,14 +790,32 @@ const handleWorksEditCancel = () => {
               </div>
             </td>
 
-            <td
-                class="px-4 py-2"
-                :class="{
-                  'font-bold': [1, 2, 3, 4, 8].includes(order.status_id)
-                }"
-                :style="{ color: getStatusColor(order.status_id) }"
-            >
-              {{ ordersStore.getStatusText(order.status_id) }}
+            <td class="px-4 py-2" :class="tdBaseTextClass">
+              <Select
+                  v-model="order.status_id"
+                  :options="statusOptions"
+                  optionValue="value"
+                  optionLabel="label"
+                  placeholder="Выберите статус"
+                  class="w-full"
+                  @change="handleStatusChange(order.serial, order.status_id)"
+              >
+
+                <template #value="slotProps">
+                   <span v-if="slotProps.value" :style="{ color: getStatusColor(slotProps.value) }">
+                     {{ statusOptions.find(opt => opt.value === slotProps.value)?.label || 'Неизвестный статус' }}
+                   </span>
+                  <span v-else>{{ slotProps.placeholder }}</span>
+                </template>
+
+                <template #option="slotProps">
+                  <div class="flex items-center">
+                      <span :style="{ color: getStatusColor(slotProps.option.value) }">
+                        {{ slotProps.option.label }}
+                      </span>
+                  </div>
+                </template>
+              </Select>
             </td>
 
           </tr>
