@@ -1,4 +1,3 @@
-<!-- src/components/DateBlock.vue -->
 <script setup lang="ts">
 import { computed } from 'vue';
 
@@ -12,7 +11,7 @@ interface DateData {
 // Определяем пропсы для компонента через деструктуризацию
 const props = defineProps<{
   order: DateData | null;
-  theme: string;
+  theme: string; // Не используется в текущей логике, но оставлен
   detailBlockClass: string;
   detailHeaderClass: string;
   tdBaseTextClass: string;
@@ -45,26 +44,28 @@ function formatLocalDateTime(
       return isoDateString; // Возвращаем исходную строку в случае ошибки
     }
 
-    // Применяем смещение часового пояса
-    const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    // ВАЖНО: Не применяем смещение часового пояса здесь,
+    // так как ISO строка уже содержит информацию о поясе (или подразумевает UTC).
+    // Date() парсит это корректно. Форматирование в ЛОКАЛЬНОЕ время
+    // должно происходить при выводе компонентов (getFullYear, getMonth и т.д.)
 
-    // Извлекаем компоненты даты
-    const year = adjustedDate.getFullYear();
-    const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(adjustedDate.getDate()).padStart(2, '0');
+    // Извлекаем компоненты даты (они будут локальными)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
 
     // Формируем строку с датой
     let formattedDate = `${year}-${month}-${day}`;
 
     // Добавляем часы и минуты, если необходимо
     if (includeHourAndMinute) {
-      const hours = String(adjustedDate.getHours()).padStart(2, '0');
-      const minutes = String(adjustedDate.getMinutes()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
       formattedDate += ` ${hours}:${minutes}`;
 
       // Добавляем секунды, если они нужны и если включены часы/минуты
       if (includeSeconds) {
-        const seconds = String(adjustedDate.getSeconds()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
         formattedDate += `:${seconds}`;
       }
     }
@@ -76,57 +77,157 @@ function formatLocalDateTime(
   }
 }
 
-// Вычисляем количество дней с момента создания
-const daysSinceCreation = computed(() => {
-  if (!props.order?.start_moment) return null;
-  const startDate = new Date(props.order.start_moment);
-  const now = new Date();
-  const diffTime = now.getTime() - startDate.getTime();
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-});
+// --- Новые функции для расчета разницы и форматирования ---
 
-// Вычисляем количество дней до дедлайна
-const daysUntilDeadline = computed(() => {
-  if (!props.order?.deadline_moment) return null;
-  const deadlineDate = new Date(props.order.deadline_moment);
-  const now = new Date();
-  const diffTime = deadlineDate.getTime() - now.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
+interface DateDifference {
+  years: number;
+  months: number;
+  days: number;
+  totalDays: number; // Общее количество дней для определения знака и случая "сегодня"
+}
 
-// Вычисляем количество дней с момента завершения
-const daysSinceCompletion = computed(() => {
-  if (!props.order?.end_moment) return null;
-  const endDate = new Date(props.order.end_moment);
-  const now = new Date();
-  const diffTime = now.getTime() - endDate.getTime();
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-});
+/**
+ * Рассчитывает разницу между двумя датами в годах, месяцах и днях.
+ * @param date1 - Первая дата (объект Date)
+ * @param date2 - Вторая дата (объект Date)
+ * @returns Объект с разницей {years, months, days, totalDays}
+ */
+function calculateDateDifference(date1: Date, date2: Date): DateDifference {
+  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
 
-// Проверка, просрочен ли дедлайн
-const isDeadlineOverdue = computed(() => {
-  return daysUntilDeadline.value !== null && daysUntilDeadline.value < 0;
-});
+  const diffTime = d2.getTime() - d1.getTime();
+  const totalDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // Округляем для случая "сегодня"
 
-// Вспомогательная функция для склонения слова "день"
+  // Определяем, какая дата раньше, для корректного расчета
+  let startDate = d1 < d2 ? d1 : d2;
+  let endDate = d1 < d2 ? d2 : d1;
+
+  let years = endDate.getFullYear() - startDate.getFullYear();
+  let months = endDate.getMonth() - startDate.getMonth();
+  let days = endDate.getDate() - startDate.getDate();
+
+  // Корректировка отрицательных значений
+  if (days < 0) {
+    // Берем дни из предыдущего месяца конечной даты
+    const prevMonthEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), 0);
+    days += prevMonthEndDate.getDate();
+    months--; // Уменьшаем количество месяцев, так как заняли дни
+  }
+
+  if (months < 0) {
+    months += 12; // Добавляем 12 месяцев
+    years--; // Уменьшаем количество лет
+  }
+
+  // Если даты были переданы в обратном порядке, totalDays будет отрицательным
+  // years, months, days всегда положительны или 0 из-за startDate/endDate
+  return { years, months, days, totalDays };
+}
+
+// Вспомогательные функции для склонения слов
+function getYearsText(years: number): string {
+  const lastDigit = years % 10;
+  const lastTwoDigits = years % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return 'лет';
+  if (lastDigit === 1) return 'год';
+  if (lastDigit >= 2 && lastDigit <= 4) return 'года';
+  return 'лет';
+}
+
+function getMonthsText(months: number): string {
+  const lastDigit = months % 10;
+  const lastTwoDigits = months % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return 'месяцев';
+  if (lastDigit === 1) return 'месяц';
+  if (lastDigit >= 2 && lastDigit <= 4) return 'месяца';
+  return 'месяцев';
+}
+
 function getDaysText(days: number): string {
   const lastDigit = days % 10;
   const lastTwoDigits = days % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
-    return 'дней';
-  }
-
-  if (lastDigit === 1) {
-    return 'день';
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return 'дня';
-  }
-
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return 'дней';
+  if (lastDigit === 1) return 'день';
+  if (lastDigit >= 2 && lastDigit <= 4) return 'дня';
   return 'дней';
 }
+
+/**
+ * Форматирует разницу дат в строку "X лет, Y месяцев, Z дней"
+ * @param diff - Объект DateDifference
+ * @returns Отформатированная строка
+ */
+function formatRelativeTimeDetailed(diff: DateDifference): string {
+  const parts: string[] = [];
+  if (diff.years > 0) {
+    parts.push(`${diff.years} ${getYearsText(diff.years)}`);
+  }
+  if (diff.months > 0) {
+    parts.push(`${diff.months} ${getMonthsText(diff.months)}`);
+  }
+  // Показываем дни, только если нет лет и месяцев, или если они есть и дни не 0
+  if (diff.days > 0 && (parts.length < 2 || (diff.years > 0 || diff.months > 0))) {
+    parts.push(`${diff.days} ${getDaysText(diff.days)}`);
+  }
+  // Если все по нулям (или только дни = 0), но totalDays не 0 (редкий случай из-за округления)
+  // Или если years/months есть, а days=0, показываем 0 дней для ясности? Решил не показывать.
+  if (parts.length === 0 && diff.totalDays !== 0) {
+    // Если разница меньше дня, но не 0
+    return `менее дня`; // Или можно вернуть пустую строку, чтобы скобки не отображались
+  }
+  if (parts.length === 0 && diff.totalDays === 0) {
+    return 'сегодня'; // Для случая дедлайна
+  }
+
+
+  return parts.join(', ');
+}
+
+// --- Обновленные вычисляемые свойства ---
+
+const timeSinceCreation = computed((): DateDifference | null => {
+  if (!props.order?.start_moment) return null;
+  try {
+    const startDate = new Date(props.order.start_moment);
+    const now = new Date();
+    if (isNaN(startDate.getTime())) return null;
+    return calculateDateDifference(startDate, now);
+  } catch {
+    return null;
+  }
+});
+
+const timeUntilDeadline = computed((): DateDifference | null => {
+  if (!props.order?.deadline_moment) return null;
+  try {
+    const deadlineDate = new Date(props.order.deadline_moment);
+    const now = new Date();
+    if (isNaN(deadlineDate.getTime())) return null;
+    return calculateDateDifference(now, deadlineDate); // Порядок важен для totalDays
+  } catch {
+    return null;
+  }
+});
+
+const timeSinceCompletion = computed((): DateDifference | null => {
+  if (!props.order?.end_moment) return null;
+  try {
+    const endDate = new Date(props.order.end_moment);
+    const now = new Date();
+    if (isNaN(endDate.getTime())) return null;
+    return calculateDateDifference(endDate, now);
+  } catch {
+    return null;
+  }
+});
+
+// Проверка, просрочен ли дедлайн (используем totalDays из timeUntilDeadline)
+const isDeadlineOverdue = computed(() => {
+  // totalDays отрицательный, если deadlineDate < now
+  return timeUntilDeadline.value !== null && timeUntilDeadline.value.totalDays < 0;
+});
+
 </script>
 
 <template>
@@ -136,78 +237,88 @@ function getDaysText(days: number): string {
     <table class="w-full border-none table-fixed border-collapse">
       <tbody>
       <tr>
-        <td :class="tdBaseTextClass" class="text-left pr-2">
+        <td :class="tdBaseTextClass" class="text-left pr-2 align-top">
           создан:
         </td>
-        <td :class="tdBaseTextClass" class="text-left">
+        <td :class="tdBaseTextClass" class="text-left align-top">
           {{ formatLocalDateTime(props.order?.start_moment, false) || 'не определено' }}
         </td>
-        <td v-if="daysSinceCreation !== null" class="text-xs text-gray-500 pl-2 text-left">
-          ({{ daysSinceCreation }} {{ getDaysText(daysSinceCreation) }} назад)
+        <td v-if="timeSinceCreation && (timeSinceCreation.years > 0 || timeSinceCreation.months > 0 || timeSinceCreation.days > 0)" class="text-xs text-gray-500 pl-2 text-left align-top">
+          ({{ formatRelativeTimeDetailed(timeSinceCreation) }} назад)
         </td>
-        <td v-else></td>
+        <td v-else class="w-px"></td>
       </tr>
 
       <tr>
-        <td :class="tdBaseTextClass" class="text-left pr-2">
+        <td :class="tdBaseTextClass" class="text-left pr-2 align-top">
           дедлайн:
         </td>
-        <td class="text-left">
+        <td :class="[tdBaseTextClass, 'text-left align-top']">
           {{ formatLocalDateTime(props.order?.deadline_moment, false) || 'не определено' }}
         </td>
         <td
-            v-if="daysUntilDeadline !== null"
-            class="text-xs pl-2 text-left"
+            v-if="timeUntilDeadline !== null"
+            class="text-xs pl-2 text-left align-top"
             :class="isDeadlineOverdue ? 'text-red-400' : 'text-gray-500'"
         >
-          <template v-if="daysUntilDeadline > 0">
-            (через {{ daysUntilDeadline }} {{ getDaysText(daysUntilDeadline) }})
+          <template v-if="timeUntilDeadline.totalDays > 0">
+            (через {{ formatRelativeTimeDetailed(timeUntilDeadline) }})
           </template>
-          <template v-else-if="daysUntilDeadline === 0">
+          <template v-else-if="timeUntilDeadline.totalDays === 0">
             (сегодня)
           </template>
           <template v-else>
-            (просрочен на {{ Math.abs(daysUntilDeadline) }} {{ getDaysText(Math.abs(daysUntilDeadline)) }})
+            (просрочен на {{ formatRelativeTimeDetailed(timeUntilDeadline) }})
           </template>
         </td>
-        <td v-else></td>
+        <td v-else class="w-px"></td>
       </tr>
 
       <tr v-if="props.order?.end_moment">
-        <td :class="tdBaseTextClass" class="text-left pr-2">
+        <td :class="tdBaseTextClass" class="text-left pr-2 align-top">
           завершён:
         </td>
-        <td :class="tdBaseTextClass" class="text-left">
+        <td :class="tdBaseTextClass" class="text-left align-top">
           {{ formatLocalDateTime(props.order?.end_moment, false) || 'не определено' }}
         </td>
-        <td v-if="daysSinceCompletion !== null" class="text-xs text-gray-500 pl-2 text-left">
-          ({{ daysSinceCompletion }} {{ getDaysText(daysSinceCompletion) }} назад)
+        <td v-if="timeSinceCompletion && (timeSinceCompletion.years > 0 || timeSinceCompletion.months > 0 || timeSinceCompletion.days > 0)" class="text-xs text-gray-500 pl-2 text-left align-top">
+          ({{ formatRelativeTimeDetailed(timeSinceCompletion) }} назад)
         </td>
-        <td v-else></td>
+        <td v-else class="w-px"></td>
       </tr>
       </tbody>
     </table>
   </div>
 </template>
 
-
 <style scoped>
 table {
   border: none;
   border-collapse: collapse;
+  /* table-layout: fixed; /* Убедитесь, что используется fixed layout */
+  /* width: 100%; Если нужно на всю ширину */
 }
 
 table tr {
-  height: 2rem; /* Выставляет фиксированную высоту строк для лучшего выравнивания */
+  /* height: 2rem; /* Убрал фикс. высоту, т.к. текст может переноситься */
   border: none;
+  vertical-align: top; /* Выравнивание по верху строки */
 }
 
 table td {
-  padding: 4px 0; /* Вертикальный отступ внутри ячеек для лучшей читаемости */
+  padding: 4px 0; /* Вертикальный отступ внутри ячеек */
   border: none;
+  vertical-align: middle; /* Выравнивание по верху ячейки */
 }
 
-table th {
-  border: none;
+
+table td:nth-child(1) { width: 20%; }
+table td:nth-child(2) { width: 20%; }
+table td:nth-child(3) { width: 60%; }
+
+/* Добавил класс для пустой ячейки, чтобы она не коллапсировала */
+.w-px {
+  width: 1px;
 }
+
 </style>
