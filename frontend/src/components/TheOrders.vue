@@ -21,9 +21,6 @@ import DateBlock from '@/components/DateBlock.vue';
 import OrderNameEditDialog from '@/components/OrderNameEditDialog.vue'; // Импорт нового компонента диалога
 import OrderWorksEditDialog from '@/components/OrderWorksEditDialog.vue'; // <-- Импорт нового компонента
 
-
-
-
 // primevue компоненты
 import Toast from 'primevue/toast'
 import SelectButton from 'primevue/selectbutton';
@@ -34,15 +31,14 @@ import Button from "primevue/button";
 
 const toast = useToast();
 
-
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
 const {theme: currentTheme} = storeToRefs(themeStore); // <--- 3. Получаем реактивную ссылку на тему
 
-// 1. Получаем экземпляр стора
+// Store для заказов
 const ordersStore = useOrdersStore();
 
-// 2. Извлекаем реактивные переменные и действия из стора.
+// Извлекаем реактивные переменные и действия из стора.
 const {
   orders,
   isLoading,
@@ -130,7 +126,7 @@ const showEndedOrders = computed({
   }
 });
 
-// 2. Watcher для отслеживания изменений и вызова fetchOrders
+// для отслеживания изменений и вызова fetchOrders
 watch(
     // Источник для отслеживания: можно напрямую следить за состоянием стора
     () => ordersTableStore.showEndedOrders,
@@ -145,37 +141,6 @@ watch(
       });
     },
 );
-
-// Функция для переключения видимости завершенных заказов
-// const toggleEndedOrders = () => {
-//   ordersTableStore.toggleShowEndedOrders(); // Переключаем состояние в сторе
-//   fetchOrders({
-//     skip: 0,
-//     limit: currentLimit.value,
-//   });
-// };
-
-
-// Функция загрузки с автоповтором при ошибке 500
-async function fetchOrdersWithRetry(params: { skip: number, limit: number}) {
-  try {
-    await fetchOrders(params);
-    // Если успешно, просто возвращаем
-  } catch (err: any) {
-    // Если ошибка есть и это 500, пробуем ещё раз
-    if (err?.response?.status === 500 || (typeof error.value === 'string' && error.value.includes('500'))) {
-      // Сбросить ошибку перед повтором (если нужно)
-      clearError();
-      try {
-        await fetchOrders(params);
-        // Если второй раз успешно — ок
-      } catch {
-        // Если второй раз ошибка — позволяем ошибке отобразиться
-      }
-    }
-    // Если другая ошибка — ничего не делаем (она отобразится стандартно)
-  }
-}
 
 
 // Вызываем действие fetchOrders при монтировании компонента
@@ -192,8 +157,8 @@ onMounted(() => {
   // Загружаем работы один раз при монтировании основного компонента
   worksStore.fetchWorks();
 
-  // Загружаем с повтором
-  fetchOrdersWithRetry({
+  // Загружаем данные
+  fetchOrders({
     skip: 0,
     limit: 50,
   });
