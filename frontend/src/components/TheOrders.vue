@@ -28,7 +28,7 @@ import Select from 'primevue/select'; // Импортируем компонен
 import {useToast} from 'primevue/usetoast';
 import Button from "primevue/button";
 
-
+// всплывающие уведомления
 const toast = useToast();
 
 // Store темы
@@ -372,7 +372,6 @@ const handlePriorityChange = async (orderId: string, priority: number | null) =>
   }
 };
 
-
 // Функция для получения опций для выпадающего списка контрагентов
 const getCustomerOptions = computed(() => {
   return counterpartyStore.sortedCounterparties.map(cp => ({
@@ -458,7 +457,6 @@ const openWorksEditDialog = (orderId: string, currentWorks: { id: number, name?:
   showWorksEditDialog.value = true;
   disableScroll(); // Блокируем прокрутку
 };
-
 
 
 /**
