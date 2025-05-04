@@ -1,6 +1,7 @@
 <!-- src/components/TheOrders.vue -->
 <script setup lang="ts">
 import {onMounted, ref, computed} from 'vue';
+import { watch } from 'vue'; // Добавьте watch
 import {storeToRefs} from 'pinia';
 import {useOrdersStore} from '../stores/storeOrders';
 import {getStatusColor} from "@/utils/getStatusColor";
@@ -9,6 +10,7 @@ import {getStatusColor} from "@/utils/getStatusColor";
 import {useThemeStore} from '../stores/storeTheme';
 import {useCounterpartyStore} from '@/stores/storeCounterparty'; // Импортируем store контрагентов
 import { useWorksStore } from "@/stores/storeWorks"; // <-- Импорт works store если еще не импортирован
+import { useOrdersTableStore } from '@/stores/storeOrdersTable'; // Импорт нового стора
 
 // мои компоненты
 import OrderCreateForm from '@/components/OrderCreateForm.vue'; // Импорт нашего нового компонента
@@ -89,7 +91,6 @@ const handleOrderCreated = () => {
   fetchOrders({
     skip: currentSkip.value,
     limit: currentLimit.value,
-    showEnded: showEndedOrders.value
   });
 }
 
@@ -120,21 +121,43 @@ const toggleOrderDetails = async (serial: string) => {
 
 
 // Состояние для отображения завершенных заказов
-const showEndedOrders = ref(false); // По умолчанию скрываем завершённые заказы
+const ordersTableStore = useOrdersTableStore(); // Получаем экземпляр стора
+// 1. Упрощенное computed свойство
+const showEndedOrders = computed({
+  get: () => ordersTableStore.showEndedOrders,
+  set: () => {
+    ordersTableStore.toggleShowEndedOrders();
+  }
+});
+
+// 2. Watcher для отслеживания изменений и вызова fetchOrders
+watch(
+    // Источник для отслеживания: можно напрямую следить за состоянием стора
+    () => ordersTableStore.showEndedOrders,
+    // Callback, который выполнится при изменении
+    (newValue) => {
+      // Вызываем fetchOrders с новым значением showEnded.
+      // Сбрасываем на первую страницу при смене фильтра
+      fetchOrders({
+        skip: 0,
+        limit: currentLimit.value, // Используем текущий лимит
+        showEnded: newValue // Передаем новое значение из watch
+      });
+    },
+);
 
 // Функция для переключения видимости завершенных заказов
-const toggleEndedOrders = () => {
-  // Вызов API с обновленным значением параметра showEnded
-  fetchOrders({
-    skip: 0, // Сбрасываем на первую страницу при смене фильтра
-    limit: currentLimit.value,
-    showEnded: showEndedOrders.value // Используем актуальное значение переключателя
-  });
-};
+// const toggleEndedOrders = () => {
+//   ordersTableStore.toggleShowEndedOrders(); // Переключаем состояние в сторе
+//   fetchOrders({
+//     skip: 0,
+//     limit: currentLimit.value,
+//   });
+// };
 
 
 // Функция загрузки с автоповтором при ошибке 500
-async function fetchOrdersWithRetry(params: { skip: number, limit: number, showEnded: boolean }) {
+async function fetchOrdersWithRetry(params: { skip: number, limit: number}) {
   try {
     await fetchOrders(params);
     // Если успешно, просто возвращаем
@@ -170,7 +193,10 @@ onMounted(() => {
   worksStore.fetchWorks();
 
   // Загружаем с повтором
-  fetchOrdersWithRetry({skip: 0, limit: 50, showEnded: showEndedOrders.value});
+  fetchOrdersWithRetry({
+    skip: 0,
+    limit: 50,
+  });
 });
 
 // Функции для пагинации (вызывают fetchOrders с новыми параметрами)
@@ -180,7 +206,6 @@ const goToPreviousPage = () => {
     fetchOrders({
       skip: newSkip,
       limit: currentLimit.value,
-      showEnded: showEndedOrders.value // Добавляем параметр
     });
   }
 };
@@ -191,7 +216,6 @@ const goToNextPage = () => {
     fetchOrders({
       skip: newSkip,
       limit: currentLimit.value,
-      showEnded: showEndedOrders.value // Добавляем параметр
     });
   }
 };
@@ -434,7 +458,6 @@ const handleNameUpdated = async () => {
   await fetchOrders({
     skip: currentSkip.value,
     limit: currentLimit.value,
-    showEnded: showEndedOrders.value
   });
   // Очищаем выбранный заказ после закрытия диалога
   selectedOrderForNameEdit.value = {id: null, name: ''};
@@ -482,7 +505,6 @@ const handleWorksUpdated = async () => {
   await fetchOrders({
     skip: currentSkip.value,
     limit: currentLimit.value,
-    showEnded: showEndedOrders.value
   });
   enableScroll(); // Восстанавливаем прокрутку
 };
@@ -540,7 +562,7 @@ const handleStatusChange = async (orderId: string, statusId: number) => {
     // Это может потребовать перезапроса данных или более сложной логики отката
     // Для простоты пока оставим так, но в реальном приложении это нужно учесть.
     // Возможно, стоит перезапросить данные, чтобы вернуть старое значение
-    await fetchOrders({ skip: currentSkip.value, limit: currentLimit.value, showEnded: showEndedOrders.value });
+    await fetchOrders({ skip: currentSkip.value, limit: currentLimit.value});
   }
 };
 </script>
@@ -591,7 +613,7 @@ const handleStatusChange = async (orderId: string, statusId: number) => {
       <span>Ошибка: {{ error }}</span>
       <div>
         <button
-            @click="fetchOrders({ skip: currentSkip, limit: currentLimit, showEnded: showEndedOrders })"
+            @click="fetchOrders({ skip: currentSkip, limit: currentLimit})"
             :class="errorRepeatButtonClass"
         >
           Повторить
@@ -622,9 +644,14 @@ const handleStatusChange = async (orderId: string, statusId: number) => {
             <div class="px-1 py-1 flex justify-between items-center">
 
               <span class="flex items-center">
-                <SelectButton v-model="showEndedOrders" :options="orderVisibilityOptions"
-                              @change="toggleEndedOrders" optionLabel="label" optionValue="value"
-                              aria-labelledby="orders-visibility-label" class="text-sm"/>
+                <SelectButton
+                    v-model="showEndedOrders"
+                    :options="orderVisibilityOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    aria-labelledby="orders-visibility-label"
+                    class="text-sm"
+                />
               </span>
 
 
