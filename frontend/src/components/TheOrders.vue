@@ -31,6 +31,7 @@ import Button from "primevue/button";
 // всплывающие уведомления
 const toast = useToast();
 
+
 // Store темы
 const themeStore = useThemeStore(); // <--- 2. Получаем экземпляр Theme Store
 const {theme: currentTheme} = storeToRefs(themeStore); // <--- 3. Получаем реактивную ссылку на тему
